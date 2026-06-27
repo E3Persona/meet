@@ -1,7 +1,9 @@
+import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "../lib/generated/prisma/client"
 import { EVENT_TYPE_KEYWORDS } from "../lib/constants/events"
 
-const prisma = new PrismaClient()
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
+const prisma = new PrismaClient({ adapter })
 
 const DEFAULT_LOCATIONS = [
   { name: "Gaylord National Harbor", city: "National Harbor", state: "MD", sourceUrl: "https://www.marriott.com/en-us/hotels/wasgn-gaylord-national-resort-and-convention-center/overview/" },
