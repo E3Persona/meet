@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Location ─────────────────────────────────────────────────────────────────
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  city      String?
+  state     String?
+  sourceUrl String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  searchTerms SearchTerm[]
+  events      Event[]
+
+  @@map("locations")
+}
+
+// ─── Search Term ──────────────────────────────────────────────────────────────
+
+model SearchTerm {
+  id         String   @id @default(cuid())
+  keyword    String
+  locationId String
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@map("search_terms")
+}
+
+// ─── Event ────────────────────────────────────────────────────────────────────
+
+model Event {
+  id               String    @id @default(cuid())
+  locationId       String
+  eventName        String
+  eventDateStart   DateTime?
+  eventDateEnd     DateTime?
+  sourceUrl        String?
+  organizerName    String?
+  organizerTitle   String?
+  organizerEmail   String?
+  organizerPhone   String?
+  status           EventStatus @default(new)
+  dateAdded        DateTime  @default(now())
+  runId            String?
+
+  location Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  run      IngestionRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
+
+  @@unique([locationId, eventName, eventDateStart])
+  @@map("events")
+}
+
+enum EventStatus {
+  new
+  reviewed
+  contacted
+}
+
+// ─── Ingestion Run ────────────────────────────────────────────────────────────
+
+model IngestionRun {
+  id           String     @id @default(cuid())
+  startedAt    DateTime   @default(now())
+  finishedAt   DateTime?
+  trigger      RunTrigger
+  status       RunStatus  @default(running)
+  recordsFound Int        @default(0)
+  recordsNew   Int        @default(0)
+  errorMessage String?
+
+  events Event[]
+
+  @@map("ingestion_runs")
+}
+
+enum RunTrigger {
+  scheduled
+  manual
+}
+
+enum RunStatus {
+  running
+  success
+  failed
+}
