@@ -387,7 +387,11 @@ export const ModelName = {
   Location: 'Location',
   SearchTerm: 'SearchTerm',
   Event: 'Event',
-  IngestionRun: 'IngestionRun'
+  IngestionRun: 'IngestionRun',
+  SearchTemplate: 'SearchTemplate',
+  SourceSite: 'SourceSite',
+  IngestionSchedule: 'IngestionSchedule',
+  EventContact: 'EventContact'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -403,7 +407,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "location" | "searchTerm" | "event" | "ingestionRun"
+    modelProps: "location" | "searchTerm" | "event" | "ingestionRun" | "searchTemplate" | "sourceSite" | "ingestionSchedule" | "eventContact"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -703,6 +707,302 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SearchTemplate: {
+      payload: Prisma.$SearchTemplatePayload<ExtArgs>
+      fields: Prisma.SearchTemplateFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SearchTemplateFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SearchTemplateFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        findFirst: {
+          args: Prisma.SearchTemplateFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SearchTemplateFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        findMany: {
+          args: Prisma.SearchTemplateFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>[]
+        }
+        create: {
+          args: Prisma.SearchTemplateCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        createMany: {
+          args: Prisma.SearchTemplateCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SearchTemplateCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>[]
+        }
+        delete: {
+          args: Prisma.SearchTemplateDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        update: {
+          args: Prisma.SearchTemplateUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        deleteMany: {
+          args: Prisma.SearchTemplateDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SearchTemplateUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SearchTemplateUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>[]
+        }
+        upsert: {
+          args: Prisma.SearchTemplateUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        aggregate: {
+          args: Prisma.SearchTemplateAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSearchTemplate>
+        }
+        groupBy: {
+          args: Prisma.SearchTemplateGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SearchTemplateGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SearchTemplateCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SearchTemplateCountAggregateOutputType> | number
+        }
+      }
+    }
+    SourceSite: {
+      payload: Prisma.$SourceSitePayload<ExtArgs>
+      fields: Prisma.SourceSiteFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SourceSiteFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SourceSiteFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload>
+        }
+        findFirst: {
+          args: Prisma.SourceSiteFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SourceSiteFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload>
+        }
+        findMany: {
+          args: Prisma.SourceSiteFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload>[]
+        }
+        create: {
+          args: Prisma.SourceSiteCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload>
+        }
+        createMany: {
+          args: Prisma.SourceSiteCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SourceSiteCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload>[]
+        }
+        delete: {
+          args: Prisma.SourceSiteDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload>
+        }
+        update: {
+          args: Prisma.SourceSiteUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload>
+        }
+        deleteMany: {
+          args: Prisma.SourceSiteDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SourceSiteUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SourceSiteUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload>[]
+        }
+        upsert: {
+          args: Prisma.SourceSiteUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SourceSitePayload>
+        }
+        aggregate: {
+          args: Prisma.SourceSiteAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSourceSite>
+        }
+        groupBy: {
+          args: Prisma.SourceSiteGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SourceSiteGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SourceSiteCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SourceSiteCountAggregateOutputType> | number
+        }
+      }
+    }
+    IngestionSchedule: {
+      payload: Prisma.$IngestionSchedulePayload<ExtArgs>
+      fields: Prisma.IngestionScheduleFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.IngestionScheduleFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.IngestionScheduleFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload>
+        }
+        findFirst: {
+          args: Prisma.IngestionScheduleFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.IngestionScheduleFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload>
+        }
+        findMany: {
+          args: Prisma.IngestionScheduleFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload>[]
+        }
+        create: {
+          args: Prisma.IngestionScheduleCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload>
+        }
+        createMany: {
+          args: Prisma.IngestionScheduleCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.IngestionScheduleCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload>[]
+        }
+        delete: {
+          args: Prisma.IngestionScheduleDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload>
+        }
+        update: {
+          args: Prisma.IngestionScheduleUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload>
+        }
+        deleteMany: {
+          args: Prisma.IngestionScheduleDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.IngestionScheduleUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.IngestionScheduleUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload>[]
+        }
+        upsert: {
+          args: Prisma.IngestionScheduleUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestionSchedulePayload>
+        }
+        aggregate: {
+          args: Prisma.IngestionScheduleAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateIngestionSchedule>
+        }
+        groupBy: {
+          args: Prisma.IngestionScheduleGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.IngestionScheduleGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.IngestionScheduleCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.IngestionScheduleCountAggregateOutputType> | number
+        }
+      }
+    }
+    EventContact: {
+      payload: Prisma.$EventContactPayload<ExtArgs>
+      fields: Prisma.EventContactFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EventContactFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EventContactFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload>
+        }
+        findFirst: {
+          args: Prisma.EventContactFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EventContactFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload>
+        }
+        findMany: {
+          args: Prisma.EventContactFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload>[]
+        }
+        create: {
+          args: Prisma.EventContactCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload>
+        }
+        createMany: {
+          args: Prisma.EventContactCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EventContactCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload>[]
+        }
+        delete: {
+          args: Prisma.EventContactDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload>
+        }
+        update: {
+          args: Prisma.EventContactUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload>
+        }
+        deleteMany: {
+          args: Prisma.EventContactDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EventContactUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EventContactUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload>[]
+        }
+        upsert: {
+          args: Prisma.EventContactUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EventContactPayload>
+        }
+        aggregate: {
+          args: Prisma.EventContactAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEventContact>
+        }
+        groupBy: {
+          args: Prisma.EventContactGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EventContactGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EventContactCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EventContactCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -745,6 +1045,7 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const LocationScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  shortName: 'shortName',
   address: 'address',
   city: 'city',
   state: 'state',
@@ -776,6 +1077,7 @@ export const EventScalarFieldEnum = {
   eventDateStart: 'eventDateStart',
   eventDateEnd: 'eventDateEnd',
   sourceUrl: 'sourceUrl',
+  sourceSiteId: 'sourceSiteId',
   organizerName: 'organizerName',
   organizerTitle: 'organizerTitle',
   organizerEmail: 'organizerEmail',
@@ -796,10 +1098,73 @@ export const IngestionRunScalarFieldEnum = {
   status: 'status',
   recordsFound: 'recordsFound',
   recordsNew: 'recordsNew',
-  errorMessage: 'errorMessage'
+  errorMessage: 'errorMessage',
+  providersUsed: 'providersUsed'
 } as const
 
 export type IngestionRunScalarFieldEnum = (typeof IngestionRunScalarFieldEnum)[keyof typeof IngestionRunScalarFieldEnum]
+
+
+export const SearchTemplateScalarFieldEnum = {
+  id: 'id',
+  template: 'template',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SearchTemplateScalarFieldEnum = (typeof SearchTemplateScalarFieldEnum)[keyof typeof SearchTemplateScalarFieldEnum]
+
+
+export const SourceSiteScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  url: 'url',
+  active: 'active',
+  urlPattern: 'urlPattern',
+  scrapeMode: 'scrapeMode',
+  notes: 'notes',
+  lastScrapedAt: 'lastScrapedAt',
+  lastScrapeStatus: 'lastScrapeStatus',
+  eventsFound: 'eventsFound',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SourceSiteScalarFieldEnum = (typeof SourceSiteScalarFieldEnum)[keyof typeof SourceSiteScalarFieldEnum]
+
+
+export const IngestionScheduleScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  cronExpr: 'cronExpr',
+  locationIds: 'locationIds',
+  templateIds: 'templateIds',
+  sourceSiteIds: 'sourceSiteIds',
+  active: 'active',
+  lastRunAt: 'lastRunAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type IngestionScheduleScalarFieldEnum = (typeof IngestionScheduleScalarFieldEnum)[keyof typeof IngestionScheduleScalarFieldEnum]
+
+
+export const EventContactScalarFieldEnum = {
+  id: 'id',
+  eventId: 'eventId',
+  name: 'name',
+  title: 'title',
+  email: 'email',
+  phone: 'phone',
+  isPrimary: 'isPrimary',
+  sourceUrl: 'sourceUrl',
+  confidence: 'confidence',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EventContactScalarFieldEnum = (typeof EventContactScalarFieldEnum)[keyof typeof EventContactScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -808,6 +1173,14 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -824,6 +1197,15 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
 
@@ -920,6 +1302,48 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
  * Reference to a field of type 'Int[]'
  */
 export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'ScrapeMode'
+ */
+export type EnumScrapeModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ScrapeMode'>
+    
+
+
+/**
+ * Reference to a field of type 'ScrapeMode[]'
+ */
+export type ListEnumScrapeModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ScrapeMode[]'>
+    
+
+
+/**
+ * Reference to a field of type 'ScrapeStatus'
+ */
+export type EnumScrapeStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ScrapeStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'ScrapeStatus[]'
+ */
+export type ListEnumScrapeStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ScrapeStatus[]'>
     
 
 
@@ -1050,6 +1474,10 @@ export type GlobalOmitConfig = {
   searchTerm?: Prisma.SearchTermOmit
   event?: Prisma.EventOmit
   ingestionRun?: Prisma.IngestionRunOmit
+  searchTemplate?: Prisma.SearchTemplateOmit
+  sourceSite?: Prisma.SourceSiteOmit
+  ingestionSchedule?: Prisma.IngestionScheduleOmit
+  eventContact?: Prisma.EventContactOmit
 }
 
 /* Types for Logging */

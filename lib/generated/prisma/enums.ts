@@ -33,3 +33,24 @@ export const RunStatus = {
 } as const
 
 export type RunStatus = (typeof RunStatus)[keyof typeof RunStatus]
+
+
+export const ScrapeMode = {
+  auto: 'auto',
+  calendar: 'calendar',
+  directory: 'directory',
+  search: 'search',
+  skip: 'skip'
+} as const
+
+export type ScrapeMode = (typeof ScrapeMode)[keyof typeof ScrapeMode]
+
+
+export const ScrapeStatus = {
+  success: 'success',
+  partial: 'partial',
+  failed: 'failed',
+  blocked: 'blocked'
+} as const
+
+export type ScrapeStatus = (typeof ScrapeStatus)[keyof typeof ScrapeStatus]

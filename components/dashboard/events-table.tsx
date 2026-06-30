@@ -30,11 +30,17 @@ import {
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowUpDown, Download, Pencil, Check, X, Search, Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import * as XLSX from "xlsx"
-import { EXCEL_EXPORT_COLUMNS } from "@/lib/constants/events"
 import { ContactFinderModal } from "./contact-finder-modal"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+interface EventContact {
+  id: string
+  name: string
+  isPrimary: boolean
+  email: string | null
+  phone: string | null
+}
 
 interface EventRow {
   id: string
@@ -49,6 +55,7 @@ interface EventRow {
   status: "new" | "reviewed" | "contacted"
   dateAdded: string
   location: { name: string; city: string | null; state: string | null }
+  contacts: EventContact[]
 }
 
 interface Location {
@@ -241,28 +248,8 @@ export function EventsTable() {
   // ── Excel Export ──────────────────────────────────────────────────────────
 
   const exportToExcel = () => {
-    const data = events.map((e) => ({
-      "Event Name": e.eventName,
-      Location: e.location.name,
-      "Contact Name": e.organizerName ?? "",
-      "Contact Title": e.organizerTitle ?? "",
-      Phone: e.organizerPhone ?? "",
-      Email: e.organizerEmail ?? "",
-      "Date of Event": e.eventDateStart
-        ? new Date(e.eventDateStart).toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })
-        : "",
-      Status: e.status,
-    }))
-
-    const ws = XLSX.utils.json_to_sheet(data, { header: [...EXCEL_EXPORT_COLUMNS] })
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Events")
-    XLSX.writeFile(wb, `events-export-${new Date().toISOString().slice(0, 10)}.xlsx`)
-    toast.success(`Exported ${events.length} events`)
+    window.open("/api/events/export", "_blank")
+    toast.success("Exporting events...")
   }
 
   // ── Find All Contacts ─────────────────────────────────────────────────────
@@ -283,7 +270,7 @@ export function EventsTable() {
     }
   }
 
-  const missingContactCount = events.filter((e) => !e.organizerName).length
+  const missingContactCount = events.filter((e) => (e.contacts?.length ?? 0) === 0).length
 
   // ── Columns ───────────────────────────────────────────────────────────────
 
@@ -324,52 +311,33 @@ export function EventsTable() {
         ),
       },
       {
-        accessorKey: "organizerName",
-        header: "Contact Name",
-        cell: ({ row }) => (
-          <InlineEditCell
-            value={row.original.organizerName}
-            eventId={row.original.id}
-            field="organizerName"
-            onSaved={fetchEvents}
-          />
-        ),
-      },
-      {
-        accessorKey: "organizerTitle",
-        header: "Contact Title",
-        cell: ({ row }) => (
-          <InlineEditCell
-            value={row.original.organizerTitle}
-            eventId={row.original.id}
-            field="organizerTitle"
-            onSaved={fetchEvents}
-          />
-        ),
-      },
-      {
-        accessorKey: "organizerPhone",
-        header: "Phone",
-        cell: ({ row }) => (
-          <InlineEditCell
-            value={row.original.organizerPhone}
-            eventId={row.original.id}
-            field="organizerPhone"
-            onSaved={fetchEvents}
-          />
-        ),
-      },
-      {
-        accessorKey: "organizerEmail",
-        header: "Email",
-        cell: ({ row }) => (
-          <InlineEditCell
-            value={row.original.organizerEmail}
-            eventId={row.original.id}
-            field="organizerEmail"
-            onSaved={fetchEvents}
-          />
-        ),
+        id: "contacts",
+        header: "Contacts",
+        cell: ({ row }) => {
+          const event = row.original
+          const contacts = event.contacts ?? []
+          const primary = contacts.find((c) => c.isPrimary)
+          if (contacts.length === 0) {
+            return (
+              <span className="text-xs text-muted-foreground italic">No contacts</span>
+            )
+          }
+          return (
+            <div className="max-w-[250px]">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-medium truncate">{primary?.name ?? contacts[0].name}</span>
+                {contacts.length > 1 && (
+                  <Badge variant="neutral" size="sm">+{contacts.length - 1}</Badge>
+                )}
+              </div>
+              {(primary?.email ?? contacts[0].email) && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {primary?.email ?? contacts[0].email}
+                </p>
+              )}
+            </div>
+          )
+        },
       },
       {
         accessorKey: "eventDateStart",
@@ -422,10 +390,10 @@ export function EventsTable() {
         meta: { align: "center" },
         cell: ({ row }) => {
           const event = row.original
-          const hasContact = !!event.organizerName
+          const contactCount = event.contacts?.length ?? 0
           return (
             <Button
-              variant={hasContact ? "ghost" : "outline"}
+              variant={contactCount > 0 ? "ghost" : "outline"}
               size="sm"
               className="h-7 text-xs"
               onClick={() =>
@@ -437,7 +405,7 @@ export function EventsTable() {
               }
             >
               <Search className="h-3 w-3 mr-1" />
-              {hasContact ? "Find Better" : "Find Contact"}
+              {contactCount > 0 ? `${contactCount} Contact${contactCount > 1 ? "s" : ""}` : "Find Contact"}
             </Button>
           )
         },

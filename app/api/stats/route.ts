@@ -5,7 +5,7 @@ export async function GET() {
   const now = new Date()
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
-  const [totalLocations, totalEvents, newThisWeek, lastRun] = await Promise.all([
+  const [totalLocations, totalEvents, newThisWeek, lastRun, totalTemplates, totalSourceSites] = await Promise.all([
     prisma.location.count({ where: { active: true } }),
     prisma.event.count(),
     prisma.event.count({ where: { dateAdded: { gte: weekAgo } } }),
@@ -19,6 +19,8 @@ export async function GET() {
         trigger: true,
       },
     }),
+    prisma.searchTemplate.count({ where: { active: true } }),
+    prisma.sourceSite.count({ where: { active: true } }),
   ])
 
   return NextResponse.json({
@@ -26,5 +28,7 @@ export async function GET() {
     totalEvents,
     newThisWeek,
     lastRun,
+    totalTemplates,
+    totalSourceSites,
   })
 }

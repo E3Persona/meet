@@ -67,6 +67,7 @@ export type IngestionRunCountAggregateOutputType = {
   recordsFound: number
   recordsNew: number
   errorMessage: number
+  providersUsed: number
   _all: number
 }
 
@@ -112,6 +113,7 @@ export type IngestionRunCountAggregateInputType = {
   recordsFound?: true
   recordsNew?: true
   errorMessage?: true
+  providersUsed?: true
   _all?: true
 }
 
@@ -210,6 +212,7 @@ export type IngestionRunGroupByOutputType = {
   recordsFound: number
   recordsNew: number
   errorMessage: string | null
+  providersUsed: runtime.JsonValue | null
   _count: IngestionRunCountAggregateOutputType | null
   _avg: IngestionRunAvgAggregateOutputType | null
   _sum: IngestionRunSumAggregateOutputType | null
@@ -244,6 +247,7 @@ export type IngestionRunWhereInput = {
   recordsFound?: Prisma.IntFilter<"IngestionRun"> | number
   recordsNew?: Prisma.IntFilter<"IngestionRun"> | number
   errorMessage?: Prisma.StringNullableFilter<"IngestionRun"> | string | null
+  providersUsed?: Prisma.JsonNullableFilter<"IngestionRun">
   events?: Prisma.EventListRelationFilter
 }
 
@@ -256,6 +260,7 @@ export type IngestionRunOrderByWithRelationInput = {
   recordsFound?: Prisma.SortOrder
   recordsNew?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  providersUsed?: Prisma.SortOrderInput | Prisma.SortOrder
   events?: Prisma.EventOrderByRelationAggregateInput
 }
 
@@ -271,6 +276,7 @@ export type IngestionRunWhereUniqueInput = Prisma.AtLeast<{
   recordsFound?: Prisma.IntFilter<"IngestionRun"> | number
   recordsNew?: Prisma.IntFilter<"IngestionRun"> | number
   errorMessage?: Prisma.StringNullableFilter<"IngestionRun"> | string | null
+  providersUsed?: Prisma.JsonNullableFilter<"IngestionRun">
   events?: Prisma.EventListRelationFilter
 }, "id">
 
@@ -283,6 +289,7 @@ export type IngestionRunOrderByWithAggregationInput = {
   recordsFound?: Prisma.SortOrder
   recordsNew?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  providersUsed?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.IngestionRunCountOrderByAggregateInput
   _avg?: Prisma.IngestionRunAvgOrderByAggregateInput
   _max?: Prisma.IngestionRunMaxOrderByAggregateInput
@@ -302,6 +309,7 @@ export type IngestionRunScalarWhereWithAggregatesInput = {
   recordsFound?: Prisma.IntWithAggregatesFilter<"IngestionRun"> | number
   recordsNew?: Prisma.IntWithAggregatesFilter<"IngestionRun"> | number
   errorMessage?: Prisma.StringNullableWithAggregatesFilter<"IngestionRun"> | string | null
+  providersUsed?: Prisma.JsonNullableWithAggregatesFilter<"IngestionRun">
 }
 
 export type IngestionRunCreateInput = {
@@ -313,6 +321,7 @@ export type IngestionRunCreateInput = {
   recordsFound?: number
   recordsNew?: number
   errorMessage?: string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   events?: Prisma.EventCreateNestedManyWithoutRunInput
 }
 
@@ -325,6 +334,7 @@ export type IngestionRunUncheckedCreateInput = {
   recordsFound?: number
   recordsNew?: number
   errorMessage?: string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   events?: Prisma.EventUncheckedCreateNestedManyWithoutRunInput
 }
 
@@ -337,6 +347,7 @@ export type IngestionRunUpdateInput = {
   recordsFound?: Prisma.IntFieldUpdateOperationsInput | number
   recordsNew?: Prisma.IntFieldUpdateOperationsInput | number
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   events?: Prisma.EventUpdateManyWithoutRunNestedInput
 }
 
@@ -349,6 +360,7 @@ export type IngestionRunUncheckedUpdateInput = {
   recordsFound?: Prisma.IntFieldUpdateOperationsInput | number
   recordsNew?: Prisma.IntFieldUpdateOperationsInput | number
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   events?: Prisma.EventUncheckedUpdateManyWithoutRunNestedInput
 }
 
@@ -361,6 +373,7 @@ export type IngestionRunCreateManyInput = {
   recordsFound?: number
   recordsNew?: number
   errorMessage?: string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type IngestionRunUpdateManyMutationInput = {
@@ -372,6 +385,7 @@ export type IngestionRunUpdateManyMutationInput = {
   recordsFound?: Prisma.IntFieldUpdateOperationsInput | number
   recordsNew?: Prisma.IntFieldUpdateOperationsInput | number
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type IngestionRunUncheckedUpdateManyInput = {
@@ -383,6 +397,7 @@ export type IngestionRunUncheckedUpdateManyInput = {
   recordsFound?: Prisma.IntFieldUpdateOperationsInput | number
   recordsNew?: Prisma.IntFieldUpdateOperationsInput | number
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type IngestionRunNullableScalarRelationFilter = {
@@ -399,6 +414,7 @@ export type IngestionRunCountOrderByAggregateInput = {
   recordsFound?: Prisma.SortOrder
   recordsNew?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrder
+  providersUsed?: Prisma.SortOrder
 }
 
 export type IngestionRunAvgOrderByAggregateInput = {
@@ -474,6 +490,7 @@ export type IngestionRunCreateWithoutEventsInput = {
   recordsFound?: number
   recordsNew?: number
   errorMessage?: string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type IngestionRunUncheckedCreateWithoutEventsInput = {
@@ -485,6 +502,7 @@ export type IngestionRunUncheckedCreateWithoutEventsInput = {
   recordsFound?: number
   recordsNew?: number
   errorMessage?: string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type IngestionRunCreateOrConnectWithoutEventsInput = {
@@ -512,6 +530,7 @@ export type IngestionRunUpdateWithoutEventsInput = {
   recordsFound?: Prisma.IntFieldUpdateOperationsInput | number
   recordsNew?: Prisma.IntFieldUpdateOperationsInput | number
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type IngestionRunUncheckedUpdateWithoutEventsInput = {
@@ -523,6 +542,7 @@ export type IngestionRunUncheckedUpdateWithoutEventsInput = {
   recordsFound?: Prisma.IntFieldUpdateOperationsInput | number
   recordsNew?: Prisma.IntFieldUpdateOperationsInput | number
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providersUsed?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 
@@ -565,6 +585,7 @@ export type IngestionRunSelect<ExtArgs extends runtime.Types.Extensions.Internal
   recordsFound?: boolean
   recordsNew?: boolean
   errorMessage?: boolean
+  providersUsed?: boolean
   events?: boolean | Prisma.IngestionRun$eventsArgs<ExtArgs>
   _count?: boolean | Prisma.IngestionRunCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["ingestionRun"]>
@@ -578,6 +599,7 @@ export type IngestionRunSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   recordsFound?: boolean
   recordsNew?: boolean
   errorMessage?: boolean
+  providersUsed?: boolean
 }, ExtArgs["result"]["ingestionRun"]>
 
 export type IngestionRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -589,6 +611,7 @@ export type IngestionRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   recordsFound?: boolean
   recordsNew?: boolean
   errorMessage?: boolean
+  providersUsed?: boolean
 }, ExtArgs["result"]["ingestionRun"]>
 
 export type IngestionRunSelectScalar = {
@@ -600,9 +623,10 @@ export type IngestionRunSelectScalar = {
   recordsFound?: boolean
   recordsNew?: boolean
   errorMessage?: boolean
+  providersUsed?: boolean
 }
 
-export type IngestionRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "startedAt" | "finishedAt" | "trigger" | "status" | "recordsFound" | "recordsNew" | "errorMessage", ExtArgs["result"]["ingestionRun"]>
+export type IngestionRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "startedAt" | "finishedAt" | "trigger" | "status" | "recordsFound" | "recordsNew" | "errorMessage" | "providersUsed", ExtArgs["result"]["ingestionRun"]>
 export type IngestionRunInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   events?: boolean | Prisma.IngestionRun$eventsArgs<ExtArgs>
   _count?: boolean | Prisma.IngestionRunCountOutputTypeDefaultArgs<ExtArgs>
@@ -624,6 +648,7 @@ export type $IngestionRunPayload<ExtArgs extends runtime.Types.Extensions.Intern
     recordsFound: number
     recordsNew: number
     errorMessage: string | null
+    providersUsed: runtime.JsonValue | null
   }, ExtArgs["result"]["ingestionRun"]>
   composites: {}
 }
@@ -1056,6 +1081,7 @@ export interface IngestionRunFieldRefs {
   readonly recordsFound: Prisma.FieldRef<"IngestionRun", 'Int'>
   readonly recordsNew: Prisma.FieldRef<"IngestionRun", 'Int'>
   readonly errorMessage: Prisma.FieldRef<"IngestionRun", 'String'>
+  readonly providersUsed: Prisma.FieldRef<"IngestionRun", 'Json'>
 }
     
 

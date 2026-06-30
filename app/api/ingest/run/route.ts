@@ -1,163 +1,75 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { ProviderRegistry } from "@/lib/providers"
+import { getUsageSummary, clearUsage } from "@/lib/providers/cost-tracker"
+import { createTavilyProvider } from "@/lib/providers/search/tavily"
+import { createBraveProvider } from "@/lib/providers/search/brave"
+import { createDuckDuckGoProvider } from "@/lib/providers/search/duckduckgo"
+import { createFirecrawlProvider } from "@/lib/providers/scrape/firecrawl"
+import { createWebPeelProvider } from "@/lib/providers/scrape/webpeel"
+import { createJinaProvider } from "@/lib/providers/scrape/jina"
 
 // ─── NEVER touch these fields from automated code ─────────────────────────────
 // AGENTS.md hard boundary: organizerName, organizerTitle, organizerEmail,
 // organizerPhone are ONLY filled by humans via inline-edit UI.
 
-// ─── CRON SCHEDULING ──────────────────────────────────────────────────────────
-// OPTION A — Vercel Cron (see vercel.json)
-// OPTION B — cron-job.org: POST https://your-domain.com/api/ingest/run?trigger=scheduled
-// OPTION C — Coolify: curl -X POST http://localhost:3000/api/ingest/run?trigger=scheduled
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Build the provider registry ─────────────────────────────────────────────
 
-const TAVILY_API_URL = "https://api.tavily.com/search"
-const FIRECRAWL_API_URL = "https://api.firecrawl.dev/v1/scrape"
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-
-// Use a cheap, fast model for extraction
-const LLM_MODEL = "google/gemini-2.5-flash"
-
-interface TavilyResult {
-  title: string
-  url: string
-  content: string
-  score: number
-}
-
-interface ExtractedEvent {
-  eventName: string
-  eventDateStart: string | null
-  eventDateEnd: string | null
-  organizerName: string | null
-  organizerTitle: string | null
-  organizerEmail: string | null
-  organizerPhone: string | null
-  confidence: "high" | "medium" | "low"
-  reason: string
-}
-
-// ─── Build search queries ─────────────────────────────────────────────────────
-
-function buildSearchQueries(
-  locations: {
-    id: string
-    name: string
-    searchTerms: { id: string; keyword: string }[]
-  }[]
-) {
-  const queries: {
-    locationId: string
-    locationName: string
-    keyword: string
-    query: string
-    monthLabel: string
-  }[] = []
-
-  const now = new Date()
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
-    const monthName = d.toLocaleString("en-US", { month: "long" })
-    const year = d.getFullYear()
-    const monthLabel = `${monthName} ${year}`
-
-    for (const location of locations) {
-      for (const term of location.searchTerms) {
-        queries.push({
-          locationId: location.id,
-          locationName: location.name,
-          keyword: term.keyword,
-          query: `${monthLabel} ${term.keyword} ${location.name}`,
-          monthLabel,
-        })
-      }
-    }
-  }
-  return queries
-}
-
-// ─── Search Tavily ────────────────────────────────────────────────────────────
-
-async function searchTavily(query: string): Promise<TavilyResult[]> {
-  const apiKey = process.env.TAVILY_API_KEY
-  if (!apiKey) throw new Error("TAVILY_API_KEY not set")
-
-  const res = await fetch(TAVILY_API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      api_key: apiKey,
-      query,
-      search_depth: "advanced",
-      max_results: 5,
-      include_answer: false,
-    }),
+function buildRegistry(): ProviderRegistry {
+  return new ProviderRegistry({
+    search: [
+      { provider: createTavilyProvider(), priority: 1, dailyLimit: 33, enabled: !!process.env.TAVILY_API_KEY },
+      { provider: createBraveProvider(), priority: 2, dailyLimit: 66, enabled: !!process.env.BRAVE_SEARCH_API_KEY },
+      { provider: createDuckDuckGoProvider(), priority: 3, dailyLimit: 999, enabled: true },
+    ],
+    scrape: [
+      { provider: createFirecrawlProvider(), priority: 1, dailyLimit: 16, enabled: !!process.env.FIRECRAWL_API_KEY },
+      { provider: createWebPeelProvider(), priority: 2, dailyLimit: 125, enabled: !!process.env.WEBPEEL_API_KEY },
+      { provider: createJinaProvider(), priority: 3, dailyLimit: 33, enabled: true },
+    ],
   })
-
-  if (!res.ok) {
-    const text = await res.text()
-    console.error(`[Tavily] Error ${res.status}: ${text}`)
-    return []
-  }
-
-  const data = await res.json()
-  return data.results ?? []
-}
-
-// ─── Scrape page with Firecrawl ───────────────────────────────────────────────
-
-async function scrapeWithFirecrawl(url: string): Promise<string | null> {
-  const apiKey = process.env.FIRECRAWL_API_KEY
-  if (!apiKey) return null
-
-  try {
-    const res = await fetch(FIRECRAWL_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        url,
-        formats: ["markdown"],
-        onlyMainContent: true,
-      }),
-    })
-
-    if (!res.ok) {
-      console.error(`[Firecrawl] Error ${res.status} for ${url}`)
-      return null
-    }
-
-    const data = await res.json()
-    return data.data?.markdown ?? null
-  } catch (err) {
-    console.error(`[Firecrawl] Failed to scrape ${url}:`, err)
-    return null
-  }
 }
 
 // ─── LLM Extraction ───────────────────────────────────────────────────────────
+// Extracts events AND contacts found on the page. Contacts are a bonus —
+// the primary goal is event discovery, but if contact info is right there
+// we grab it so we don't have to re-scrape later.
 
 async function extractEventsWithLLM(
   pageContent: string,
   pageTitle: string,
   pageUrl: string,
   locationName: string,
-  searchMonth: string
-): Promise<ExtractedEvent[]> {
+  searchMonth: string,
+  sourceNotes: string | null
+): Promise<{
+  events: {
+    eventName: string
+    eventDateStart: string | null
+    eventDateEnd: string | null
+    confidence: "high" | "medium" | "low"
+    reason: string
+    contacts: {
+      name: string
+      title: string | null
+      email: string | null
+      phone: string | null
+      confidence: string
+    }[]
+  }[]
+}> {
   const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) {
-    console.error("[LLM] OPENROUTER_API_KEY not set, skipping extraction")
-    return []
-  }
+  if (!apiKey) return { events: [] }
 
-  // Truncate content to stay within context limits
   const maxContentLength = 8000
   const truncatedContent =
     pageContent.length > maxContentLength
       ? pageContent.slice(0, maxContentLength) + "\n\n[Content truncated...]"
       : pageContent
+
+  const sourceInstructions = sourceNotes
+    ? `\nSOURCE-SITE INSTRUCTIONS:\n${sourceNotes}\n`
+    : ""
 
   const prompt = `You are an expert event data extractor specializing in Meetings, Conventions, Tradeshows, Conferences, and Expos.
 
@@ -166,60 +78,65 @@ CONTEXT:
 - The search was for month: ${searchMonth}
 - Page title: ${pageTitle}
 - Page URL: ${pageUrl}
-
+${sourceInstructions}
 PAGE CONTENT:
 ${truncatedContent}
 
 TASK:
-Extract ALL events/conferences/tradeshows mentioned on this page. For each event, provide:
+Extract ALL events/conferences/tradeshows mentioned on this page AND any contact persons associated with them.
 
-EVENT INFO:
-1. eventName: The full, accurate name of the event (e.g. "ACoP 2026 Annual Meeting", "NASFAA National Conference 2026")
+FOR EACH EVENT, provide:
+1. eventName: The full, accurate name of the event
 2. eventDateStart: Start date in ISO format (YYYY-MM-DD) if found, null if not
 3. eventDateEnd: End date in ISO format (YYYY-MM-DD) if found, null if not
+4. confidence: "high" if clearly stated, "medium" if partially clear, "low" if inferred
+5. reason: Brief note on where/how you found this event
+6. contacts: Array of contact persons found for THIS specific event on this page
 
-CONTACT INFO (extract if visible on this page):
-4. organizerName: Full name of a contact person (e.g. "Joan Smith", "John Doe"). Look for: registration contacts, event planners, meeting managers, conference coordinators, CMP holders, lead retrieval contacts. Often found in "Contact Us", "Registration", "For More Information" sections, or email signatures.
-5. organizerTitle: Their title/role (e.g. "Conference Planner", "Registration Manager", "Event Manager", "CMP", "Meeting Manager", "Lead Retrieval")
-6. organizerEmail: Their email address (e.g. "jsmith@acr.org"). Look for email addresses on the page.
-7. organizerPhone: Their phone number (e.g. "123-456-7891"). Look for phone numbers on the page.
+FOR EACH CONTACT (per event):
+- name: Full name (first and last) of a person associated with this specific event
+- title: Their exact title/role (e.g. Event Manager, Registration Contact, Director of Sales)
+- email: Their email address
+- phone: Their phone number with area code
 
-CONFIDENCE:
-8. confidence: "high" if event name and dates are clearly stated, "medium" if partially clear, "low" if inferred
-9. reason: Brief note on where/how you found this event and any contact info
+CONTACT RULES:
+- Only extract SPECIFIC PERSONS linked to THIS event, not generic venue staff
+- Do NOT extract info@ or generic venue numbers
+- Look for: registration contacts, event managers, conference planners, CMP holders, directors of sales, group sales managers, program managers
+- If no contacts found for an event, return empty array for that event's contacts
+- You may find 0-5 contacts per event
 
-RULES:
-- Extract events that are AT or NEAR the venue "${locationName}" in ${searchMonth}
-- If this is a venue listing page, extract ALL upcoming events listed
-- If this is an event detail page, extract that single event
+EVENT RULES:
+- Extract events AT or NEAR the venue "${locationName}" in ${searchMonth}
 - Be precise with event names — include year, full title
-- Only extract events that are meetings, conventions, tradeshow, conferences, expos, summits, forums, shows, or similar professional gatherings
-- Do NOT extract: venue hotel info, restaurant listings, general tourism content
-- For contact info: only extract if clearly associated with THIS specific event, not general venue contacts
+- Only extract meetings, conventions, tradeshows, conferences, expos, summits, forums, shows
+- Do NOT extract venue info, restaurant listings, general tourism
 - Return empty array if no relevant events found
 
-KNOWN CONTACT TITLES (look for these or similar):
-Registration Manager, Event Manager, CMP, Certified Meeting Planner, Meeting Manager, Conference Planner, Lead Retrieval, Director of Sales, Group Sales Manager, Event Coordinator, Program Manager
-
-RESPOND WITH VALID JSON ONLY — no markdown, no explanation:
+RESPOND WITH VALID JSON ONLY:
 {
   "events": [
     {
       "eventName": "...",
       "eventDateStart": "YYYY-MM-DD" or null,
       "eventDateEnd": "YYYY-MM-DD" or null,
-      "organizerName": "..." or null,
-      "organizerTitle": "..." or null,
-      "organizerEmail": "..." or null,
-      "organizerPhone": "..." or null,
       "confidence": "high" | "medium" | "low",
-      "reason": "..."
+      "reason": "...",
+      "contacts": [
+        {
+          "name": "First Last",
+          "title": "Title" or null,
+          "email": "email@domain.com" or null,
+          "phone": "123-456-7891" or null,
+          "confidence": "high" | "medium" | "low"
+        }
+      ]
     }
   ]
 }`
 
   try {
-    const res = await fetch(OPENROUTER_API_URL, {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -228,46 +145,31 @@ RESPOND WITH VALID JSON ONLY — no markdown, no explanation:
         "X-OpenRouter-Title": "Event Pipeline Dashboard",
       },
       body: JSON.stringify({
-        model: LLM_MODEL,
+        model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: "system",
-            content:
-              "You are a precise event data extraction engine. Always respond with valid JSON only.",
-          },
+          { role: "system", content: "You are a precise event data extraction engine. Always respond with valid JSON only." },
           { role: "user", content: prompt },
         ],
         temperature: 0.1,
-        max_tokens: 2000,
+        max_tokens: 3000,
         response_format: { type: "json_object" },
       }),
     })
 
-    if (!res.ok) {
-      const text = await res.text()
-      console.error(`[LLM] Error ${res.status}: ${text}`)
-      return []
-    }
-
+    if (!res.ok) return { events: [] }
     const data = await res.json()
     const content = data.choices?.[0]?.message?.content
-    if (!content) return []
-
+    if (!content) return { events: [] }
     const parsed = JSON.parse(content)
-    return parsed.events ?? []
-  } catch (err) {
-    console.error("[LLM] Extraction failed:", err)
-    return []
+    return { events: parsed.events ?? [] }
+  } catch {
+    return { events: [] }
   }
 }
 
 // ─── Dedupe check ─────────────────────────────────────────────────────────────
 
-async function isDuplicate(
-  eventName: string,
-  locationId: string,
-  eventDateStart: Date | null
-): Promise<boolean> {
+async function isDuplicate(eventName: string, locationId: string, eventDateStart: Date | null): Promise<boolean> {
   const existing = await prisma.event.findFirst({
     where: {
       eventName: { equals: eventName, mode: "insensitive" },
@@ -278,225 +180,283 @@ async function isDuplicate(
   return !!existing
 }
 
-// ─── Sleep helper ─────────────────────────────────────────────────────────────
+// ─── Template expansion ───────────────────────────────────────────────────────
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+function expandTemplate(template: string, location: { city: string | null; name: string }): string {
+  const now = new Date()
+  return template
+    .replace(/\{CITY\}/g, location.city ?? "")
+    .replace(/\{VENUE\}/g, location.name)
+    .replace(/\{MONTH\}/g, now.toLocaleString("en-US", { month: "long" }))
+    .replace(/\{YEAR\}/g, String(now.getFullYear()))
 }
+
+// ─── Query builders ───────────────────────────────────────────────────────────
+
+function buildTemplateQueries(
+  templates: { id: string; template: string }[],
+  locations: { id: string; name: string; city: string | null }[]
+) {
+  const queries: { locationId: string; locationName: string; query: string; monthLabel: string }[] = []
+  const now = new Date()
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
+    const monthLabel = `${d.toLocaleString("en-US", { month: "long" })} ${d.getFullYear()}`
+    for (const template of templates) {
+      if (/\{(CITY|VENUE|MONTH|YEAR)\}/.test(template.template)) {
+        for (const loc of locations) {
+          queries.push({ locationId: loc.id, locationName: loc.name, query: expandTemplate(template.template, loc), monthLabel })
+        }
+      } else {
+        queries.push({ locationId: locations[0].id, locationName: locations[0].name, query: template.template, monthLabel })
+      }
+    }
+  }
+  return queries
+}
+
+function buildSearchTermQueries(
+  locations: { id: string; name: string; searchTerms: { id: string; keyword: string }[] }[]
+) {
+  const queries: { locationId: string; locationName: string; query: string; monthLabel: string }[] = []
+  const now = new Date()
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
+    const monthLabel = `${d.toLocaleString("en-US", { month: "long" })} ${d.getFullYear()}`
+    for (const loc of locations) {
+      for (const term of loc.searchTerms) {
+        queries.push({ locationId: loc.id, locationName: loc.name, query: `${monthLabel} ${term.keyword} ${loc.name}`, monthLabel })
+      }
+    }
+  }
+  return queries
+}
+
+// ─── URL pattern matching ─────────────────────────────────────────────────────
+
+function compileUrlPatterns(patterns: string[]): RegExp[] {
+  return patterns
+    .filter(Boolean)
+    .map((p) => { try { return new RegExp(p, "i") } catch { return null } })
+    .filter(Boolean) as RegExp[]
+}
+
+function isKnownSource(url: string, patterns: RegExp[]): boolean {
+  return patterns.some((p) => p.test(url))
+}
+
+// ─── Process a URL through providers ──────────────────────────────────────────
+
+async function processUrl(
+  url: string,
+  title: string,
+  locationId: string,
+  locationName: string,
+  monthLabel: string,
+  runId: string,
+  sourceSiteId: string | null,
+  sourceNotes: string | null,
+  registry: ProviderRegistry,
+  counters: { totalFound: number; totalNew: number }
+) {
+  counters.totalFound++
+
+  const { result } = await registry.scrape(url, { runId })
+  if (!result.markdown || result.markdown.length < 200) return
+
+  const { events: extracted } = await extractEventsWithLLM(
+    result.markdown, title, url, locationName, monthLabel, sourceNotes
+  )
+
+  for (const ext of extracted) {
+    if (ext.confidence === "low") continue
+
+    let eventDateStart: Date | null = null
+    let eventDateEnd: Date | null = null
+    if (ext.eventDateStart) { const d = new Date(ext.eventDateStart); if (!isNaN(d.getTime())) eventDateStart = d }
+    if (ext.eventDateEnd) { const d = new Date(ext.eventDateEnd); if (!isNaN(d.getTime())) eventDateEnd = d }
+
+    const eventName = ext.eventName.trim()
+    if (eventName.length < 3) continue
+    if (await isDuplicate(eventName, locationId, eventDateStart)) continue
+
+    const event = await prisma.event.create({
+      data: { locationId, eventName, eventDateStart, eventDateEnd, sourceUrl: url, sourceSiteId, runId },
+    })
+    counters.totalNew++
+
+    // Save contacts found during ingestion — don't wait for separate find-contact step
+    if (ext.contacts && ext.contacts.length > 0) {
+      let firstSaved = false
+      for (const c of ext.contacts) {
+        if (!c.name || c.name.length < 2) continue
+        await prisma.eventContact.create({
+          data: {
+            eventId: event.id,
+            name: c.name,
+            title: c.title,
+            email: c.email,
+            phone: c.phone,
+            isPrimary: !firstSaved,
+            sourceUrl: url,
+            confidence: c.confidence ?? "medium",
+          },
+        })
+        // Sync legacy fields from first/primary contact
+        if (!firstSaved) {
+          await prisma.event.update({
+            where: { id: event.id },
+            data: {
+              organizerName: c.name,
+              organizerTitle: c.title,
+              organizerEmail: c.email,
+              organizerPhone: c.phone,
+            },
+          })
+          firstSaved = true
+        }
+      }
+      console.log(`[Ingest] Saved ${ext.contacts.length} contact(s) for "${eventName}"`)
+    }
+  }
+}
+
+// ─── Sleep ────────────────────────────────────────────────────────────────────
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 // ─── POST /api/ingest/run ─────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url)
-  const trigger =
-    searchParams.get("trigger") === "scheduled" ? "scheduled" : "manual"
+  const trigger = searchParams.get("trigger") === "scheduled" ? "scheduled" : "manual"
+
+  // Accept optional body for schedule-specific runs
+  let body: { locationIds?: string[]; templateIds?: string[]; sourceSiteIds?: string[] } = {}
+  try { body = await request.json() } catch { /* no body */ }
 
   console.log(`\n[Ingest] Starting ${trigger} run at ${new Date().toISOString()}`)
 
-  // Create ingestion run
-  const run = await prisma.ingestionRun.create({
-    data: { trigger, status: "running" },
-  })
+  const run = await prisma.ingestionRun.create({ data: { trigger, status: "running" } })
+  clearUsage(run.id)
 
   try {
-    // Get active locations with active search terms
-    const locations = await prisma.location.findMany({
-      where: { active: true },
-      include: {
-        searchTerms: { where: { active: true } },
-      },
-    })
+    const registry = buildRegistry()
+
+    // Load data — optionally filtered by schedule
+    const [locations, templates, sourceSites] = await Promise.all([
+      prisma.location.findMany({
+        where: { active: true, ...(body.locationIds?.length ? { id: { in: body.locationIds } } : {}) },
+        include: { searchTerms: { where: { active: true } } },
+      }),
+      prisma.searchTemplate.findMany({
+        where: { active: true, ...(body.templateIds?.length ? { id: { in: body.templateIds } } : {}) },
+      }),
+      prisma.sourceSite.findMany({
+        where: { active: true, ...(body.sourceSiteIds?.length ? { id: { in: body.sourceSiteIds } } : {}) },
+      }),
+    ])
 
     if (locations.length === 0) {
-      console.log("[Ingest] No active locations found")
       await prisma.ingestionRun.update({
         where: { id: run.id },
-        data: {
-          status: "success",
-          finishedAt: new Date(),
-          recordsFound: 0,
-          recordsNew: 0,
-          errorMessage: "No active locations with search terms",
-        },
+        data: { status: "success", finishedAt: new Date(), recordsFound: 0, recordsNew: 0, errorMessage: "No active locations" },
       })
-      return NextResponse.json({
-        runId: run.id,
-        recordsFound: 0,
-        recordsNew: 0,
-        message: "No active locations found",
-      })
+      return NextResponse.json({ runId: run.id, recordsFound: 0, recordsNew: 0 })
     }
 
-    const totalSearchTerms = locations.reduce(
-      (sum, loc) => sum + loc.searchTerms.length,
-      0
-    )
-    console.log(
-      `[Ingest] ${locations.length} locations, ${totalSearchTerms} search terms`
-    )
+    const counters = { totalFound: 0, totalNew: 0 }
+    const knownPatterns = compileUrlPatterns(sourceSites.filter((s) => s.urlPattern && s.scrapeMode !== "skip").map((s) => s.urlPattern!))
 
-    // Build search queries
-    const allQueries = buildSearchQueries(locations)
-    console.log(`[Ingest] ${allQueries.length} total search queries to process`)
+    // ── Phase 1: Known SourceSites ──────────────────────────────────────
+    const scrapable = sourceSites.filter((s) => s.scrapeMode !== "skip" && s.url)
+    console.log(`\n[Phase 1] SourceSite crawl: ${scrapable.length} sites`)
+    const monthLabel = new Date().toLocaleString("en-US", { month: "long", year: "numeric" })
 
-    let totalFound = 0
-    let totalNew = 0
-    let queriesProcessed = 0
-
-    // Process queries SEQUENTIALLY to avoid rate limits
-    for (const q of allQueries) {
-      queriesProcessed++
-      if (queriesProcessed % 10 === 0) {
-        console.log(
-          `[Ingest] Progress: ${queriesProcessed}/${allQueries.length} queries, ${totalNew} new events`
-        )
-      }
-
-      // Rate limit: 1 Tavily request per second
-      await sleep(1000)
-
-      // Step 1: Search Tavily
-      let tavilyResults: TavilyResult[]
+    for (const site of scrapable) {
+      let eventsBefore = counters.totalNew
       try {
-        tavilyResults = await searchTavily(q.query)
-      } catch (err) {
-        console.error(`[Tavily] Failed for "${q.query}":`, err)
-        continue
-      }
-
-      if (tavilyResults.length === 0) {
-        console.log(`[Tavily] No results for "${q.query}"`)
-        continue
-      }
-
-      console.log(
-        `[Tavily] ${tavilyResults.length} results for "${q.query}"`
-      )
-
-      // Step 2: For each result, optionally scrape + LLM extract
-      for (const tavilyResult of tavilyResults) {
-        totalFound++
-
-        // Try Firecrawl first for full page content, fall back to Tavily snippet
-        let pageContent = tavilyResult.content
-        if (process.env.FIRECRAWL_API_KEY && tavilyResult.url) {
-          await sleep(500) // Rate limit Firecrawl
-          const scraped = await scrapeWithFirecrawl(tavilyResult.url)
-          if (scraped && scraped.length > pageContent.length) {
-            pageContent = scraped
+        if (site.scrapeMode === "search") {
+          for (const loc of locations) {
+            const slug = (loc.city ?? "").toLowerCase().replace(/\s+/g, "-")
+            let searchUrl = site.url!
+            if (site.urlPattern?.includes("10times")) searchUrl = `https://10times.com/${slug}/upcoming`
+            else if (site.urlPattern?.includes("eventbrite")) searchUrl = `https://www.eventbrite.com/d/${slug}/meetings/`
+            else if (site.urlPattern?.includes("allconferencealert")) searchUrl = `https://allconferencealert.net/usa.php?city=${slug}`
+            else searchUrl = `${site.url}/${slug}`
+            await sleep(500)
+            await processUrl(searchUrl, `${site.name} - ${loc.name}`, loc.id, loc.name, monthLabel, run.id, site.id, site.notes, registry, counters)
+          }
+        } else {
+          await sleep(500)
+          const { result } = await registry.scrape(site.url!, { runId: run.id })
+          if (result.markdown && result.markdown.length > 200) {
+            for (const loc of locations) {
+              const cityLower = (loc.city ?? "").toLowerCase()
+              const nameLower = loc.name.toLowerCase()
+              if ((cityLower && result.markdown.toLowerCase().includes(cityLower)) || result.markdown.toLowerCase().includes(nameLower)) {
+                await processUrl(site.url!, site.name, loc.id, loc.name, monthLabel, run.id, site.id, site.notes, registry, counters)
+              }
+            }
           }
         }
+      } catch (err) { console.error(`[Phase 1] ${site.name} error:`, err) }
 
-        // Step 3: LLM extraction
-        await sleep(300) // Rate limit LLM
-        const extractedEvents = await extractEventsWithLLM(
-          pageContent,
-          tavilyResult.title,
-          tavilyResult.url,
-          q.locationName,
-          q.monthLabel
-        )
+      const eventsThisRun = counters.totalNew - eventsBefore
+      await prisma.sourceSite.update({
+        where: { id: site.id },
+        data: { lastScrapedAt: new Date(), lastScrapeStatus: counters.totalNew > eventsBefore ? "success" : "partial", eventsFound: { increment: eventsThisRun } },
+      }).catch(() => {})
+    }
 
-        if (extractedEvents.length === 0) {
-          console.log(
-            `[LLM] No events extracted from ${tavilyResult.url}`
-          )
-          continue
+    // ── Phase 2: Template-expanded search ───────────────────────────────
+    if (templates.length > 0) {
+      const templateQueries = buildTemplateQueries(templates, locations)
+      console.log(`\n[Phase 2] Template search: ${templateQueries.length} queries`)
+      for (let i = 0; i < templateQueries.length; i++) {
+        const q = templateQueries[i]
+        const { results } = await registry.search(q.query, { runId: run.id })
+        for (const r of results) {
+          if (isKnownSource(r.url, knownPatterns)) continue
+          await sleep(500)
+          await processUrl(r.url, r.title, q.locationId, q.locationName, q.monthLabel, run.id, null, null, registry, counters)
         }
-
-        console.log(
-          `[LLM] Extracted ${extractedEvents.length} event(s) from ${tavilyResult.url}`
-        )
-
-        // Step 4: Store each extracted event
-        for (const extracted of extractedEvents) {
-          // Skip low-confidence events
-          if (extracted.confidence === "low") {
-            console.log(
-              `[Skip] Low confidence: "${extracted.eventName}" — ${extracted.reason}`
-            )
-            continue
-          }
-
-          // Parse dates
-          let eventDateStart: Date | null = null
-          let eventDateEnd: Date | null = null
-          if (extracted.eventDateStart) {
-            const d = new Date(extracted.eventDateStart)
-            if (!isNaN(d.getTime())) eventDateStart = d
-          }
-          if (extracted.eventDateEnd) {
-            const d = new Date(extracted.eventDateEnd)
-            if (!isNaN(d.getTime())) eventDateEnd = d
-          }
-
-          const eventName = extracted.eventName.trim()
-          if (eventName.length < 3) continue
-
-          // Dedupe
-          const dup = await isDuplicate(eventName, q.locationId, eventDateStart)
-          if (dup) {
-            console.log(`[Skip] Duplicate: "${eventName}"`)
-            continue
-          }
-
-          // Insert — store event info + any contacts found on the page
-          await prisma.event.create({
-            data: {
-              locationId: q.locationId,
-              eventName,
-              eventDateStart,
-              eventDateEnd,
-              sourceUrl: tavilyResult.url,
-              runId: run.id,
-              organizerName: extracted.organizerName?.trim() || null,
-              organizerTitle: extracted.organizerTitle?.trim() || null,
-              organizerEmail: extracted.organizerEmail?.trim() || null,
-              organizerPhone: extracted.organizerPhone?.trim() || null,
-            },
-          })
-          totalNew++
-          console.log(
-            `[New] "${eventName}" (${eventDateStart?.toISOString().slice(0, 10) ?? "no date"})`
-          )
-        }
+        if ((i + 1) % 10 === 0) console.log(`[Phase 2] ${i + 1}/${templateQueries.length}, ${counters.totalNew} new`)
       }
     }
 
-    // Finalize run
+    // ── Phase 3: Legacy SearchTerms ─────────────────────────────────────
+    const locsWTerms = locations.filter((l) => l.searchTerms.length > 0)
+    if (locsWTerms.length > 0) {
+      const termQueries = buildSearchTermQueries(locsWTerms)
+      console.log(`\n[Phase 3] Legacy search: ${termQueries.length} queries`)
+      for (let i = 0; i < termQueries.length; i++) {
+        const q = termQueries[i]
+        const { results } = await registry.search(q.query, { runId: run.id })
+        for (const r of results) {
+          if (isKnownSource(r.url, knownPatterns)) continue
+          await sleep(500)
+          await processUrl(r.url, r.title, q.locationId, q.locationName, q.monthLabel, run.id, null, null, registry, counters)
+        }
+        if ((i + 1) % 10 === 0) console.log(`[Phase 3] ${i + 1}/${termQueries.length}, ${counters.totalNew} new`)
+      }
+    }
+
+    // ── Finalize ────────────────────────────────────────────────────────
+    const providersUsed = getUsageSummary(run.id)
     await prisma.ingestionRun.update({
       where: { id: run.id },
-      data: {
-        status: "success",
-        finishedAt: new Date(),
-        recordsFound: totalFound,
-        recordsNew: totalNew,
-      },
+      data: { status: "success", finishedAt: new Date(), recordsFound: counters.totalFound, recordsNew: counters.totalNew, providersUsed },
     })
 
-    console.log(
-      `\n[Ingest] Complete: ${totalNew} new events from ${totalFound} results scanned`
-    )
+    console.log(`\n[Ingest] Complete: ${counters.totalNew} new from ${counters.totalFound} scanned`)
+    console.log(`[Ingest] Providers used:`, providersUsed)
 
-    return NextResponse.json({
-      runId: run.id,
-      recordsFound: totalFound,
-      recordsNew: totalNew,
-    })
+    return NextResponse.json({ runId: run.id, recordsFound: counters.totalFound, recordsNew: counters.totalNew, providersUsed })
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error"
-    console.error(`[Ingest] Fatal error:`, error)
-
-    await prisma.ingestionRun.update({
-      where: { id: run.id },
-      data: {
-        status: "failed",
-        finishedAt: new Date(),
-        errorMessage,
-      },
-    })
-
+    const errorMessage = error instanceof Error ? error.message : "Unknown"
+    console.error(`[Ingest] Fatal:`, error)
+    await prisma.ingestionRun.update({ where: { id: run.id }, data: { status: "failed", finishedAt: new Date(), errorMessage } })
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

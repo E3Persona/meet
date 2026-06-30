@@ -61,3 +61,23 @@ export type Event = Prisma.EventModel
  * 
  */
 export type IngestionRun = Prisma.IngestionRunModel
+/**
+ * Model SearchTemplate
+ * 
+ */
+export type SearchTemplate = Prisma.SearchTemplateModel
+/**
+ * Model SourceSite
+ * 
+ */
+export type SourceSite = Prisma.SourceSiteModel
+/**
+ * Model IngestionSchedule
+ * 
+ */
+export type IngestionSchedule = Prisma.IngestionScheduleModel
+/**
+ * Model EventContact
+ * 
+ */
+export type EventContact = Prisma.EventContactModel

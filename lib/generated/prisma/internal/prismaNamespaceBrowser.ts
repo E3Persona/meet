@@ -54,7 +54,11 @@ export const ModelName = {
   Location: 'Location',
   SearchTerm: 'SearchTerm',
   Event: 'Event',
-  IngestionRun: 'IngestionRun'
+  IngestionRun: 'IngestionRun',
+  SearchTemplate: 'SearchTemplate',
+  SourceSite: 'SourceSite',
+  IngestionSchedule: 'IngestionSchedule',
+  EventContact: 'EventContact'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -76,6 +80,7 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const LocationScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  shortName: 'shortName',
   address: 'address',
   city: 'city',
   state: 'state',
@@ -107,6 +112,7 @@ export const EventScalarFieldEnum = {
   eventDateStart: 'eventDateStart',
   eventDateEnd: 'eventDateEnd',
   sourceUrl: 'sourceUrl',
+  sourceSiteId: 'sourceSiteId',
   organizerName: 'organizerName',
   organizerTitle: 'organizerTitle',
   organizerEmail: 'organizerEmail',
@@ -127,10 +133,73 @@ export const IngestionRunScalarFieldEnum = {
   status: 'status',
   recordsFound: 'recordsFound',
   recordsNew: 'recordsNew',
-  errorMessage: 'errorMessage'
+  errorMessage: 'errorMessage',
+  providersUsed: 'providersUsed'
 } as const
 
 export type IngestionRunScalarFieldEnum = (typeof IngestionRunScalarFieldEnum)[keyof typeof IngestionRunScalarFieldEnum]
+
+
+export const SearchTemplateScalarFieldEnum = {
+  id: 'id',
+  template: 'template',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SearchTemplateScalarFieldEnum = (typeof SearchTemplateScalarFieldEnum)[keyof typeof SearchTemplateScalarFieldEnum]
+
+
+export const SourceSiteScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  url: 'url',
+  active: 'active',
+  urlPattern: 'urlPattern',
+  scrapeMode: 'scrapeMode',
+  notes: 'notes',
+  lastScrapedAt: 'lastScrapedAt',
+  lastScrapeStatus: 'lastScrapeStatus',
+  eventsFound: 'eventsFound',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SourceSiteScalarFieldEnum = (typeof SourceSiteScalarFieldEnum)[keyof typeof SourceSiteScalarFieldEnum]
+
+
+export const IngestionScheduleScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  cronExpr: 'cronExpr',
+  locationIds: 'locationIds',
+  templateIds: 'templateIds',
+  sourceSiteIds: 'sourceSiteIds',
+  active: 'active',
+  lastRunAt: 'lastRunAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type IngestionScheduleScalarFieldEnum = (typeof IngestionScheduleScalarFieldEnum)[keyof typeof IngestionScheduleScalarFieldEnum]
+
+
+export const EventContactScalarFieldEnum = {
+  id: 'id',
+  eventId: 'eventId',
+  name: 'name',
+  title: 'title',
+  email: 'email',
+  phone: 'phone',
+  isPrimary: 'isPrimary',
+  sourceUrl: 'sourceUrl',
+  confidence: 'confidence',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EventContactScalarFieldEnum = (typeof EventContactScalarFieldEnum)[keyof typeof EventContactScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -139,6 +208,14 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -155,4 +232,13 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 

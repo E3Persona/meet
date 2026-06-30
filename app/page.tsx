@@ -1,61 +1,56 @@
 "use client"
 
 import React, { useState } from "react"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { StatsRow } from "@/components/dashboard/stats-row"
 import { EventsTable } from "@/components/dashboard/events-table"
 import { RunNowButton } from "@/components/dashboard/run-now-button"
 import { RunHistoryTable } from "@/components/dashboard/run-history-table"
 import { LocationsManager } from "@/components/locations/locations-manager"
+import { TemplatesManager } from "@/components/templates/templates-manager"
+import { SourceSitesManager } from "@/components/source-sites/source-sites-manager"
+import { ScheduleManager } from "@/components/schedules/schedule-manager"
+import { Sidebar, type SidebarSection } from "@/components/dashboard/sidebar"
 
 export default function DashboardPage() {
-  const [tab, setTab] = useState("events")
+  const [active, setActive] = useState<SidebarSection>("events")
   const [refreshKey, setRefreshKey] = useState(0)
 
   const refresh = () => setRefreshKey((k) => k + 1)
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="mx-auto max-w-7xl space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Event Pipeline Dashboard
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Track meetings, conventions, and tradeshows across venues.
-            </p>
+    <>
+      <Sidebar active={active} onSelect={setActive} />
+
+      {/* Main content — offset by sidebar width */}
+      <main className="flex-1 md:ml-60">
+        <div className="p-6">
+          <div className="mx-auto max-w-7xl space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Event Pipeline Dashboard
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Track meetings, conventions, and tradeshows across venues.
+                </p>
+              </div>
+              <RunNowButton onComplete={refresh} />
+            </div>
+
+            {/* Stats */}
+            <StatsRow />
+
+            {/* Content */}
+            {active === "events" && <EventsTable key={refreshKey} />}
+            {active === "locations" && <LocationsManager />}
+            {active === "templates" && <TemplatesManager />}
+            {active === "sources" && <SourceSitesManager />}
+            {active === "schedules" && <ScheduleManager />}
+            {active === "runs" && <RunHistoryTable />}
           </div>
-          <RunNowButton onComplete={refresh} />
         </div>
-
-        {/* Stats */}
-        <StatsRow key={refreshKey} />
-
-        {/* Main Content Tabs */}
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="events" count={undefined}>
-              Events
-            </TabsTrigger>
-            <TabsTrigger value="locations">Locations & Search Terms</TabsTrigger>
-            <TabsTrigger value="runs">Run History</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="events" className="mt-4">
-            <EventsTable key={refreshKey} />
-          </TabsContent>
-
-          <TabsContent value="locations" className="mt-4">
-            <LocationsManager />
-          </TabsContent>
-
-          <TabsContent value="runs" className="mt-4">
-            <RunHistoryTable />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+      </main>
+    </>
   )
 }

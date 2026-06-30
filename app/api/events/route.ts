@@ -16,12 +16,20 @@ export async function GET(request: Request) {
       { eventName: { contains: search, mode: "insensitive" } },
       { organizerName: { contains: search, mode: "insensitive" } },
       { organizerEmail: { contains: search, mode: "insensitive" } },
+      { contacts: { some: { name: { contains: search, mode: "insensitive" } } } },
+      { contacts: { some: { email: { contains: search, mode: "insensitive" } } } },
     ]
   }
 
   const events = await prisma.event.findMany({
     where,
-    include: { location: { select: { name: true, city: true, state: true } } },
+    include: {
+      location: { select: { name: true, city: true, state: true } },
+      contacts: {
+        select: { id: true, name: true, isPrimary: true, email: true, phone: true },
+        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+      },
+    },
     orderBy: { eventDateStart: "asc" },
   })
 

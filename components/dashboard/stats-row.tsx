@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect } from "react"
 import { MetricCardsGrid } from "@/components/ui/analytics/metric-cards-grid"
-import { MapPin, Calendar, Sparkles, Activity } from "lucide-react"
+import { MapPin, Calendar, Sparkles, Activity, Search, Globe } from "lucide-react"
 import type { MetricCardDef } from "@/types/components"
 
 interface Stats {
   totalLocations: number
   totalEvents: number
   newThisWeek: number
+  totalTemplates: number
+  totalSourceSites: number
   lastRun: {
     status: string
     startedAt: string
@@ -55,6 +57,20 @@ export function StatsRow() {
       accent: "success",
     },
     {
+      id: "templates",
+      label: "Search Templates",
+      value: stats?.totalTemplates ?? 0,
+      icon: Search,
+      accent: "info",
+    },
+    {
+      id: "source-sites",
+      label: "Source Sites",
+      value: stats?.totalSourceSites ?? 0,
+      icon: Globe,
+      accent: "info",
+    },
+    {
       id: "last-run",
       label: "Last Run",
       value: lastRunLabel,
@@ -63,5 +79,5 @@ export function StatsRow() {
     },
   ]
 
-  return <MetricCardsGrid cards={cards} columns={4} />
+  return <MetricCardsGrid cards={cards} columns={3} />
 }

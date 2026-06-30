@@ -27,6 +27,7 @@ export type AggregateLocation = {
 export type LocationMinAggregateOutputType = {
   id: string | null
   name: string | null
+  shortName: string | null
   address: string | null
   city: string | null
   state: string | null
@@ -39,6 +40,7 @@ export type LocationMinAggregateOutputType = {
 export type LocationMaxAggregateOutputType = {
   id: string | null
   name: string | null
+  shortName: string | null
   address: string | null
   city: string | null
   state: string | null
@@ -51,6 +53,7 @@ export type LocationMaxAggregateOutputType = {
 export type LocationCountAggregateOutputType = {
   id: number
   name: number
+  shortName: number
   address: number
   city: number
   state: number
@@ -65,6 +68,7 @@ export type LocationCountAggregateOutputType = {
 export type LocationMinAggregateInputType = {
   id?: true
   name?: true
+  shortName?: true
   address?: true
   city?: true
   state?: true
@@ -77,6 +81,7 @@ export type LocationMinAggregateInputType = {
 export type LocationMaxAggregateInputType = {
   id?: true
   name?: true
+  shortName?: true
   address?: true
   city?: true
   state?: true
@@ -89,6 +94,7 @@ export type LocationMaxAggregateInputType = {
 export type LocationCountAggregateInputType = {
   id?: true
   name?: true
+  shortName?: true
   address?: true
   city?: true
   state?: true
@@ -174,6 +180,7 @@ export type LocationGroupByArgs<ExtArgs extends runtime.Types.Extensions.Interna
 export type LocationGroupByOutputType = {
   id: string
   name: string
+  shortName: string | null
   address: string | null
   city: string | null
   state: string | null
@@ -207,6 +214,7 @@ export type LocationWhereInput = {
   NOT?: Prisma.LocationWhereInput | Prisma.LocationWhereInput[]
   id?: Prisma.StringFilter<"Location"> | string
   name?: Prisma.StringFilter<"Location"> | string
+  shortName?: Prisma.StringNullableFilter<"Location"> | string | null
   address?: Prisma.StringNullableFilter<"Location"> | string | null
   city?: Prisma.StringNullableFilter<"Location"> | string | null
   state?: Prisma.StringNullableFilter<"Location"> | string | null
@@ -221,6 +229,7 @@ export type LocationWhereInput = {
 export type LocationOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  shortName?: Prisma.SortOrderInput | Prisma.SortOrder
   address?: Prisma.SortOrderInput | Prisma.SortOrder
   city?: Prisma.SortOrderInput | Prisma.SortOrder
   state?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -238,6 +247,7 @@ export type LocationWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.LocationWhereInput[]
   NOT?: Prisma.LocationWhereInput | Prisma.LocationWhereInput[]
   name?: Prisma.StringFilter<"Location"> | string
+  shortName?: Prisma.StringNullableFilter<"Location"> | string | null
   address?: Prisma.StringNullableFilter<"Location"> | string | null
   city?: Prisma.StringNullableFilter<"Location"> | string | null
   state?: Prisma.StringNullableFilter<"Location"> | string | null
@@ -252,6 +262,7 @@ export type LocationWhereUniqueInput = Prisma.AtLeast<{
 export type LocationOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  shortName?: Prisma.SortOrderInput | Prisma.SortOrder
   address?: Prisma.SortOrderInput | Prisma.SortOrder
   city?: Prisma.SortOrderInput | Prisma.SortOrder
   state?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -270,6 +281,7 @@ export type LocationScalarWhereWithAggregatesInput = {
   NOT?: Prisma.LocationScalarWhereWithAggregatesInput | Prisma.LocationScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Location"> | string
   name?: Prisma.StringWithAggregatesFilter<"Location"> | string
+  shortName?: Prisma.StringNullableWithAggregatesFilter<"Location"> | string | null
   address?: Prisma.StringNullableWithAggregatesFilter<"Location"> | string | null
   city?: Prisma.StringNullableWithAggregatesFilter<"Location"> | string | null
   state?: Prisma.StringNullableWithAggregatesFilter<"Location"> | string | null
@@ -282,6 +294,7 @@ export type LocationScalarWhereWithAggregatesInput = {
 export type LocationCreateInput = {
   id?: string
   name: string
+  shortName?: string | null
   address?: string | null
   city?: string | null
   state?: string | null
@@ -296,6 +309,7 @@ export type LocationCreateInput = {
 export type LocationUncheckedCreateInput = {
   id?: string
   name: string
+  shortName?: string | null
   address?: string | null
   city?: string | null
   state?: string | null
@@ -310,6 +324,7 @@ export type LocationUncheckedCreateInput = {
 export type LocationUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  shortName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -324,6 +339,7 @@ export type LocationUpdateInput = {
 export type LocationUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  shortName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -338,6 +354,7 @@ export type LocationUncheckedUpdateInput = {
 export type LocationCreateManyInput = {
   id?: string
   name: string
+  shortName?: string | null
   address?: string | null
   city?: string | null
   state?: string | null
@@ -350,6 +367,7 @@ export type LocationCreateManyInput = {
 export type LocationUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  shortName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -362,6 +380,7 @@ export type LocationUpdateManyMutationInput = {
 export type LocationUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  shortName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -374,6 +393,7 @@ export type LocationUncheckedUpdateManyInput = {
 export type LocationCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  shortName?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
   state?: Prisma.SortOrder
@@ -386,6 +406,7 @@ export type LocationCountOrderByAggregateInput = {
 export type LocationMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  shortName?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
   state?: Prisma.SortOrder
@@ -398,6 +419,7 @@ export type LocationMaxOrderByAggregateInput = {
 export type LocationMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  shortName?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
   state?: Prisma.SortOrder
@@ -459,6 +481,7 @@ export type LocationUpdateOneRequiredWithoutEventsNestedInput = {
 export type LocationCreateWithoutSearchTermsInput = {
   id?: string
   name: string
+  shortName?: string | null
   address?: string | null
   city?: string | null
   state?: string | null
@@ -472,6 +495,7 @@ export type LocationCreateWithoutSearchTermsInput = {
 export type LocationUncheckedCreateWithoutSearchTermsInput = {
   id?: string
   name: string
+  shortName?: string | null
   address?: string | null
   city?: string | null
   state?: string | null
@@ -501,6 +525,7 @@ export type LocationUpdateToOneWithWhereWithoutSearchTermsInput = {
 export type LocationUpdateWithoutSearchTermsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  shortName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -514,6 +539,7 @@ export type LocationUpdateWithoutSearchTermsInput = {
 export type LocationUncheckedUpdateWithoutSearchTermsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  shortName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -527,6 +553,7 @@ export type LocationUncheckedUpdateWithoutSearchTermsInput = {
 export type LocationCreateWithoutEventsInput = {
   id?: string
   name: string
+  shortName?: string | null
   address?: string | null
   city?: string | null
   state?: string | null
@@ -540,6 +567,7 @@ export type LocationCreateWithoutEventsInput = {
 export type LocationUncheckedCreateWithoutEventsInput = {
   id?: string
   name: string
+  shortName?: string | null
   address?: string | null
   city?: string | null
   state?: string | null
@@ -569,6 +597,7 @@ export type LocationUpdateToOneWithWhereWithoutEventsInput = {
 export type LocationUpdateWithoutEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  shortName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -582,6 +611,7 @@ export type LocationUpdateWithoutEventsInput = {
 export type LocationUncheckedUpdateWithoutEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  shortName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -635,6 +665,7 @@ export type LocationCountOutputTypeCountEventsArgs<ExtArgs extends runtime.Types
 export type LocationSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  shortName?: boolean
   address?: boolean
   city?: boolean
   state?: boolean
@@ -650,6 +681,7 @@ export type LocationSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
 export type LocationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  shortName?: boolean
   address?: boolean
   city?: boolean
   state?: boolean
@@ -662,6 +694,7 @@ export type LocationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
 export type LocationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  shortName?: boolean
   address?: boolean
   city?: boolean
   state?: boolean
@@ -674,6 +707,7 @@ export type LocationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
 export type LocationSelectScalar = {
   id?: boolean
   name?: boolean
+  shortName?: boolean
   address?: boolean
   city?: boolean
   state?: boolean
@@ -683,7 +717,7 @@ export type LocationSelectScalar = {
   updatedAt?: boolean
 }
 
-export type LocationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "address" | "city" | "state" | "sourceUrl" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["location"]>
+export type LocationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "shortName" | "address" | "city" | "state" | "sourceUrl" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["location"]>
 export type LocationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   searchTerms?: boolean | Prisma.Location$searchTermsArgs<ExtArgs>
   events?: boolean | Prisma.Location$eventsArgs<ExtArgs>
@@ -701,6 +735,7 @@ export type $LocationPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
+    shortName: string | null
     address: string | null
     city: string | null
     state: string | null
@@ -1135,6 +1170,7 @@ export interface Prisma__LocationClient<T, Null = never, ExtArgs extends runtime
 export interface LocationFieldRefs {
   readonly id: Prisma.FieldRef<"Location", 'String'>
   readonly name: Prisma.FieldRef<"Location", 'String'>
+  readonly shortName: Prisma.FieldRef<"Location", 'String'>
   readonly address: Prisma.FieldRef<"Location", 'String'>
   readonly city: Prisma.FieldRef<"Location", 'String'>
   readonly state: Prisma.FieldRef<"Location", 'String'>
