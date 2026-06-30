@@ -11,35 +11,40 @@ import { SourceSitesManager } from "@/components/source-sites/source-sites-manag
 import { ScheduleManager } from "@/components/schedules/schedule-manager"
 import { Sidebar, type SidebarSection } from "@/components/dashboard/sidebar"
 
+const SECTION_TITLES: Record<SidebarSection, { title: string; description: string }> = {
+  events: { title: "Event Pipeline Dashboard", description: "Track meetings, conventions, and tradeshows across venues." },
+  locations: { title: "Locations", description: "Manage venues and their search configurations." },
+  templates: { title: "Search Templates", description: "Define query templates expanded per-location at ingestion time." },
+  sources: { title: "Source Sites", description: "Event directories and websites to scrape during ingestion." },
+  schedules: { title: "Schedules", description: "Configure named cron schedules for automated ingestion runs." },
+  runs: { title: "Run History", description: "View all past ingestion runs and their results." },
+}
+
 export default function DashboardPage() {
   const [active, setActive] = useState<SidebarSection>("events")
   const [refreshKey, setRefreshKey] = useState(0)
 
   const refresh = () => setRefreshKey((k) => k + 1)
+  const section = SECTION_TITLES[active]
 
   return (
     <>
       <Sidebar active={active} onSelect={setActive} />
 
-      {/* Main content — offset by sidebar width */}
       <main className="flex-1 md:ml-60">
         <div className="p-6">
           <div className="mx-auto max-w-7xl space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">
-                  Event Pipeline Dashboard
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Track meetings, conventions, and tradeshows across venues.
-                </p>
+                <h1 className="text-2xl font-bold tracking-tight">{section.title}</h1>
+                <p className="text-sm text-muted-foreground mt-1">{section.description}</p>
               </div>
-              <RunNowButton onComplete={refresh} />
+              {active === "events" && <RunNowButton onComplete={refresh} />}
             </div>
 
-            {/* Stats */}
-            <StatsRow />
+            {/* Stats — events view only */}
+            {active === "events" && <StatsRow />}
 
             {/* Content */}
             {active === "events" && <EventsTable key={refreshKey} />}

@@ -6,8 +6,8 @@ import { UniversalList } from "@/components/ui/list/universallist"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
-import { Trash2, Play } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Trash2, Play, Plus } from "lucide-react"
 import type { FormSection as FormSectionType } from "@/types/components"
 import { toast } from "sonner"
 import { ColumnDef } from "@tanstack/react-table"
@@ -118,6 +118,7 @@ export function ScheduleManager() {
   const [formValues, setFormValues] = useState<Record<string, unknown>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
 
   // ── Fetch all data ────────────────────────────────────────────────────────
 
@@ -178,6 +179,7 @@ export function ScheduleManager() {
       toast.success("Schedule created")
       setFormValues({})
       setFormErrors({})
+      setFormOpen(false)
       fetchAll()
     } catch {
       toast.error("Failed to create schedule")
@@ -312,28 +314,45 @@ export function ScheduleManager() {
 
   return (
     <div className="space-y-6">
-      <UniversalForm
-        title="Add Schedule"
-        description="Create a named cron schedule to run ingestion on specific locations, templates, or source sites"
-        variant="standard"
-        sections={sections}
-        values={formValues}
-        errors={formErrors}
-        onChange={(name, value) => setFormValues((prev) => ({ ...prev, [name]: value }))}
-        onSubmit={handleCreate}
-        onCancel={() => { setFormValues({}); setFormErrors({}) }}
-        isLoading={isSubmitting}
-        primaryLabel="Create Schedule"
-      />
+      {/* Add Schedule Button */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {schedules.length} schedule{schedules.length !== 1 ? "s" : ""}
+        </p>
+        <Button onClick={() => setFormOpen(true)} leftIcon={Plus}>
+          Add Schedule
+        </Button>
+      </div>
 
-      <Separator />
+      {/* Add Schedule Dialog */}
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Schedule</DialogTitle>
+            <DialogDescription>Create a named cron schedule to run ingestion on specific locations, templates, or source sites.</DialogDescription>
+          </DialogHeader>
+          <UniversalForm
+            title=""
+            variant="standard"
+            sections={sections}
+            values={formValues}
+            errors={formErrors}
+            onChange={(name, value) => setFormValues((prev) => ({ ...prev, [name]: value }))}
+            onSubmit={handleCreate}
+            onCancel={() => { setFormValues({}); setFormErrors({}); setFormOpen(false) }}
+            isLoading={isSubmitting}
+            primaryLabel="Create Schedule"
+            bare
+          />
+        </DialogContent>
+      </Dialog>
 
       <UniversalList
         columns={columns}
         data={schedules}
         getRowId={(row) => row.id}
         isLoading={loading}
-        emptyMessage="No schedules configured. Create one above."
+        emptyMessage="No schedules configured."
         ariaLabel="Ingestion schedules"
         rowActions={rowActions}
         searchPlaceholder="Search schedules..."

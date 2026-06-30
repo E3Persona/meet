@@ -6,8 +6,8 @@ import { UniversalList } from "@/components/ui/list/universallist"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
-import { Trash2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Trash2, Plus } from "lucide-react"
 import type { FormSection as FormSectionType } from "@/types/components"
 import { toast } from "sonner"
 import { ColumnDef } from "@tanstack/react-table"
@@ -52,6 +52,7 @@ export function TemplatesManager() {
   const [formValues, setFormValues] = useState<Record<string, unknown>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
 
   const fetchTemplates = useCallback(async () => {
     try {
@@ -81,6 +82,7 @@ export function TemplatesManager() {
       toast.success("Template created")
       setFormValues({})
       setFormErrors({})
+      setFormOpen(false)
       fetchTemplates()
     } catch {
       toast.error("Failed to create template")
@@ -182,33 +184,53 @@ export function TemplatesManager() {
 
   return (
     <div className="space-y-6">
-      <UniversalForm
-        title="Add Search Template"
-        description="Templates are resolved per-location at ingestion time. Use {CITY}, {VENUE}, {MONTH}, {YEAR} as placeholders."
-        variant="standard"
-        sections={TEMPLATE_FORM_SECTIONS}
-        values={formValues}
-        errors={formErrors}
-        onChange={(name, value) =>
-          setFormValues((prev) => ({ ...prev, [name]: value }))
-        }
-        onSubmit={handleCreate}
-        onCancel={() => {
-          setFormValues({})
-          setFormErrors({})
-        }}
-        isLoading={isSubmitting}
-        primaryLabel="Create Template"
-      />
+      {/* Add Template Button */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {templates.length} template{templates.length !== 1 ? "s" : ""}
+        </p>
+        <Button onClick={() => setFormOpen(true)} leftIcon={Plus}>
+          Add Template
+        </Button>
+      </div>
 
-      <Separator />
+      {/* Add Template Dialog */}
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Add Search Template</DialogTitle>
+            <DialogDescription>
+              Templates are resolved per-location at ingestion time. Use {"{CITY}"}, {"{VENUE}"}, {"{MONTH}"}, {"{YEAR}"} as placeholders.
+            </DialogDescription>
+          </DialogHeader>
+          <UniversalForm
+            title=""
+            variant="standard"
+            sections={TEMPLATE_FORM_SECTIONS}
+            values={formValues}
+            errors={formErrors}
+            onChange={(name, value) =>
+              setFormValues((prev) => ({ ...prev, [name]: value }))
+            }
+            onSubmit={handleCreate}
+            onCancel={() => {
+              setFormValues({})
+              setFormErrors({})
+              setFormOpen(false)
+            }}
+            isLoading={isSubmitting}
+            primaryLabel="Create Template"
+            bare
+          />
+        </DialogContent>
+      </Dialog>
 
       <UniversalList
         columns={columns}
         data={templates}
         getRowId={(row) => row.id}
         isLoading={loading}
-        emptyMessage="No templates yet. Create one above."
+        emptyMessage="No templates yet."
         ariaLabel="Search Templates"
         rowActions={rowActions}
         searchPlaceholder="Search templates..."

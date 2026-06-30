@@ -6,8 +6,8 @@ import { UniversalList } from "@/components/ui/list/universallist"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
-import { Trash2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Trash2, Plus } from "lucide-react"
 import type { FormSection as FormSectionType } from "@/types/components"
 import { toast } from "sonner"
 import { ColumnDef } from "@tanstack/react-table"
@@ -25,8 +25,6 @@ interface SourceSite {
   lastScrapedAt: string | null
   lastScrapeStatus: string | null
   eventsFound: number
-  createdAt: string
-  updatedAt: string
 }
 
 // ─── Form Sections ────────────────────────────────────────────────────────────
@@ -34,22 +32,21 @@ interface SourceSite {
 const SOURCE_SITE_FORM_SECTIONS: FormSectionType[] = [
   {
     id: "details",
-    title: "Source Site",
-    description:
-      "Event directories and websites to check during ingestion.",
+    title: "Source Site Details",
+    description: "Add event directories and websites to check during ingestion.",
     columns: 4,
     fields: [
       {
         name: "name",
-        label: "Name",
+        label: "Site Name",
         type: "text",
-        placeholder: "e.g. BizTradeShows.com",
+        placeholder: "e.g. 10times.com",
         required: true,
         colSpan: 2,
       },
       {
         name: "url",
-        label: "URL",
+        label: "Base URL",
         type: "text",
         placeholder: "https://...",
         colSpan: 2,
@@ -58,8 +55,6 @@ const SOURCE_SITE_FORM_SECTIONS: FormSectionType[] = [
         name: "scrapeMode",
         label: "Scrape Mode",
         type: "select",
-        required: true,
-        colSpan: 2,
         options: [
           { label: "Auto", value: "auto" },
           { label: "Calendar", value: "calendar" },
@@ -67,13 +62,14 @@ const SOURCE_SITE_FORM_SECTIONS: FormSectionType[] = [
           { label: "Search", value: "search" },
           { label: "Skip", value: "skip" },
         ],
+        colSpan: 2,
       },
       {
         name: "urlPattern",
         label: "URL Pattern (regex)",
         type: "text",
-        placeholder: "e.g. eventseye\\.com",
-        helperText: "Regex to match Tavily results — skips known sources in Phase 2",
+        placeholder: "e.g. 10times\\.com",
+        helperText: "Used to skip known sources during Phase 2 search",
         colSpan: 2,
       },
       {
@@ -128,6 +124,7 @@ export function SourceSitesManager() {
   const [formValues, setFormValues] = useState<Record<string, unknown>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
 
   const fetchSites = useCallback(async () => {
     try {
@@ -163,6 +160,7 @@ export function SourceSitesManager() {
       toast.success("Source site created")
       setFormValues({})
       setFormErrors({})
+      setFormOpen(false)
       fetchSites()
     } catch {
       toast.error("Failed to create source site")
@@ -205,6 +203,11 @@ export function SourceSitesManager() {
     })
   }
 
+  // ── Derived counts ─────────────────────────────────────────────────────────
+
+  const activeSites = sites.filter((s) => s.active && s.scrapeMode !== "skip")
+  const skippedSites = sites.filter((s) => s.scrapeMode === "skip")
+
   // ── Columns ──────────────────────────────────────────────────────────────
 
   const columns: ColumnDef<SourceSite, unknown>[] = [
@@ -228,29 +231,23 @@ export function SourceSitesManager() {
     {
       id: "scrapeMode",
       header: "Mode",
-      cell: ({ row }) => {
-        const mode = row.original.scrapeMode
-        return (
-          <Badge variant={SCRAPE_MODE_VARIANTS[mode] ?? "neutral"} size="sm">
-            {SCRAPE_MODE_LABELS[mode] ?? mode}
-          </Badge>
-        )
-      },
+      cell: ({ row }) => (
+        <Badge variant={SCRAPE_MODE_VARIANTS[row.original.scrapeMode] ?? "neutral"} size="sm">
+          {SCRAPE_MODE_LABELS[row.original.scrapeMode] ?? row.original.scrapeMode}
+        </Badge>
+      ),
     },
     {
       id: "lastScraped",
       header: "Last Scraped",
       cell: ({ row }) => {
         const s = row.original
+        if (!s.lastScrapedAt) return <span className="text-xs text-muted-foreground">Never</span>
         return (
-          <div className="text-xs">
-            <p>{formatDate(s.lastScrapedAt)}</p>
+          <div>
+            <p className="text-xs">{formatDate(s.lastScrapedAt)}</p>
             {s.lastScrapeStatus && (
-              <Badge
-                variant={STATUS_VARIANTS[s.lastScrapeStatus] ?? "neutral"}
-                size="sm"
-                className="mt-0.5"
-              >
+              <Badge variant={STATUS_VARIANTS[s.lastScrapeStatus] ?? "neutral"} size="sm">
                 {STATUS_LABELS[s.lastScrapeStatus] ?? s.lastScrapeStatus}
               </Badge>
             )}
@@ -263,9 +260,7 @@ export function SourceSitesManager() {
       header: "Events",
       meta: { align: "center" as const },
       cell: ({ row }) => (
-        <div className="text-center">
-          <span className="text-sm font-medium">{row.original.eventsFound}</span>
-        </div>
+        <span className="text-sm">{row.original.eventsFound}</span>
       ),
     },
     {
@@ -298,49 +293,59 @@ export function SourceSitesManager() {
     </Button>
   )
 
-  // ── Render ───────────────────────────────────────────────────────────────
-
-  const activeSites = sites.filter((s) => s.active && s.scrapeMode !== "skip")
-  const skippedSites = sites.filter((s) => s.scrapeMode === "skip")
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
-      <UniversalForm
-        title="Add Source Site"
-        description="Add event directories and websites to check during ingestion."
-        variant="standard"
-        sections={SOURCE_SITE_FORM_SECTIONS}
-        values={formValues}
-        errors={formErrors}
-        onChange={(name, value) =>
-          setFormValues((prev) => ({ ...prev, [name]: value }))
-        }
-        onSubmit={handleCreate}
-        onCancel={() => {
-          setFormValues({})
-          setFormErrors({})
-        }}
-        isLoading={isSubmitting}
-        primaryLabel="Create Source Site"
-      />
-
-      <Separator />
-
-      {/* Summary */}
-      <div className="flex gap-4 text-sm text-muted-foreground">
-        <span>{activeSites.length} active (scraped in Phase 1)</span>
-        <span>·</span>
-        <span>{skippedSites.length} skipped</span>
-        <span>·</span>
-        <span>{sites.length} total</span>
+      {/* Add Source Site Button + Summary */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-4 text-sm text-muted-foreground">
+          <span>{activeSites.length} active (scraped in Phase 1)</span>
+          <span>·</span>
+          <span>{skippedSites.length} skipped</span>
+          <span>·</span>
+          <span>{sites.length} total</span>
+        </div>
+        <Button onClick={() => setFormOpen(true)} leftIcon={Plus}>
+          Add Source Site
+        </Button>
       </div>
+
+      {/* Add Source Site Dialog */}
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Add Source Site</DialogTitle>
+            <DialogDescription>Add event directories and websites to check during ingestion.</DialogDescription>
+          </DialogHeader>
+          <UniversalForm
+            title=""
+            variant="standard"
+            sections={SOURCE_SITE_FORM_SECTIONS}
+            values={formValues}
+            errors={formErrors}
+            onChange={(name, value) =>
+              setFormValues((prev) => ({ ...prev, [name]: value }))
+            }
+            onSubmit={handleCreate}
+            onCancel={() => {
+              setFormValues({})
+              setFormErrors({})
+              setFormOpen(false)
+            }}
+            isLoading={isSubmitting}
+            primaryLabel="Create Source Site"
+            bare
+          />
+        </DialogContent>
+      </Dialog>
 
       <UniversalList
         columns={columns}
         data={sites}
         getRowId={(row) => row.id}
         isLoading={loading}
-        emptyMessage="No source sites yet. Create one above."
+        emptyMessage="No source sites yet."
         ariaLabel="Source Sites"
         rowActions={rowActions}
         searchPlaceholder="Search source sites..."

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Trash2, Plus } from "lucide-react"
 import type { FormSection as FormSectionType } from "@/types/components"
 import { EVENT_TYPE_KEYWORDS } from "@/lib/constants/events"
@@ -91,6 +91,7 @@ export function LocationsManager() {
   const [formValues, setFormValues] = useState<Record<string, unknown>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
 
   // ── Fetch locations ────────────────────────────────────────────────────────
 
@@ -132,6 +133,7 @@ export function LocationsManager() {
       toast.success("Location created with all search term keywords")
       setFormValues({})
       setFormErrors({})
+      setFormOpen(false)
       fetchLocations()
     } catch {
       toast.error("Failed to create location")
@@ -308,27 +310,44 @@ export function LocationsManager() {
 
   return (
     <div className="space-y-6">
-      {/* Add Location Form */}
-      <UniversalForm
-        title="Add Location"
-        description="Add a venue to start tracking events"
-        variant="standard"
-        sections={LOCATION_FORM_SECTIONS}
-        values={formValues}
-        errors={formErrors}
-        onChange={(name, value) =>
-          setFormValues((prev) => ({ ...prev, [name]: value }))
-        }
-        onSubmit={handleCreateLocation}
-        onCancel={() => {
-          setFormValues({})
-          setFormErrors({})
-        }}
-        isLoading={isSubmitting}
-        primaryLabel="Create Location"
-      />
+      {/* Add Location Button */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {locations.length} location{locations.length !== 1 ? "s" : ""}
+        </p>
+        <Button onClick={() => setFormOpen(true)} leftIcon={Plus}>
+          Add Location
+        </Button>
+      </div>
 
-      <Separator />
+      {/* Add Location Dialog */}
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Add Location</DialogTitle>
+            <DialogDescription>Add a venue to start tracking events.</DialogDescription>
+          </DialogHeader>
+          <UniversalForm
+            title=""
+            variant="standard"
+            sections={LOCATION_FORM_SECTIONS}
+            values={formValues}
+            errors={formErrors}
+            onChange={(name, value) =>
+              setFormValues((prev) => ({ ...prev, [name]: value }))
+            }
+            onSubmit={handleCreateLocation}
+            onCancel={() => {
+              setFormValues({})
+              setFormErrors({})
+              setFormOpen(false)
+            }}
+            isLoading={isSubmitting}
+            primaryLabel="Create Location"
+            bare
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Locations List */}
       <UniversalList
@@ -336,7 +355,7 @@ export function LocationsManager() {
         data={locations}
         getRowId={(row) => row.id}
         isLoading={loading}
-        emptyMessage="No locations added yet. Create one above."
+        emptyMessage="No locations added yet."
         ariaLabel="Locations"
         rowActions={rowActions}
         searchPlaceholder="Search locations..."
