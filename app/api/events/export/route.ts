@@ -2,41 +2,71 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import * as XLSX from "xlsx"
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const month = searchParams.get("month") // "1"-"12" or null for all
+  const year = searchParams.get("year") // "2026" etc or null for all
+
+  const where: Record<string, any> = {}
+
+  if (month && year) {
+    const m = parseInt(month, 10)
+    const y = parseInt(year, 10)
+    const start = new Date(Date.UTC(y, m - 1, 1))
+    const end = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999))
+    where.eventDateStart = { gte: start, lte: end }
+  } else if (year) {
+    const y = parseInt(year, 10)
+    const start = new Date(Date.UTC(y, 0, 1))
+    const end = new Date(Date.UTC(y, 11, 31, 23, 59, 59, 999))
+    where.eventDateStart = { gte: start, lte: end }
+  } else if (month) {
+    const m = parseInt(month, 10)
+    where.eventDateStart = {
+      gte: new Date(Date.UTC(2020, m - 1, 1)),
+      lte: new Date(Date.UTC(2030, m, 0, 23, 59, 59, 999)),
+    }
+  }
+
   const events = await prisma.event.findMany({
-    include: { location: true, sourceSite: true },
-    orderBy: { eventDateStart: "asc" },
+    where,
+    include: { location: true, sourceSite: true, contacts: true },
+    orderBy: { eventDateStart: "desc" },
   })
 
-  const rows = events.map((e) => ({
-    "Event Name": e.eventName,
-    Location: e.location.name,
-    "Contact Name": e.organizerName ?? "",
-    "Contact Title": e.organizerTitle ?? "",
-    Phone: e.organizerPhone ?? "",
-    Email: e.organizerEmail ?? "",
-    "Date of Event": e.eventDateStart ? new Date(e.eventDateStart).toLocaleDateString() : "",
-    Status: e.status,
-    "Source URL": e.sourceUrl ?? "",
-    "Source Site": e.sourceSite?.name ?? "",
-    "Date Added": new Date(e.dateAdded).toLocaleDateString(),
-  }))
+  const rows = events.map((e) => {
+    const primary = e.contacts?.find((c) => c.isPrimary) ?? e.contacts?.[0]
+    return {
+      "Event Name": e.eventName,
+      Location: e.location.name,
+      "Contact Name": primary?.name ?? e.organizerName ?? "",
+      "Contact Title": primary?.title ?? e.organizerTitle ?? "",
+      Phone: primary?.phone ?? e.organizerPhone ?? "",
+      Email: primary?.email ?? e.organizerEmail ?? "",
+      "Date of Event": e.eventDateStart
+        ? new Date(e.eventDateStart).toLocaleDateString()
+        : "",
+      Status: e.status,
+      "Source URL": e.sourceUrl ?? "",
+      "Source Site": e.sourceSite?.name ?? "",
+      "Date Added": new Date(e.dateAdded).toLocaleDateString(),
+    }
+  })
 
   const ws = XLSX.utils.json_to_sheet(rows)
 
-  // Set column widths for readability
   ws["!cols"] = [
-    { wch: 40 }, // Event Name
-    { wch: 30 }, // Location
-    { wch: 25 }, // Contact Name
-    { wch: 25 }, // Contact Title
-    { wch: 18 }, // Phone
-    { wch: 30 }, // Email
-    { wch: 15 }, // Date of Event
-    { wch: 12 }, // Status
-    { wch: 50 }, // Source URL
-    { wch: 25 }, // Source Site
-    { wch: 15 }, // Date Added
+    { wch: 40 },
+    { wch: 30 },
+    { wch: 25 },
+    { wch: 25 },
+    { wch: 18 },
+    { wch: 30 },
+    { wch: 15 },
+    { wch: 12 },
+    { wch: 50 },
+    { wch: 25 },
+    { wch: 15 },
   ]
 
   const wb = XLSX.utils.book_new()
@@ -44,10 +74,22 @@ export async function GET() {
 
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" })
 
+  const monthNames = [
+    "", "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ]
+  const label = month && year
+    ? `${monthNames[parseInt(month)]}-${year}`
+    : year
+      ? `Year-${year}`
+      : month
+        ? `${monthNames[parseInt(month)]}-All`
+        : new Date().toISOString().slice(0, 10)
+
   return new NextResponse(buf, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="events-export-${new Date().toISOString().slice(0, 10)}.xlsx"`,
+      "Content-Disposition": `attachment; filename="events-${label}.xlsx"`,
     },
   })
 }

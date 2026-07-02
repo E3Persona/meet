@@ -392,6 +392,7 @@ export const ModelName = {
   SourceSite: 'SourceSite',
   SourceSiteConfig: 'SourceSiteConfig',
   IngestionSchedule: 'IngestionSchedule',
+  IngestConfig: 'IngestConfig',
   EventContact: 'EventContact'
 } as const
 
@@ -408,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "location" | "searchTerm" | "event" | "ingestionRun" | "searchTemplate" | "sourceSite" | "sourceSiteConfig" | "ingestionSchedule" | "eventContact"
+    modelProps: "location" | "searchTerm" | "event" | "ingestionRun" | "searchTemplate" | "sourceSite" | "sourceSiteConfig" | "ingestionSchedule" | "ingestConfig" | "eventContact"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1004,6 +1005,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    IngestConfig: {
+      payload: Prisma.$IngestConfigPayload<ExtArgs>
+      fields: Prisma.IngestConfigFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.IngestConfigFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.IngestConfigFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload>
+        }
+        findFirst: {
+          args: Prisma.IngestConfigFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.IngestConfigFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload>
+        }
+        findMany: {
+          args: Prisma.IngestConfigFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload>[]
+        }
+        create: {
+          args: Prisma.IngestConfigCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload>
+        }
+        createMany: {
+          args: Prisma.IngestConfigCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.IngestConfigCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload>[]
+        }
+        delete: {
+          args: Prisma.IngestConfigDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload>
+        }
+        update: {
+          args: Prisma.IngestConfigUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload>
+        }
+        deleteMany: {
+          args: Prisma.IngestConfigDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.IngestConfigUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.IngestConfigUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload>[]
+        }
+        upsert: {
+          args: Prisma.IngestConfigUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$IngestConfigPayload>
+        }
+        aggregate: {
+          args: Prisma.IngestConfigAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateIngestConfig>
+        }
+        groupBy: {
+          args: Prisma.IngestConfigGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.IngestConfigGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.IngestConfigCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.IngestConfigCountAggregateOutputType> | number
+        }
+      }
+    }
     EventContact: {
       payload: Prisma.$EventContactPayload<ExtArgs>
       fields: Prisma.EventContactFieldRefs
@@ -1126,6 +1201,7 @@ export const LocationScalarFieldEnum = {
   state: 'state',
   sourceUrl: 'sourceUrl',
   active: 'active',
+  isCity: 'isCity',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1253,6 +1329,19 @@ export const IngestionScheduleScalarFieldEnum = {
 } as const
 
 export type IngestionScheduleScalarFieldEnum = (typeof IngestionScheduleScalarFieldEnum)[keyof typeof IngestionScheduleScalarFieldEnum]
+
+
+export const IngestConfigScalarFieldEnum = {
+  id: 'id',
+  scraper: 'scraper',
+  maxMonths: 'maxMonths',
+  maxPages: 'maxPages',
+  maxLocations: 'maxLocations',
+  active: 'active',
+  updatedAt: 'updatedAt'
+} as const
+
+export type IngestConfigScalarFieldEnum = (typeof IngestConfigScalarFieldEnum)[keyof typeof IngestConfigScalarFieldEnum]
 
 
 export const EventContactScalarFieldEnum = {
@@ -1583,6 +1672,7 @@ export type GlobalOmitConfig = {
   sourceSite?: Prisma.SourceSiteOmit
   sourceSiteConfig?: Prisma.SourceSiteConfigOmit
   ingestionSchedule?: Prisma.IngestionScheduleOmit
+  ingestConfig?: Prisma.IngestConfigOmit
   eventContact?: Prisma.EventContactOmit
 }
 

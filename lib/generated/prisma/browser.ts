@@ -58,6 +58,11 @@ export type SourceSiteConfig = Prisma.SourceSiteConfigModel
  */
 export type IngestionSchedule = Prisma.IngestionScheduleModel
 /**
+ * Model IngestConfig
+ * 
+ */
+export type IngestConfig = Prisma.IngestConfigModel
+/**
  * Model EventContact
  * 
  */

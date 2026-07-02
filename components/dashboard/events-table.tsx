@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowUpDown, Download, Pencil, Check, X, Search, Loader2 } from "lucide-react"
+import { ArrowUpDown, Download, Pencil, Check, X, Search, Loader2, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 import { ContactFinderModal } from "./contact-finder-modal"
 
@@ -40,6 +40,7 @@ interface EventContact {
   isPrimary: boolean
   email: string | null
   phone: string | null
+  title: string | null
 }
 
 interface EventRow {
@@ -204,8 +205,14 @@ export function EventsTable() {
   const [filterLocation, setFilterLocation] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [sorting, setSorting] = useState<SortingState>([
-    { id: "eventDateStart", desc: false },
+    { id: "eventDateStart", desc: true },
   ])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [total, setTotal] = useState(0)
+  const [filterHasContact, setFilterHasContact] = useState<string>("true")
+  const [exportMonth, setExportMonth] = useState<string>("all")
+  const [exportYear, setExportYear] = useState<string>(String(new Date().getFullYear()))
 
   // Contact finder modal state
   const [contactModal, setContactModal] = useState<{
@@ -214,23 +221,36 @@ export function EventsTable() {
     eventName: string
   }>({ open: false, eventId: "", eventName: "" })
   const [findAllLoading, setFindAllLoading] = useState(false)
+  const [deleteAllLoading, setDeleteAllLoading] = useState(false)
+  const [eventsMissingContacts, setEventsMissingContacts] = useState(0)
+  const [eventsWithContacts, setEventsWithContacts] = useState(0)
+
+  const setLocationFilter = (val: string) => { setFilterLocation(val); setPage(1) }
+  const setStatusFilter = (val: string) => { setFilterStatus(val); setPage(1) }
+  const setSearchFilter = (val: string) => { setSearch(val); setPage(1) }
+  const setHasContactFilter = (val: string) => { setFilterHasContact(val); setPage(1) }
 
   const fetchEvents = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       if (filterLocation !== "all") params.set("locationId", filterLocation)
       if (filterStatus !== "all") params.set("status", filterStatus)
+      if (filterHasContact !== "all") params.set("hasContact", filterHasContact)
       if (search) params.set("search", search)
+      params.set("page", String(page))
+      params.set("pageSize", String(pageSize))
 
       const res = await fetch(`/api/events?${params}`)
       if (!res.ok) throw new Error("Failed")
-      setEvents(await res.json())
+      const data = await res.json()
+      setEvents(data.events)
+      setTotal(data.total)
     } catch {
       toast.error("Failed to load events")
     } finally {
       setLoading(false)
     }
-  }, [filterLocation, filterStatus, search])
+  }, [filterLocation, filterStatus, filterHasContact, search, page, pageSize])
 
   const fetchLocations = useCallback(async () => {
     const res = await fetch("/api/locations")
@@ -242,17 +262,45 @@ export function EventsTable() {
   }, [fetchLocations])
 
   useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.eventsMissingContacts !== undefined) {
+          setEventsMissingContacts(data.eventsMissingContacts)
+        }
+        if (data.eventsWithContacts !== undefined) {
+          setEventsWithContacts(data.eventsWithContacts)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
     fetchEvents()
   }, [fetchEvents])
 
   // ── Excel Export ──────────────────────────────────────────────────────────
 
   const exportToExcel = () => {
-    window.open("/api/events/export", "_blank")
+    const params = new URLSearchParams()
+    if (exportMonth !== "all") params.set("month", exportMonth)
+    if (exportYear) params.set("year", exportYear)
+    const qs = params.toString()
+    window.open(`/api/events/export${qs ? `?${qs}` : ""}`, "_blank")
     toast.success("Exporting events...")
   }
 
   // ── Find All Contacts ─────────────────────────────────────────────────────
+
+  const refreshStats = () => {
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.eventsMissingContacts !== undefined) setEventsMissingContacts(data.eventsMissingContacts)
+        if (data.eventsWithContacts !== undefined) setEventsWithContacts(data.eventsWithContacts)
+      })
+      .catch(() => {})
+  }
 
   const handleFindAllContacts = async () => {
     setFindAllLoading(true)
@@ -263,6 +311,7 @@ export function EventsTable() {
       const data = await res.json()
       toast.success(`Done: ${data.found} contacts found out of ${data.processed} events`)
       fetchEvents()
+      refreshStats()
     } catch {
       toast.error("Failed to find contacts")
     } finally {
@@ -270,7 +319,23 @@ export function EventsTable() {
     }
   }
 
-  const missingContactCount = events.filter((e) => (e.contacts?.length ?? 0) === 0).length
+  const handleDeleteAll = async () => {
+    if (!confirm(`Delete all ${total} events? This cannot be undone.`)) return
+    setDeleteAllLoading(true)
+    try {
+      const res = await fetch("/api/events", { method: "DELETE" })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      toast.success(`Deleted ${data.deleted} events`)
+      setPage(1)
+      fetchEvents()
+      refreshStats()
+    } catch {
+      toast.error("Failed to delete events")
+    } finally {
+      setDeleteAllLoading(false)
+    }
+  }
 
   // ── Columns ───────────────────────────────────────────────────────────────
 
@@ -323,16 +388,26 @@ export function EventsTable() {
             )
           }
           return (
-            <div className="max-w-[250px]">
+            <div className="max-w-[280px]">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-medium truncate">{primary?.name ?? contacts[0].name}</span>
                 {contacts.length > 1 && (
                   <Badge variant="neutral" size="sm">+{contacts.length - 1}</Badge>
                 )}
               </div>
-              {(primary?.email ?? contacts[0].email) && (
+              {(primary?.title ?? contacts[0].title) && (
                 <p className="text-xs text-muted-foreground truncate">
+                  {primary?.title ?? contacts[0].title}
+                </p>
+              )}
+              {(primary?.email ?? contacts[0].email) && (
+                <p className="text-xs truncate">
                   {primary?.email ?? contacts[0].email}
+                </p>
+              )}
+              {(primary?.phone ?? contacts[0].phone) && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {primary?.phone ?? contacts[0].phone}
                 </p>
               )}
             </div>
@@ -428,14 +503,38 @@ export function EventsTable() {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="space-y-3">
+        {/* Contact filter tabs */}
+        <div className="flex items-center gap-1">
+          {[
+            { value: "true", label: "With Contact", count: eventsWithContacts },
+            { value: "false", label: "No Contact", count: eventsMissingContacts },
+            { value: "all", label: "All Events", count: total },
+          ].map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setHasContactFilter(tab.value)}
+              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                filterHasContact === tab.value
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
+
+        {/* Filters row */}
+        <div className="flex items-center gap-3 flex-wrap">
         <Input
           placeholder="Search events..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => setSearchFilter(e.target.value)}
           className="w-64"
         />
-        <Select value={filterLocation} onValueChange={setFilterLocation}>
+        <Select value={filterLocation} onValueChange={setLocationFilter}>
           <SelectTrigger className="w-48" size="sm">
             <SelectValue placeholder="All locations" />
           </SelectTrigger>
@@ -448,7 +547,7 @@ export function EventsTable() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
+        <Select value={filterStatus} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36" size="sm">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
@@ -459,6 +558,36 @@ export function EventsTable() {
             <SelectItem value="contacted">Contacted</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={exportMonth} onValueChange={setExportMonth}>
+          <SelectTrigger className="w-32" size="sm">
+            <SelectValue placeholder="All months" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All months</SelectItem>
+            <SelectItem value="1">January</SelectItem>
+            <SelectItem value="2">February</SelectItem>
+            <SelectItem value="3">March</SelectItem>
+            <SelectItem value="4">April</SelectItem>
+            <SelectItem value="5">May</SelectItem>
+            <SelectItem value="6">June</SelectItem>
+            <SelectItem value="7">July</SelectItem>
+            <SelectItem value="8">August</SelectItem>
+            <SelectItem value="9">September</SelectItem>
+            <SelectItem value="10">October</SelectItem>
+            <SelectItem value="11">November</SelectItem>
+            <SelectItem value="12">December</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={exportYear} onValueChange={setExportYear}>
+          <SelectTrigger className="w-24" size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="2025">2025</SelectItem>
+            <SelectItem value="2026">2026</SelectItem>
+            <SelectItem value="2027">2027</SelectItem>
+          </SelectContent>
+        </Select>
         <Button variant="outline" size="sm" onClick={exportToExcel}>
           <Download className="h-4 w-4 mr-1.5" />
           Export to Excel
@@ -467,18 +596,35 @@ export function EventsTable() {
           variant="outline"
           size="sm"
           onClick={handleFindAllContacts}
-          disabled={findAllLoading || missingContactCount === 0}
+          disabled={findAllLoading || eventsMissingContacts === 0}
         >
           {findAllLoading ? (
             <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
           ) : (
             <Search className="h-4 w-4 mr-1.5" />
           )}
-          Find All Contacts ({missingContactCount})
+          Find All Contacts ({eventsMissingContacts})
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-destructive hover:bg-destructive/10"
+          onClick={handleDeleteAll}
+          disabled={deleteAllLoading || total === 0}
+        >
+          {deleteAllLoading ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4 mr-1.5" />
+          )}
+          Delete All ({total})
         </Button>
         <span className="text-xs text-muted-foreground ml-auto">
-          {events.length} events
+          {events.length > 0
+            ? `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`
+            : `${total} events`}
         </span>
+        </div>
       </div>
 
       {/* Table */}
@@ -545,6 +691,48 @@ export function EventsTable() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {total > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Show</span>
+            <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
+              <SelectTrigger className="h-8 w-16" size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+            <span>of {total}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm px-3">
+              Page {page} of {Math.max(1, Math.ceil(total / pageSize))}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(Math.ceil(total / pageSize), p + 1))}
+              disabled={page >= Math.ceil(total / pageSize)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Contact Finder Modal */}
       <ContactFinderModal

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { ProviderRegistry } from "@/lib/providers"
-import { getUsageSummary, clearUsage } from "@/lib/providers/cost-tracker"
+import { clearUsage, getUsageSummary } from "@/lib/providers/cost-tracker"
 import { createTavilyProvider } from "@/lib/providers/search/tavily"
 import { createBraveProvider } from "@/lib/providers/search/brave"
 import { createDuckDuckGoProvider } from "@/lib/providers/search/duckduckgo"
@@ -9,14 +9,25 @@ import { createFirecrawlProvider } from "@/lib/providers/scrape/firecrawl"
 import { createWebPeelProvider } from "@/lib/providers/scrape/webpeel"
 import { createJinaProvider } from "@/lib/providers/scrape/jina"
 import { extractEventsWithLLM } from "@/lib/scrape/llm-extractor"
-import { scrapeDirectory } from "@/lib/scrape/directory-scraper"
-import type { ScrapeContext } from "@/lib/scrape/directory-scraper"
 
-// ─── NEVER touch these fields from automated code ─────────────────────────────
-// AGENTS.md hard boundary: organizerName, organizerTitle, organizerEmail,
-// organizerPhone are ONLY filled by humans via inline-edit UI.
+// ─── Scraper types ───────────────────────────────────────────────────────────
 
-// ─── Build the provider registry ─────────────────────────────────────────────
+type ScraperType = "ica" | "cn" | "tf" | "showsbee" | "eventseye" | "aca" | "search"
+
+interface ScraperResult {
+  scraper: ScraperType
+  recordsFound: number
+  recordsNew: number
+  error?: string
+  provider?: string
+}
+
+interface RunConfig {
+  scraperTypes: ScraperType[]
+  locationIds?: string[]
+}
+
+// ─── Provider registry ───────────────────────────────────────────────────────
 
 function buildRegistry(): ProviderRegistry {
   return new ProviderRegistry({
@@ -26,14 +37,14 @@ function buildRegistry(): ProviderRegistry {
       { provider: createDuckDuckGoProvider(), priority: 3, dailyLimit: 999, enabled: true },
     ],
     scrape: [
-      { provider: createFirecrawlProvider(), priority: 1, dailyLimit: 16, enabled: !!process.env.FIRECRAWL_API_KEY },
+      { provider: createJinaProvider(), priority: 1, dailyLimit: 33, enabled: true },
       { provider: createWebPeelProvider(), priority: 2, dailyLimit: 125, enabled: !!process.env.WEBPEEL_API_KEY },
-      { provider: createJinaProvider(), priority: 3, dailyLimit: 33, enabled: true },
+      { provider: createFirecrawlProvider(), priority: 3, dailyLimit: 16, enabled: !!process.env.FIRECRAWL_API_KEY },
     ],
   })
 }
 
-// ─── Dedupe check ─────────────────────────────────────────────────────────────
+// ─── Dedupe check ───────────────────────────────────────────────────────────
 
 async function isDuplicate(eventName: string, locationId: string, eventDateStart: Date | null): Promise<boolean> {
   const existing = await prisma.event.findFirst({
@@ -46,83 +57,63 @@ async function isDuplicate(eventName: string, locationId: string, eventDateStart
   return !!existing
 }
 
-// ─── Template expansion ───────────────────────────────────────────────────────
+// ─── Template expansion ─────────────────────────────────────────────────────
 
-function expandTemplate(template: string, location: { city: string | null; name: string }): string {
-  const now = new Date()
+function expandTemplate(template: string, location: { city: string | null; name: string }, monthLabel: string): string {
   return template
     .replace(/\{CITY\}/g, location.city ?? "")
     .replace(/\{VENUE\}/g, location.name)
-    .replace(/\{MONTH\}/g, now.toLocaleString("en-US", { month: "long" }))
-    .replace(/\{YEAR\}/g, String(now.getFullYear()))
+    .replace(/\{MONTH\}/g, monthLabel.split(" ")[0])
+    .replace(/\{YEAR\}/g, monthLabel.split(" ")[1] ?? String(new Date().getFullYear()))
 }
 
-// ─── Query builders ───────────────────────────────────────────────────────────
+// ─── Build search queries from templates + locations ────────────────────────
 
-function buildTemplateQueries(
-  templates: { id: string; template: string }[],
-  locations: { id: string; name: string; city: string | null }[]
-) {
+function buildQueries(
+  templates: { template: string }[],
+  locations: { id: string; name: string; city: string | null; searchTerms: { keyword: string }[] }[]
+): { locationId: string; locationName: string; query: string; monthLabel: string }[] {
   const queries: { locationId: string; locationName: string; query: string; monthLabel: string }[] = []
   const now = new Date()
+
   for (let i = 0; i < 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
     const monthLabel = `${d.toLocaleString("en-US", { month: "long" })} ${d.getFullYear()}`
-    for (const template of templates) {
-      if (/\{(CITY|VENUE|MONTH|YEAR)\}/.test(template.template)) {
-        for (const loc of locations) {
-          queries.push({ locationId: loc.id, locationName: loc.name, query: expandTemplate(template.template, loc), monthLabel })
-        }
-      } else {
-        queries.push({ locationId: locations[0].id, locationName: locations[0].name, query: template.template, monthLabel })
-      }
-    }
-  }
-  return queries
-}
 
-function buildSearchTermQueries(
-  locations: { id: string; name: string; searchTerms: { id: string; keyword: string }[] }[]
-) {
-  const queries: { locationId: string; locationName: string; query: string; monthLabel: string }[] = []
-  const now = new Date()
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
-    const monthLabel = `${d.toLocaleString("en-US", { month: "long" })} ${d.getFullYear()}`
     for (const loc of locations) {
+      for (const tmpl of templates) {
+        queries.push({
+          locationId: loc.id,
+          locationName: loc.name,
+          query: expandTemplate(tmpl.template, loc, monthLabel),
+          monthLabel,
+        })
+      }
+
       for (const term of loc.searchTerms) {
-        queries.push({ locationId: loc.id, locationName: loc.name, query: `${monthLabel} ${term.keyword} ${loc.name}`, monthLabel })
+        queries.push({
+          locationId: loc.id,
+          locationName: loc.name,
+          query: `${monthLabel} ${term.keyword} ${loc.city ?? loc.name}`,
+          monthLabel,
+        })
       }
     }
   }
+
   return queries
 }
 
-// ─── URL pattern matching ─────────────────────────────────────────────────────
+// ─── Scrape a URL and extract events ────────────────────────────────────────
 
-function compileUrlPatterns(patterns: string[]): RegExp[] {
-  return patterns
-    .filter(Boolean)
-    .map((p) => { try { return new RegExp(p, "i") } catch { return null } })
-    .filter(Boolean) as RegExp[]
-}
-
-function isKnownSource(url: string, patterns: RegExp[]): boolean {
-  return patterns.some((p) => p.test(url))
-}
-
-// ─── Process a URL through providers ──────────────────────────────────────────
-
-async function processUrl(
+async function scrapeAndExtract(
   url: string,
   title: string,
   locationId: string,
   locationName: string,
   monthLabel: string,
-  runId: string,
-  sourceSiteId: string | null,
-  sourceNotes: string | null,
   registry: ProviderRegistry,
+  runId: string,
   counters: { totalFound: number; totalNew: number }
 ) {
   counters.totalFound++
@@ -131,27 +122,39 @@ async function processUrl(
   if (!result.markdown || result.markdown.length < 200) return
 
   const { events: extracted } = await extractEventsWithLLM(
-    result.markdown, title, url, locationName, monthLabel, sourceNotes
+    result.markdown, title, url, locationName, monthLabel, null
   )
 
   for (const ext of extracted) {
     if (ext.confidence === "low") continue
+    const eventName = ext.eventName.trim()
+    if (eventName.length < 3) continue
 
     let eventDateStart: Date | null = null
     let eventDateEnd: Date | null = null
-    if (ext.eventDateStart) { const d = new Date(ext.eventDateStart); if (!isNaN(d.getTime())) eventDateStart = d }
-    if (ext.eventDateEnd) { const d = new Date(ext.eventDateEnd); if (!isNaN(d.getTime())) eventDateEnd = d }
+    if (ext.eventDateStart) {
+      const d = new Date(ext.eventDateStart)
+      if (!isNaN(d.getTime())) eventDateStart = d
+    }
+    if (ext.eventDateEnd) {
+      const d = new Date(ext.eventDateEnd)
+      if (!isNaN(d.getTime())) eventDateEnd = d
+    }
 
-    const eventName = ext.eventName.trim()
-    if (eventName.length < 3) continue
     if (await isDuplicate(eventName, locationId, eventDateStart)) continue
 
     const event = await prisma.event.create({
-      data: { locationId, eventName, eventDateStart, eventDateEnd, sourceUrl: url, sourceSiteId, runId },
+      data: {
+        locationId,
+        eventName,
+        eventDateStart,
+        eventDateEnd,
+        sourceUrl: url,
+        runId,
+      },
     })
     counters.totalNew++
 
-    // Save contacts found during ingestion — don't wait for separate find-contact step
     if (ext.contacts && ext.contacts.length > 0) {
       let firstSaved = false
       for (const c of ext.contacts) {
@@ -168,7 +171,6 @@ async function processUrl(
             confidence: c.confidence ?? "medium",
           },
         })
-        // Sync legacy fields from first/primary contact
         if (!firstSaved) {
           await prisma.event.update({
             where: { id: event.id },
@@ -182,46 +184,89 @@ async function processUrl(
           firstSaved = true
         }
       }
-      console.log(`[Ingest] Saved ${ext.contacts.length} contact(s) for "${eventName}"`)
+      console.log(`[Search] Saved ${ext.contacts.length} contact(s) for "${eventName}"`)
     }
   }
 }
 
-// ─── Sleep ────────────────────────────────────────────────────────────────────
+// ─── Sleep ───────────────────────────────────────────────────────────────────
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-// ─── POST /api/ingest/run ─────────────────────────────────────────────────────
+// ─── Search-based scraper ────────────────────────────────────────────────────
+
+async function runSearchScraper(
+  locations: { id: string; name: string; city: string | null; searchTerms: { keyword: string }[] }[],
+  templates: { template: string }[],
+  runId: string
+): Promise<ScraperResult> {
+  const registry = buildRegistry()
+  const counters = { totalFound: 0, totalNew: 0 }
+
+  const queries = buildQueries(templates, locations)
+  console.log(`[Search] ${queries.length} queries across ${locations.length} locations`)
+
+  let lastProvider = "none"
+  for (let i = 0; i < queries.length; i++) {
+    const q = queries[i]
+
+    const { results, provider } = await registry.search(q.query, { runId })
+    lastProvider = provider
+
+    if (results.length === 0) {
+      console.log(`[Search] ${i + 1}/${queries.length}: "${q.query}" → 0 results`)
+      continue
+    }
+
+    console.log(`[Search] ${i + 1}/${queries.length}: "${q.query}" → ${results.length} results (${provider})`)
+
+    for (const sr of results) {
+      await sleep(500)
+      await scrapeAndExtract(sr.url, sr.title, q.locationId, q.locationName, q.monthLabel, registry, runId, counters)
+    }
+
+    if ((i + 1) % 10 === 0) {
+      console.log(`[Search] Progress: ${i + 1}/${queries.length}, ${counters.totalNew} new`)
+    }
+  }
+
+  return {
+    scraper: "search",
+    recordsFound: counters.totalFound,
+    recordsNew: counters.totalNew,
+    provider: lastProvider,
+  }
+}
+
+// ─── POST /api/ingest/run ───────────────────────────────────────────────────
 
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url)
   const trigger = searchParams.get("trigger") === "scheduled" ? "scheduled" : "manual"
 
-  // Accept optional body for schedule-specific runs
-  let body: { locationIds?: string[]; templateIds?: string[]; sourceSiteIds?: string[] } = {}
-  try { body = await request.json() } catch { /* no body */ }
+  let body: RunConfig = { scraperTypes: ["search"] }
+  try {
+    const raw = await request.json()
+    if (raw.scraperTypes && Array.isArray(raw.scraperTypes)) {
+      body.scraperTypes = raw.scraperTypes
+    }
+    if (raw.locationIds) body.locationIds = raw.locationIds
+  } catch { /* no body */ }
 
   console.log(`\n[Ingest] Starting ${trigger} run at ${new Date().toISOString()}`)
+  console.log(`[Ingest] Scrapers: ${body.scraperTypes.join(", ")}`)
 
   const run = await prisma.ingestionRun.create({ data: { trigger, status: "running" } })
   clearUsage(run.id)
 
   try {
-    const registry = buildRegistry()
-
-    // Load data — optionally filtered by schedule
-    const [locations, templates, sourceSites] = await Promise.all([
+    // Load locations and templates once
+    const [locations, templates] = await Promise.all([
       prisma.location.findMany({
         where: { active: true, ...(body.locationIds?.length ? { id: { in: body.locationIds } } : {}) },
         include: { searchTerms: { where: { active: true } } },
       }),
-      prisma.searchTemplate.findMany({
-        where: { active: true, ...(body.templateIds?.length ? { id: { in: body.templateIds } } : {}) },
-      }),
-      prisma.sourceSite.findMany({
-        where: { active: true, ...(body.sourceSiteIds?.length ? { id: { in: body.sourceSiteIds } } : {}) },
-        include: { sourceSiteConfig: true },
-      }),
+      prisma.searchTemplate.findMany({ where: { active: true } }),
     ])
 
     if (locations.length === 0) {
@@ -232,126 +277,49 @@ export async function POST(request: Request) {
       return NextResponse.json({ runId: run.id, recordsFound: 0, recordsNew: 0 })
     }
 
-    const counters = { totalFound: 0, totalNew: 0 }
-    const knownPatterns = compileUrlPatterns(sourceSites.filter((s) => s.urlPattern && s.scrapeMode !== "skip").map((s) => s.urlPattern!))
+    const results: ScraperResult[] = []
+    let totalFound = 0
+    let totalNew = 0
 
-    // ── Phase 1: Known SourceSites ──────────────────────────────────────
-    const scrapable = sourceSites.filter((s) => s.scrapeMode !== "skip" && s.url)
-    console.log(`\n[Phase 1] SourceSite crawl: ${scrapable.length} sites`)
-    const monthLabel = new Date().toLocaleString("en-US", { month: "long", year: "numeric" })
+    // ── Run each scraper type in sequence ─────────────────────────────────
+    for (const scraperType of body.scraperTypes) {
+      console.log(`\n[Ingest] Running scraper: ${scraperType}`)
 
-    for (const site of scrapable) {
-      const eventsBefore = counters.totalNew
-      try {
-        // Sites with configured selectors → use directory scraper
-        const cfg = site.sourceSiteConfig
-        if (cfg && cfg.listingUrlTemplate && cfg.selectorEventName) {
-          const ctx: ScrapeContext = {
-            city: "",
-            month: new Date().toLocaleString("en-US", { month: "long" }),
-            year: String(new Date().getFullYear()),
-          }
-          for (const loc of locations) {
-            ctx.city = loc.city ?? ""
-            const result = await scrapeDirectory(cfg, ctx)
-            for (const page of result.pages) {
-              const sourceEvents = page.detailEvents.length > 0 ? page.detailEvents : page.aiEvents.length > 0 ? page.aiEvents : page.events
-              for (const ev of sourceEvents) {
-                if (!ev.eventName || ev.eventName.length < 3) continue
-                counters.totalFound++
-                let eventDateStart: Date | null = null
-                let eventDateEnd: Date | null = null
-                if (ev.eventDateStart) { const d = new Date(ev.eventDateStart); if (!isNaN(d.getTime())) eventDateStart = d }
-                if (ev.eventDateEnd) { const d = new Date(ev.eventDateEnd); if (!isNaN(d.getTime())) eventDateEnd = d }
-                if (await isDuplicate(ev.eventName, loc.id, eventDateStart)) continue
-                await prisma.event.create({
-                  data: { locationId: loc.id, eventName: ev.eventName, eventDateStart, eventDateEnd, sourceUrl: ev.sourceUrl ?? site.url ?? "", sourceSiteId: site.id, runId: run.id },
-                })
-                counters.totalNew++
-              }
-            }
-          }
-        } else if (site.scrapeMode === "search") {
-          for (const loc of locations) {
-            const slug = (loc.city ?? "").toLowerCase().replace(/\s+/g, "-")
-            let searchUrl = site.url!
-            if (site.urlPattern?.includes("10times")) searchUrl = `https://10times.com/${slug}/upcoming`
-            else if (site.urlPattern?.includes("eventbrite")) searchUrl = `https://www.eventbrite.com/d/${slug}/meetings/`
-            else if (site.urlPattern?.includes("allconferencealert")) searchUrl = `https://allconferencealert.net/usa.php?city=${slug}`
-            else searchUrl = `${site.url}/${slug}`
-            await sleep(500)
-            await processUrl(searchUrl, `${site.name} - ${loc.name}`, loc.id, loc.name, monthLabel, run.id, site.id, site.notes, registry, counters)
-          }
-        } else {
-          await sleep(500)
-          const { result } = await registry.scrape(site.url!, { runId: run.id })
-          if (result.markdown && result.markdown.length > 200) {
-            for (const loc of locations) {
-              const cityLower = (loc.city ?? "").toLowerCase()
-              const nameLower = loc.name.toLowerCase()
-              if ((cityLower && result.markdown.toLowerCase().includes(cityLower)) || result.markdown.toLowerCase().includes(nameLower)) {
-                await processUrl(site.url!, site.name, loc.id, loc.name, monthLabel, run.id, site.id, site.notes, registry, counters)
-              }
-            }
-          }
-        }
-      } catch (err) { console.error(`[Phase 1] ${site.name} error:`, err) }
-
-      const eventsThisRun = counters.totalNew - eventsBefore
-      await prisma.sourceSite.update({
-        where: { id: site.id },
-        data: { lastScrapedAt: new Date(), lastScrapeStatus: counters.totalNew > eventsBefore ? "success" : "partial", eventsFound: { increment: eventsThisRun } },
-      }).catch(() => {})
-    }
-
-    // ── Phase 2: Template-expanded search ───────────────────────────────
-    if (templates.length > 0) {
-      const templateQueries = buildTemplateQueries(templates, locations)
-      console.log(`\n[Phase 2] Template search: ${templateQueries.length} queries`)
-      for (let i = 0; i < templateQueries.length; i++) {
-        const q = templateQueries[i]
-        const { results } = await registry.search(q.query, { runId: run.id })
-        for (const r of results) {
-          if (isKnownSource(r.url, knownPatterns)) continue
-          await sleep(500)
-          await processUrl(r.url, r.title, q.locationId, q.locationName, q.monthLabel, run.id, null, null, registry, counters)
-        }
-        if ((i + 1) % 10 === 0) console.log(`[Phase 2] ${i + 1}/${templateQueries.length}, ${counters.totalNew} new`)
+      if (scraperType === "search") {
+        const r = await runSearchScraper(locations, templates, run.id)
+        results.push(r)
+        totalFound += r.recordsFound
+        totalNew += r.recordsNew
+        console.log(`[Ingest] ${scraperType}: ${r.recordsNew} new from ${r.recordsFound}`)
       }
+      // Future scraper types can be added here:
+      // else if (scraperType === "ica") { ... }
+      // else if (scraperType === "tf") { ... }
+      // etc.
     }
 
-    // ── Phase 3: Legacy SearchTerms ─────────────────────────────────────
-    const locsWTerms = locations.filter((l) => l.searchTerms.length > 0)
-    if (locsWTerms.length > 0) {
-      const termQueries = buildSearchTermQueries(locsWTerms)
-      console.log(`\n[Phase 3] Legacy search: ${termQueries.length} queries`)
-      for (let i = 0; i < termQueries.length; i++) {
-        const q = termQueries[i]
-        const { results } = await registry.search(q.query, { runId: run.id })
-        for (const r of results) {
-          if (isKnownSource(r.url, knownPatterns)) continue
-          await sleep(500)
-          await processUrl(r.url, r.title, q.locationId, q.locationName, q.monthLabel, run.id, null, null, registry, counters)
-        }
-        if ((i + 1) % 10 === 0) console.log(`[Phase 3] ${i + 1}/${termQueries.length}, ${counters.totalNew} new`)
-      }
-    }
-
-    // ── Finalize ────────────────────────────────────────────────────────
+    // ── Finalize ─────────────────────────────────────────────────────────
     const providersUsed = getUsageSummary(run.id)
     await prisma.ingestionRun.update({
       where: { id: run.id },
-      data: { status: "success", finishedAt: new Date(), recordsFound: counters.totalFound, recordsNew: counters.totalNew, providersUsed },
+      data: {
+        status: "success",
+        finishedAt: new Date(),
+        recordsFound: totalFound,
+        recordsNew: totalNew,
+        providersUsed,
+      },
     })
 
-    console.log(`\n[Ingest] Complete: ${counters.totalNew} new from ${counters.totalFound} scanned`)
-    console.log(`[Ingest] Providers used:`, providersUsed)
-
-    return NextResponse.json({ runId: run.id, recordsFound: counters.totalFound, recordsNew: counters.totalNew, providersUsed })
+    console.log(`\n[Ingest] Complete: ${totalNew} new from ${totalFound} total`)
+    return NextResponse.json({ runId: run.id, recordsFound: totalFound, recordsNew: totalNew, results, providersUsed })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown"
     console.error(`[Ingest] Fatal:`, error)
-    await prisma.ingestionRun.update({ where: { id: run.id }, data: { status: "failed", finishedAt: new Date(), errorMessage } })
+    await prisma.ingestionRun.update({
+      where: { id: run.id },
+      data: { status: "failed", finishedAt: new Date(), errorMessage },
+    })
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }

@@ -13,6 +13,7 @@ import {
   CalendarClock,
   Menu,
   X,
+  Bot,
 } from "lucide-react"
 
 export type SidebarSection =
@@ -21,6 +22,7 @@ export type SidebarSection =
   | "templates"
   | "sources"
   | "directories"
+  | "scrapers"
   | "schedules"
   | "runs"
 
@@ -30,6 +32,7 @@ const NAV_ITEMS: { id: SidebarSection; label: string; icon: React.ComponentType<
   { id: "templates", label: "Search Templates", icon: Search },
   { id: "sources", label: "Source Sites", icon: Globe },
   { id: "directories", label: "Directories", icon: FileText },
+  { id: "scrapers", label: "Scrapers", icon: Bot },
   { id: "schedules", label: "Schedules", icon: CalendarClock },
   { id: "runs", label: "Run History", icon: History },
 ]

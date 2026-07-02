@@ -59,6 +59,7 @@ export const ModelName = {
   SourceSite: 'SourceSite',
   SourceSiteConfig: 'SourceSiteConfig',
   IngestionSchedule: 'IngestionSchedule',
+  IngestConfig: 'IngestConfig',
   EventContact: 'EventContact'
 } as const
 
@@ -87,6 +88,7 @@ export const LocationScalarFieldEnum = {
   state: 'state',
   sourceUrl: 'sourceUrl',
   active: 'active',
+  isCity: 'isCity',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -214,6 +216,19 @@ export const IngestionScheduleScalarFieldEnum = {
 } as const
 
 export type IngestionScheduleScalarFieldEnum = (typeof IngestionScheduleScalarFieldEnum)[keyof typeof IngestionScheduleScalarFieldEnum]
+
+
+export const IngestConfigScalarFieldEnum = {
+  id: 'id',
+  scraper: 'scraper',
+  maxMonths: 'maxMonths',
+  maxPages: 'maxPages',
+  maxLocations: 'maxLocations',
+  active: 'active',
+  updatedAt: 'updatedAt'
+} as const
+
+export type IngestConfigScalarFieldEnum = (typeof IngestConfigScalarFieldEnum)[keyof typeof IngestConfigScalarFieldEnum]
 
 
 export const EventContactScalarFieldEnum = {

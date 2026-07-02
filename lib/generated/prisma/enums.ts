@@ -40,6 +40,7 @@ export const ScrapeMode = {
   calendar: 'calendar',
   directory: 'directory',
   search: 'search',
+  ica: 'ica',
   skip: 'skip'
 } as const
 

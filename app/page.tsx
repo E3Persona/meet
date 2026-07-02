@@ -9,17 +9,49 @@ import { LocationsManager } from "@/components/locations/locations-manager"
 import { TemplatesManager } from "@/components/templates/templates-manager"
 import { SourceSitesManager } from "@/components/source-sites/source-sites-manager"
 import { DirectoriesManager } from "@/components/directories/directories-manager"
+import { ScrapersPanel } from "@/components/dashboard/scrapers-panel"
 import { ScheduleManager } from "@/components/schedules/schedule-manager"
 import { Sidebar, type SidebarSection } from "@/components/dashboard/sidebar"
 
-const SECTION_TITLES: Record<SidebarSection, { title: string; description: string }> = {
-  events: { title: "Event Pipeline Dashboard", description: "Track meetings, conventions, and tradeshows across venues." },
-  locations: { title: "Locations", description: "Manage venues and their search configurations." },
-  templates: { title: "Search Templates", description: "Define query templates expanded per-location at ingestion time." },
-  sources: { title: "Source Sites", description: "Event directories and websites to scrape during ingestion." },
-  directories: { title: "Directories", description: "Configure CSS selectors for deterministic event extraction from directory sites." },
-  schedules: { title: "Schedules", description: "Configure named cron schedules for automated ingestion runs." },
-  runs: { title: "Run History", description: "View all past ingestion runs and their results." },
+const SECTION_TITLES: Record<
+  SidebarSection,
+  { title: string; description: string }
+> = {
+  events: {
+    title: "Event Pipeline Dashboard",
+    description: "Track meetings, conventions, and tradeshows across venues.",
+  },
+  locations: {
+    title: "Locations",
+    description: "Manage venues and their search configurations.",
+  },
+  templates: {
+    title: "Search Templates",
+    description:
+      "Define query templates expanded per-location at ingestion time.",
+  },
+  sources: {
+    title: "Source Sites",
+    description: "Event directories and websites to scrape during ingestion.",
+  },
+  directories: {
+    title: "Directories",
+    description:
+      "Configure CSS selectors for deterministic event extraction from directory sites.",
+  },
+  scrapers: {
+    title: "Site Scrapers",
+    description:
+      "Run per-site scrapers (Puppeteer-based) for dedicated conference directories.",
+  },
+  schedules: {
+    title: "Schedules",
+    description: "Configure named cron schedules for automated ingestion runs.",
+  },
+  runs: {
+    title: "Run History",
+    description: "View all past ingestion runs and their results.",
+  },
 }
 
 export default function DashboardPage() {
@@ -39,10 +71,14 @@ export default function DashboardPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">{section.title}</h1>
-                <p className="text-sm text-muted-foreground mt-1">{section.description}</p>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  {section.title}
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {section.description}
+                </p>
               </div>
-              {active === "events" && <RunNowButton onComplete={refresh} />}
+              {/* {active === "events" && <RunNowButton onComplete={refresh} />} */}
             </div>
 
             {/* Stats — events view only */}
@@ -54,6 +90,7 @@ export default function DashboardPage() {
             {active === "templates" && <TemplatesManager />}
             {active === "sources" && <SourceSitesManager />}
             {active === "directories" && <DirectoriesManager />}
+            {active === "scrapers" && <ScrapersPanel />}
             {active === "schedules" && <ScheduleManager />}
             {active === "runs" && <RunHistoryTable />}
           </div>
