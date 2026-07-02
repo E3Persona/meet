@@ -20,6 +20,7 @@ export type SidebarSection =
   | "locations"
   | "templates"
   | "sources"
+  | "directories"
   | "schedules"
   | "runs"
 
@@ -28,6 +29,7 @@ const NAV_ITEMS: { id: SidebarSection; label: string; icon: React.ComponentType<
   { id: "locations", label: "Locations", icon: MapPin },
   { id: "templates", label: "Search Templates", icon: Search },
   { id: "sources", label: "Source Sites", icon: Globe },
+  { id: "directories", label: "Directories", icon: FileText },
   { id: "schedules", label: "Schedules", icon: CalendarClock },
   { id: "runs", label: "Run History", icon: History },
 ]

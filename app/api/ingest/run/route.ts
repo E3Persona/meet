@@ -8,6 +8,9 @@ import { createDuckDuckGoProvider } from "@/lib/providers/search/duckduckgo"
 import { createFirecrawlProvider } from "@/lib/providers/scrape/firecrawl"
 import { createWebPeelProvider } from "@/lib/providers/scrape/webpeel"
 import { createJinaProvider } from "@/lib/providers/scrape/jina"
+import { extractEventsWithLLM } from "@/lib/scrape/llm-extractor"
+import { scrapeDirectory } from "@/lib/scrape/directory-scraper"
+import type { ScrapeContext } from "@/lib/scrape/directory-scraper"
 
 // ─── NEVER touch these fields from automated code ─────────────────────────────
 // AGENTS.md hard boundary: organizerName, organizerTitle, organizerEmail,
@@ -28,143 +31,6 @@ function buildRegistry(): ProviderRegistry {
       { provider: createJinaProvider(), priority: 3, dailyLimit: 33, enabled: true },
     ],
   })
-}
-
-// ─── LLM Extraction ───────────────────────────────────────────────────────────
-// Extracts events AND contacts found on the page. Contacts are a bonus —
-// the primary goal is event discovery, but if contact info is right there
-// we grab it so we don't have to re-scrape later.
-
-async function extractEventsWithLLM(
-  pageContent: string,
-  pageTitle: string,
-  pageUrl: string,
-  locationName: string,
-  searchMonth: string,
-  sourceNotes: string | null
-): Promise<{
-  events: {
-    eventName: string
-    eventDateStart: string | null
-    eventDateEnd: string | null
-    confidence: "high" | "medium" | "low"
-    reason: string
-    contacts: {
-      name: string
-      title: string | null
-      email: string | null
-      phone: string | null
-      confidence: string
-    }[]
-  }[]
-}> {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) return { events: [] }
-
-  const maxContentLength = 8000
-  const truncatedContent =
-    pageContent.length > maxContentLength
-      ? pageContent.slice(0, maxContentLength) + "\n\n[Content truncated...]"
-      : pageContent
-
-  const sourceInstructions = sourceNotes
-    ? `\nSOURCE-SITE INSTRUCTIONS:\n${sourceNotes}\n`
-    : ""
-
-  const prompt = `You are an expert event data extractor specializing in Meetings, Conventions, Tradeshows, Conferences, and Expos.
-
-CONTEXT:
-- We are searching for events at: ${locationName}
-- The search was for month: ${searchMonth}
-- Page title: ${pageTitle}
-- Page URL: ${pageUrl}
-${sourceInstructions}
-PAGE CONTENT:
-${truncatedContent}
-
-TASK:
-Extract ALL events/conferences/tradeshows mentioned on this page AND any contact persons associated with them.
-
-FOR EACH EVENT, provide:
-1. eventName: The full, accurate name of the event
-2. eventDateStart: Start date in ISO format (YYYY-MM-DD) if found, null if not
-3. eventDateEnd: End date in ISO format (YYYY-MM-DD) if found, null if not
-4. confidence: "high" if clearly stated, "medium" if partially clear, "low" if inferred
-5. reason: Brief note on where/how you found this event
-6. contacts: Array of contact persons found for THIS specific event on this page
-
-FOR EACH CONTACT (per event):
-- name: Full name (first and last) of a person associated with this specific event
-- title: Their exact title/role (e.g. Event Manager, Registration Contact, Director of Sales)
-- email: Their email address
-- phone: Their phone number with area code
-
-CONTACT RULES:
-- Only extract SPECIFIC PERSONS linked to THIS event, not generic venue staff
-- Do NOT extract info@ or generic venue numbers
-- Look for: registration contacts, event managers, conference planners, CMP holders, directors of sales, group sales managers, program managers
-- If no contacts found for an event, return empty array for that event's contacts
-- You may find 0-5 contacts per event
-
-EVENT RULES:
-- Extract events AT or NEAR the venue "${locationName}" in ${searchMonth}
-- Be precise with event names — include year, full title
-- Only extract meetings, conventions, tradeshows, conferences, expos, summits, forums, shows
-- Do NOT extract venue info, restaurant listings, general tourism
-- Return empty array if no relevant events found
-
-RESPOND WITH VALID JSON ONLY:
-{
-  "events": [
-    {
-      "eventName": "...",
-      "eventDateStart": "YYYY-MM-DD" or null,
-      "eventDateEnd": "YYYY-MM-DD" or null,
-      "confidence": "high" | "medium" | "low",
-      "reason": "...",
-      "contacts": [
-        {
-          "name": "First Last",
-          "title": "Title" or null,
-          "email": "email@domain.com" or null,
-          "phone": "123-456-7891" or null,
-          "confidence": "high" | "medium" | "low"
-        }
-      ]
-    }
-  ]
-}`
-
-  try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://event-pipeline-dashboard.local",
-        "X-OpenRouter-Title": "Event Pipeline Dashboard",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "You are a precise event data extraction engine. Always respond with valid JSON only." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.1,
-        max_tokens: 3000,
-        response_format: { type: "json_object" },
-      }),
-    })
-
-    if (!res.ok) return { events: [] }
-    const data = await res.json()
-    const content = data.choices?.[0]?.message?.content
-    if (!content) return { events: [] }
-    const parsed = JSON.parse(content)
-    return { events: parsed.events ?? [] }
-  } catch {
-    return { events: [] }
-  }
 }
 
 // ─── Dedupe check ─────────────────────────────────────────────────────────────
@@ -354,6 +220,7 @@ export async function POST(request: Request) {
       }),
       prisma.sourceSite.findMany({
         where: { active: true, ...(body.sourceSiteIds?.length ? { id: { in: body.sourceSiteIds } } : {}) },
+        include: { sourceSiteConfig: true },
       }),
     ])
 
@@ -374,9 +241,37 @@ export async function POST(request: Request) {
     const monthLabel = new Date().toLocaleString("en-US", { month: "long", year: "numeric" })
 
     for (const site of scrapable) {
-      let eventsBefore = counters.totalNew
+      const eventsBefore = counters.totalNew
       try {
-        if (site.scrapeMode === "search") {
+        // Sites with configured selectors → use directory scraper
+        const cfg = site.sourceSiteConfig
+        if (cfg && cfg.listingUrlTemplate && cfg.selectorEventName) {
+          const ctx: ScrapeContext = {
+            city: "",
+            month: new Date().toLocaleString("en-US", { month: "long" }),
+            year: String(new Date().getFullYear()),
+          }
+          for (const loc of locations) {
+            ctx.city = loc.city ?? ""
+            const result = await scrapeDirectory(cfg, ctx)
+            for (const page of result.pages) {
+              const sourceEvents = page.detailEvents.length > 0 ? page.detailEvents : page.aiEvents.length > 0 ? page.aiEvents : page.events
+              for (const ev of sourceEvents) {
+                if (!ev.eventName || ev.eventName.length < 3) continue
+                counters.totalFound++
+                let eventDateStart: Date | null = null
+                let eventDateEnd: Date | null = null
+                if (ev.eventDateStart) { const d = new Date(ev.eventDateStart); if (!isNaN(d.getTime())) eventDateStart = d }
+                if (ev.eventDateEnd) { const d = new Date(ev.eventDateEnd); if (!isNaN(d.getTime())) eventDateEnd = d }
+                if (await isDuplicate(ev.eventName, loc.id, eventDateStart)) continue
+                await prisma.event.create({
+                  data: { locationId: loc.id, eventName: ev.eventName, eventDateStart, eventDateEnd, sourceUrl: ev.sourceUrl ?? site.url ?? "", sourceSiteId: site.id, runId: run.id },
+                })
+                counters.totalNew++
+              }
+            }
+          }
+        } else if (site.scrapeMode === "search") {
           for (const loc of locations) {
             const slug = (loc.city ?? "").toLowerCase().replace(/\s+/g, "-")
             let searchUrl = site.url!

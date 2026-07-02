@@ -57,6 +57,7 @@ export const ModelName = {
   IngestionRun: 'IngestionRun',
   SearchTemplate: 'SearchTemplate',
   SourceSite: 'SourceSite',
+  SourceSiteConfig: 'SourceSiteConfig',
   IngestionSchedule: 'IngestionSchedule',
   EventContact: 'EventContact'
 } as const
@@ -167,6 +168,36 @@ export const SourceSiteScalarFieldEnum = {
 } as const
 
 export type SourceSiteScalarFieldEnum = (typeof SourceSiteScalarFieldEnum)[keyof typeof SourceSiteScalarFieldEnum]
+
+
+export const SourceSiteConfigScalarFieldEnum = {
+  id: 'id',
+  sourceSiteId: 'sourceSiteId',
+  paginationType: 'paginationType',
+  paginationParam: 'paginationParam',
+  paginationStart: 'paginationStart',
+  maxPages: 'maxPages',
+  listingUrlTemplate: 'listingUrlTemplate',
+  selectorEventContainer: 'selectorEventContainer',
+  selectorEventName: 'selectorEventName',
+  selectorEventDateStart: 'selectorEventDateStart',
+  selectorEventDateEnd: 'selectorEventDateEnd',
+  selectorEventUrl: 'selectorEventUrl',
+  selectorVenue: 'selectorVenue',
+  selectorCity: 'selectorCity',
+  followDetailPage: 'followDetailPage',
+  firecrawlFallback: 'firecrawlFallback',
+  aiFallback: 'aiFallback',
+  selectorDetailOrganizer: 'selectorDetailOrganizer',
+  selectorDetailEmail: 'selectorDetailEmail',
+  selectorDetailPhone: 'selectorDetailPhone',
+  lastTestedAt: 'lastTestedAt',
+  lastTestStatus: 'lastTestStatus',
+  lastTestNotes: 'lastTestNotes',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SourceSiteConfigScalarFieldEnum = (typeof SourceSiteConfigScalarFieldEnum)[keyof typeof SourceSiteConfigScalarFieldEnum]
 
 
 export const IngestionScheduleScalarFieldEnum = {

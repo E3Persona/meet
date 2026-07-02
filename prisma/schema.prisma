@@ -132,7 +132,8 @@ model SourceSite {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  events Event[]
+  events          Event[]
+  sourceSiteConfig SourceSiteConfig?
 
   @@map("source_sites")
 }
@@ -150,6 +151,44 @@ enum ScrapeStatus {
   partial
   failed
   blocked
+}
+
+// ─── Source Site Config ───────────────────────────────────────────────────────
+
+model SourceSiteConfig {
+  id              String      @id @default(cuid())
+  sourceSiteId    String      @unique
+  sourceSite      SourceSite  @relation(fields: [sourceSiteId], references: [id], onDelete: Cascade)
+
+  paginationType  String?
+  paginationParam String?
+  paginationStart Int         @default(1)
+  maxPages        Int         @default(5)
+
+  listingUrlTemplate String?
+
+  selectorEventContainer  String?
+  selectorEventName       String?
+  selectorEventDateStart  String?
+  selectorEventDateEnd    String?
+  selectorEventUrl        String?
+  selectorVenue           String?
+  selectorCity            String?
+
+  followDetailPage        Boolean     @default(false)
+  firecrawlFallback       Boolean     @default(true)
+  aiFallback              Boolean     @default(false)
+  selectorDetailOrganizer String?
+  selectorDetailEmail     String?
+  selectorDetailPhone     String?
+
+  lastTestedAt    DateTime?
+  lastTestStatus  String?
+  lastTestNotes   String?
+
+  updatedAt       DateTime    @updatedAt
+
+  @@map("source_site_configs")
 }
 
 // ─── Ingestion Schedule ──────────────────────────────────────────────────────

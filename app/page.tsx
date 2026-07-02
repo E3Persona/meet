@@ -8,6 +8,7 @@ import { RunHistoryTable } from "@/components/dashboard/run-history-table"
 import { LocationsManager } from "@/components/locations/locations-manager"
 import { TemplatesManager } from "@/components/templates/templates-manager"
 import { SourceSitesManager } from "@/components/source-sites/source-sites-manager"
+import { DirectoriesManager } from "@/components/directories/directories-manager"
 import { ScheduleManager } from "@/components/schedules/schedule-manager"
 import { Sidebar, type SidebarSection } from "@/components/dashboard/sidebar"
 
@@ -16,6 +17,7 @@ const SECTION_TITLES: Record<SidebarSection, { title: string; description: strin
   locations: { title: "Locations", description: "Manage venues and their search configurations." },
   templates: { title: "Search Templates", description: "Define query templates expanded per-location at ingestion time." },
   sources: { title: "Source Sites", description: "Event directories and websites to scrape during ingestion." },
+  directories: { title: "Directories", description: "Configure CSS selectors for deterministic event extraction from directory sites." },
   schedules: { title: "Schedules", description: "Configure named cron schedules for automated ingestion runs." },
   runs: { title: "Run History", description: "View all past ingestion runs and their results." },
 }
@@ -51,6 +53,7 @@ export default function DashboardPage() {
             {active === "locations" && <LocationsManager />}
             {active === "templates" && <TemplatesManager />}
             {active === "sources" && <SourceSitesManager />}
+            {active === "directories" && <DirectoriesManager />}
             {active === "schedules" && <ScheduleManager />}
             {active === "runs" && <RunHistoryTable />}
           </div>

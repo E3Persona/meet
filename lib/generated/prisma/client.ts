@@ -72,6 +72,11 @@ export type SearchTemplate = Prisma.SearchTemplateModel
  */
 export type SourceSite = Prisma.SourceSiteModel
 /**
+ * Model SourceSiteConfig
+ * 
+ */
+export type SourceSiteConfig = Prisma.SourceSiteConfigModel
+/**
  * Model IngestionSchedule
  * 
  */

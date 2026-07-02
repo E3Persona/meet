@@ -273,6 +273,7 @@ export type SourceSiteWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"SourceSite"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SourceSite"> | Date | string
   events?: Prisma.EventListRelationFilter
+  sourceSiteConfig?: Prisma.XOR<Prisma.SourceSiteConfigNullableScalarRelationFilter, Prisma.SourceSiteConfigWhereInput> | null
 }
 
 export type SourceSiteOrderByWithRelationInput = {
@@ -289,6 +290,7 @@ export type SourceSiteOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   events?: Prisma.EventOrderByRelationAggregateInput
+  sourceSiteConfig?: Prisma.SourceSiteConfigOrderByWithRelationInput
 }
 
 export type SourceSiteWhereUniqueInput = Prisma.AtLeast<{
@@ -308,6 +310,7 @@ export type SourceSiteWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"SourceSite"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SourceSite"> | Date | string
   events?: Prisma.EventListRelationFilter
+  sourceSiteConfig?: Prisma.XOR<Prisma.SourceSiteConfigNullableScalarRelationFilter, Prisma.SourceSiteConfigWhereInput> | null
 }, "id">
 
 export type SourceSiteOrderByWithAggregationInput = {
@@ -362,6 +365,7 @@ export type SourceSiteCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   events?: Prisma.EventCreateNestedManyWithoutSourceSiteInput
+  sourceSiteConfig?: Prisma.SourceSiteConfigCreateNestedOneWithoutSourceSiteInput
 }
 
 export type SourceSiteUncheckedCreateInput = {
@@ -378,6 +382,7 @@ export type SourceSiteUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   events?: Prisma.EventUncheckedCreateNestedManyWithoutSourceSiteInput
+  sourceSiteConfig?: Prisma.SourceSiteConfigUncheckedCreateNestedOneWithoutSourceSiteInput
 }
 
 export type SourceSiteUpdateInput = {
@@ -394,6 +399,7 @@ export type SourceSiteUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.EventUpdateManyWithoutSourceSiteNestedInput
+  sourceSiteConfig?: Prisma.SourceSiteConfigUpdateOneWithoutSourceSiteNestedInput
 }
 
 export type SourceSiteUncheckedUpdateInput = {
@@ -410,6 +416,7 @@ export type SourceSiteUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.EventUncheckedUpdateManyWithoutSourceSiteNestedInput
+  sourceSiteConfig?: Prisma.SourceSiteConfigUncheckedUpdateOneWithoutSourceSiteNestedInput
 }
 
 export type SourceSiteCreateManyInput = {
@@ -515,6 +522,11 @@ export type SourceSiteSumOrderByAggregateInput = {
   eventsFound?: Prisma.SortOrder
 }
 
+export type SourceSiteScalarRelationFilter = {
+  is?: Prisma.SourceSiteWhereInput
+  isNot?: Prisma.SourceSiteWhereInput
+}
+
 export type SourceSiteCreateNestedOneWithoutEventsInput = {
   create?: Prisma.XOR<Prisma.SourceSiteCreateWithoutEventsInput, Prisma.SourceSiteUncheckedCreateWithoutEventsInput>
   connectOrCreate?: Prisma.SourceSiteCreateOrConnectWithoutEventsInput
@@ -539,6 +551,20 @@ export type NullableEnumScrapeStatusFieldUpdateOperationsInput = {
   set?: $Enums.ScrapeStatus | null
 }
 
+export type SourceSiteCreateNestedOneWithoutSourceSiteConfigInput = {
+  create?: Prisma.XOR<Prisma.SourceSiteCreateWithoutSourceSiteConfigInput, Prisma.SourceSiteUncheckedCreateWithoutSourceSiteConfigInput>
+  connectOrCreate?: Prisma.SourceSiteCreateOrConnectWithoutSourceSiteConfigInput
+  connect?: Prisma.SourceSiteWhereUniqueInput
+}
+
+export type SourceSiteUpdateOneRequiredWithoutSourceSiteConfigNestedInput = {
+  create?: Prisma.XOR<Prisma.SourceSiteCreateWithoutSourceSiteConfigInput, Prisma.SourceSiteUncheckedCreateWithoutSourceSiteConfigInput>
+  connectOrCreate?: Prisma.SourceSiteCreateOrConnectWithoutSourceSiteConfigInput
+  upsert?: Prisma.SourceSiteUpsertWithoutSourceSiteConfigInput
+  connect?: Prisma.SourceSiteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SourceSiteUpdateToOneWithWhereWithoutSourceSiteConfigInput, Prisma.SourceSiteUpdateWithoutSourceSiteConfigInput>, Prisma.SourceSiteUncheckedUpdateWithoutSourceSiteConfigInput>
+}
+
 export type SourceSiteCreateWithoutEventsInput = {
   id?: string
   name: string
@@ -552,6 +578,7 @@ export type SourceSiteCreateWithoutEventsInput = {
   eventsFound?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  sourceSiteConfig?: Prisma.SourceSiteConfigCreateNestedOneWithoutSourceSiteInput
 }
 
 export type SourceSiteUncheckedCreateWithoutEventsInput = {
@@ -567,6 +594,7 @@ export type SourceSiteUncheckedCreateWithoutEventsInput = {
   eventsFound?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  sourceSiteConfig?: Prisma.SourceSiteConfigUncheckedCreateNestedOneWithoutSourceSiteInput
 }
 
 export type SourceSiteCreateOrConnectWithoutEventsInput = {
@@ -598,6 +626,7 @@ export type SourceSiteUpdateWithoutEventsInput = {
   eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sourceSiteConfig?: Prisma.SourceSiteConfigUpdateOneWithoutSourceSiteNestedInput
 }
 
 export type SourceSiteUncheckedUpdateWithoutEventsInput = {
@@ -613,6 +642,87 @@ export type SourceSiteUncheckedUpdateWithoutEventsInput = {
   eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sourceSiteConfig?: Prisma.SourceSiteConfigUncheckedUpdateOneWithoutSourceSiteNestedInput
+}
+
+export type SourceSiteCreateWithoutSourceSiteConfigInput = {
+  id?: string
+  name: string
+  url?: string | null
+  active?: boolean
+  urlPattern?: string | null
+  scrapeMode?: $Enums.ScrapeMode
+  notes?: string | null
+  lastScrapedAt?: Date | string | null
+  lastScrapeStatus?: $Enums.ScrapeStatus | null
+  eventsFound?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  events?: Prisma.EventCreateNestedManyWithoutSourceSiteInput
+}
+
+export type SourceSiteUncheckedCreateWithoutSourceSiteConfigInput = {
+  id?: string
+  name: string
+  url?: string | null
+  active?: boolean
+  urlPattern?: string | null
+  scrapeMode?: $Enums.ScrapeMode
+  notes?: string | null
+  lastScrapedAt?: Date | string | null
+  lastScrapeStatus?: $Enums.ScrapeStatus | null
+  eventsFound?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  events?: Prisma.EventUncheckedCreateNestedManyWithoutSourceSiteInput
+}
+
+export type SourceSiteCreateOrConnectWithoutSourceSiteConfigInput = {
+  where: Prisma.SourceSiteWhereUniqueInput
+  create: Prisma.XOR<Prisma.SourceSiteCreateWithoutSourceSiteConfigInput, Prisma.SourceSiteUncheckedCreateWithoutSourceSiteConfigInput>
+}
+
+export type SourceSiteUpsertWithoutSourceSiteConfigInput = {
+  update: Prisma.XOR<Prisma.SourceSiteUpdateWithoutSourceSiteConfigInput, Prisma.SourceSiteUncheckedUpdateWithoutSourceSiteConfigInput>
+  create: Prisma.XOR<Prisma.SourceSiteCreateWithoutSourceSiteConfigInput, Prisma.SourceSiteUncheckedCreateWithoutSourceSiteConfigInput>
+  where?: Prisma.SourceSiteWhereInput
+}
+
+export type SourceSiteUpdateToOneWithWhereWithoutSourceSiteConfigInput = {
+  where?: Prisma.SourceSiteWhereInput
+  data: Prisma.XOR<Prisma.SourceSiteUpdateWithoutSourceSiteConfigInput, Prisma.SourceSiteUncheckedUpdateWithoutSourceSiteConfigInput>
+}
+
+export type SourceSiteUpdateWithoutSourceSiteConfigInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  urlPattern?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scrapeMode?: Prisma.EnumScrapeModeFieldUpdateOperationsInput | $Enums.ScrapeMode
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastScrapedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastScrapeStatus?: Prisma.NullableEnumScrapeStatusFieldUpdateOperationsInput | $Enums.ScrapeStatus | null
+  eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  events?: Prisma.EventUpdateManyWithoutSourceSiteNestedInput
+}
+
+export type SourceSiteUncheckedUpdateWithoutSourceSiteConfigInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  urlPattern?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scrapeMode?: Prisma.EnumScrapeModeFieldUpdateOperationsInput | $Enums.ScrapeMode
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastScrapedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastScrapeStatus?: Prisma.NullableEnumScrapeStatusFieldUpdateOperationsInput | $Enums.ScrapeStatus | null
+  eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  events?: Prisma.EventUncheckedUpdateManyWithoutSourceSiteNestedInput
 }
 
 
@@ -660,6 +770,7 @@ export type SourceSiteSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   createdAt?: boolean
   updatedAt?: boolean
   events?: boolean | Prisma.SourceSite$eventsArgs<ExtArgs>
+  sourceSiteConfig?: boolean | Prisma.SourceSite$sourceSiteConfigArgs<ExtArgs>
   _count?: boolean | Prisma.SourceSiteCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["sourceSite"]>
 
@@ -711,6 +822,7 @@ export type SourceSiteSelectScalar = {
 export type SourceSiteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "url" | "active" | "urlPattern" | "scrapeMode" | "notes" | "lastScrapedAt" | "lastScrapeStatus" | "eventsFound" | "createdAt" | "updatedAt", ExtArgs["result"]["sourceSite"]>
 export type SourceSiteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   events?: boolean | Prisma.SourceSite$eventsArgs<ExtArgs>
+  sourceSiteConfig?: boolean | Prisma.SourceSite$sourceSiteConfigArgs<ExtArgs>
   _count?: boolean | Prisma.SourceSiteCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SourceSiteIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -720,6 +832,7 @@ export type $SourceSitePayload<ExtArgs extends runtime.Types.Extensions.Internal
   name: "SourceSite"
   objects: {
     events: Prisma.$EventPayload<ExtArgs>[]
+    sourceSiteConfig: Prisma.$SourceSiteConfigPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1129,6 +1242,7 @@ readonly fields: SourceSiteFieldRefs;
 export interface Prisma__SourceSiteClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   events<T extends Prisma.SourceSite$eventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SourceSite$eventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  sourceSiteConfig<T extends Prisma.SourceSite$sourceSiteConfigArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SourceSite$sourceSiteConfigArgs<ExtArgs>>): Prisma.Prisma__SourceSiteConfigClient<runtime.Types.Result.GetResult<Prisma.$SourceSiteConfigPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1584,6 +1698,25 @@ export type SourceSite$eventsArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   distinct?: Prisma.EventScalarFieldEnum | Prisma.EventScalarFieldEnum[]
+}
+
+/**
+ * SourceSite.sourceSiteConfig
+ */
+export type SourceSite$sourceSiteConfigArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SourceSiteConfig
+   */
+  select?: Prisma.SourceSiteConfigSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SourceSiteConfig
+   */
+  omit?: Prisma.SourceSiteConfigOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SourceSiteConfigInclude<ExtArgs> | null
+  where?: Prisma.SourceSiteConfigWhereInput
 }
 
 /**
