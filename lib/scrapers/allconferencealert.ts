@@ -279,7 +279,10 @@ async function scrapeDetailPage(
           } else if (label.startsWith("Organized By")) {
             organizedBy = value || null
           } else if (label.startsWith("Event Enquiries")) {
-            inquiryEmail = value || null
+            const mailtoLink = valueCell.querySelector("a[href^='mailto:']") as HTMLAnchorElement | null
+            inquiryEmail = mailtoLink
+              ? mailtoLink.href.replace(/^mailto:/i, "").trim()
+              : value || null
           } else if (label.startsWith("Visit Website")) {
             const link = valueCell.querySelector("a") as HTMLAnchorElement | null
             officialWebsite = link?.href || null
