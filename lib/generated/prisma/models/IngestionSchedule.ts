@@ -53,6 +53,7 @@ export type IngestionScheduleCountAggregateOutputType = {
   sourceSiteIds: number
   active: number
   lastRunAt: number
+  runHistory: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -88,6 +89,7 @@ export type IngestionScheduleCountAggregateInputType = {
   sourceSiteIds?: true
   active?: true
   lastRunAt?: true
+  runHistory?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -174,6 +176,7 @@ export type IngestionScheduleGroupByOutputType = {
   sourceSiteIds: string[]
   active: boolean
   lastRunAt: Date | null
+  runHistory: runtime.JsonValue | null
   createdAt: Date
   updatedAt: Date
   _count: IngestionScheduleCountAggregateOutputType | null
@@ -208,6 +211,7 @@ export type IngestionScheduleWhereInput = {
   sourceSiteIds?: Prisma.StringNullableListFilter<"IngestionSchedule">
   active?: Prisma.BoolFilter<"IngestionSchedule"> | boolean
   lastRunAt?: Prisma.DateTimeNullableFilter<"IngestionSchedule"> | Date | string | null
+  runHistory?: Prisma.JsonNullableFilter<"IngestionSchedule">
   createdAt?: Prisma.DateTimeFilter<"IngestionSchedule"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"IngestionSchedule"> | Date | string
 }
@@ -221,6 +225,7 @@ export type IngestionScheduleOrderByWithRelationInput = {
   sourceSiteIds?: Prisma.SortOrder
   active?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  runHistory?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -237,6 +242,7 @@ export type IngestionScheduleWhereUniqueInput = Prisma.AtLeast<{
   sourceSiteIds?: Prisma.StringNullableListFilter<"IngestionSchedule">
   active?: Prisma.BoolFilter<"IngestionSchedule"> | boolean
   lastRunAt?: Prisma.DateTimeNullableFilter<"IngestionSchedule"> | Date | string | null
+  runHistory?: Prisma.JsonNullableFilter<"IngestionSchedule">
   createdAt?: Prisma.DateTimeFilter<"IngestionSchedule"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"IngestionSchedule"> | Date | string
 }, "id">
@@ -250,6 +256,7 @@ export type IngestionScheduleOrderByWithAggregationInput = {
   sourceSiteIds?: Prisma.SortOrder
   active?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  runHistory?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.IngestionScheduleCountOrderByAggregateInput
@@ -269,6 +276,7 @@ export type IngestionScheduleScalarWhereWithAggregatesInput = {
   sourceSiteIds?: Prisma.StringNullableListFilter<"IngestionSchedule">
   active?: Prisma.BoolWithAggregatesFilter<"IngestionSchedule"> | boolean
   lastRunAt?: Prisma.DateTimeNullableWithAggregatesFilter<"IngestionSchedule"> | Date | string | null
+  runHistory?: Prisma.JsonNullableWithAggregatesFilter<"IngestionSchedule">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"IngestionSchedule"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"IngestionSchedule"> | Date | string
 }
@@ -282,6 +290,7 @@ export type IngestionScheduleCreateInput = {
   sourceSiteIds?: Prisma.IngestionScheduleCreatesourceSiteIdsInput | string[]
   active?: boolean
   lastRunAt?: Date | string | null
+  runHistory?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -295,6 +304,7 @@ export type IngestionScheduleUncheckedCreateInput = {
   sourceSiteIds?: Prisma.IngestionScheduleCreatesourceSiteIdsInput | string[]
   active?: boolean
   lastRunAt?: Date | string | null
+  runHistory?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -308,6 +318,7 @@ export type IngestionScheduleUpdateInput = {
   sourceSiteIds?: Prisma.IngestionScheduleUpdatesourceSiteIdsInput | string[]
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runHistory?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -321,6 +332,7 @@ export type IngestionScheduleUncheckedUpdateInput = {
   sourceSiteIds?: Prisma.IngestionScheduleUpdatesourceSiteIdsInput | string[]
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runHistory?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -334,6 +346,7 @@ export type IngestionScheduleCreateManyInput = {
   sourceSiteIds?: Prisma.IngestionScheduleCreatesourceSiteIdsInput | string[]
   active?: boolean
   lastRunAt?: Date | string | null
+  runHistory?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -347,6 +360,7 @@ export type IngestionScheduleUpdateManyMutationInput = {
   sourceSiteIds?: Prisma.IngestionScheduleUpdatesourceSiteIdsInput | string[]
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runHistory?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -360,6 +374,7 @@ export type IngestionScheduleUncheckedUpdateManyInput = {
   sourceSiteIds?: Prisma.IngestionScheduleUpdatesourceSiteIdsInput | string[]
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastRunAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  runHistory?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -381,6 +396,7 @@ export type IngestionScheduleCountOrderByAggregateInput = {
   sourceSiteIds?: Prisma.SortOrder
   active?: Prisma.SortOrder
   lastRunAt?: Prisma.SortOrder
+  runHistory?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -443,6 +459,7 @@ export type IngestionScheduleSelect<ExtArgs extends runtime.Types.Extensions.Int
   sourceSiteIds?: boolean
   active?: boolean
   lastRunAt?: boolean
+  runHistory?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["ingestionSchedule"]>
@@ -456,6 +473,7 @@ export type IngestionScheduleSelectCreateManyAndReturn<ExtArgs extends runtime.T
   sourceSiteIds?: boolean
   active?: boolean
   lastRunAt?: boolean
+  runHistory?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["ingestionSchedule"]>
@@ -469,6 +487,7 @@ export type IngestionScheduleSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   sourceSiteIds?: boolean
   active?: boolean
   lastRunAt?: boolean
+  runHistory?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["ingestionSchedule"]>
@@ -482,11 +501,12 @@ export type IngestionScheduleSelectScalar = {
   sourceSiteIds?: boolean
   active?: boolean
   lastRunAt?: boolean
+  runHistory?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type IngestionScheduleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "cronExpr" | "locationIds" | "templateIds" | "sourceSiteIds" | "active" | "lastRunAt" | "createdAt" | "updatedAt", ExtArgs["result"]["ingestionSchedule"]>
+export type IngestionScheduleOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "cronExpr" | "locationIds" | "templateIds" | "sourceSiteIds" | "active" | "lastRunAt" | "runHistory" | "createdAt" | "updatedAt", ExtArgs["result"]["ingestionSchedule"]>
 
 export type $IngestionSchedulePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "IngestionSchedule"
@@ -500,6 +520,7 @@ export type $IngestionSchedulePayload<ExtArgs extends runtime.Types.Extensions.I
     sourceSiteIds: string[]
     active: boolean
     lastRunAt: Date | null
+    runHistory: runtime.JsonValue | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["ingestionSchedule"]>
@@ -933,6 +954,7 @@ export interface IngestionScheduleFieldRefs {
   readonly sourceSiteIds: Prisma.FieldRef<"IngestionSchedule", 'String[]'>
   readonly active: Prisma.FieldRef<"IngestionSchedule", 'Boolean'>
   readonly lastRunAt: Prisma.FieldRef<"IngestionSchedule", 'DateTime'>
+  readonly runHistory: Prisma.FieldRef<"IngestionSchedule", 'Json'>
   readonly createdAt: Prisma.FieldRef<"IngestionSchedule", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"IngestionSchedule", 'DateTime'>
 }

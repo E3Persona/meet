@@ -29,7 +29,7 @@ function buildRegistry(): ProviderRegistry {
     { provider: createDuckDuckGoProvider(), priority: 3, dailyLimit: 999, enabled: true },
   ]
   const scrapeProviders = [
-    { provider: createJinaProvider(), priority: 1, dailyLimit: 33, enabled: true },
+    { provider: createJinaProvider(), priority: 1, dailyLimit: 200, enabled: true },
     { provider: createWebPeelProvider(), priority: 2, dailyLimit: 125, enabled: !!process.env.WEBPEEL_API_KEY },
     { provider: createFirecrawlProvider(), priority: 3, dailyLimit: 16, enabled: !!process.env.FIRECRAWL_API_KEY },
   ]
@@ -38,6 +38,41 @@ function buildRegistry(): ProviderRegistry {
   console.log("[Registry] scrape providers:", scrapeProviders.map(p => `${p.provider.name}=${p.enabled ? "on" : "OFF (missing key)"}`).join(", "))
 
   return new ProviderRegistry({ search: searchProviders, scrape: scrapeProviders })
+}
+
+// ─── Location matching for general search hits ────────────────────────────────
+
+let locationCache: { id: string; name: string; city: string | null; state: string | null }[] | null = null
+
+async function getAllLocations(): Promise<{ id: string; name: string; city: string | null; state: string | null }[]> {
+  if (locationCache) return locationCache
+  locationCache = await prisma.location.findMany({
+    where: { active: true },
+    select: { id: true, name: true, city: true, state: true },
+  })
+  return locationCache
+}
+
+function matchLocation(
+  eventName: string,
+  locations: { id: string; name: string; city: string | null; state: string | null }[]
+): { id: string; name: string } | null {
+  const searchTerms = [eventName].filter(Boolean).map(s => s!.toLowerCase())
+  
+  for (const loc of locations) {
+    const locTerms = [loc.name, loc.city, loc.state].filter(Boolean).map(s => s!.toLowerCase())
+    
+    // Check if any search term matches any location term
+    for (const searchTerm of searchTerms) {
+      for (const locTerm of locTerms) {
+        // Exact match or contains match
+        if (searchTerm === locTerm || searchTerm.includes(locTerm) || locTerm.includes(searchTerm)) {
+          return { id: loc.id, name: loc.name }
+        }
+      }
+    }
+  }
+  return null
 }
 
 // ─── Dedupe check ──────────────────────────────────────────────────────────
@@ -83,6 +118,21 @@ function createLimiter(concurrency: number) {
 
 // ─── Retry wrapper (search/scrape providers fail transiently) ─────────────
 
+// Permanent errors that should not be retried
+const PERMANENT_ERROR_PATTERNS = [
+  /404|not found/i,
+  /403|forbidden/i,
+  /410|gone/i,
+  /no such host/i,
+  /ENOTFOUND/i,
+  /connection refused/i,
+]
+
+function isPermanentError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err)
+  return PERMANENT_ERROR_PATTERNS.some(pattern => pattern.test(msg))
+}
+
 async function withRetry<T>(
   fn: () => Promise<T>,
   { retries = 2, baseDelayMs = 400, label = "op" }: { retries?: number; baseDelayMs?: number; label?: string } = {}
@@ -93,6 +143,11 @@ async function withRetry<T>(
       return await fn()
     } catch (err) {
       lastErr = err
+      // Fast-fail on permanent errors
+      if (isPermanentError(err)) {
+        console.log(`[Fast-fail] ${label} - permanent error, skipping retries:`, err instanceof Error ? err.message : err)
+        throw err
+      }
       if (attempt < retries) {
         const delay = baseDelayMs * 2 ** attempt
         console.warn(`[Retry] ${label} failed (attempt ${attempt + 1}/${retries + 1}), retrying in ${delay}ms:`, err instanceof Error ? err.message : err)
@@ -101,6 +156,26 @@ async function withRetry<T>(
     }
   }
   throw lastErr
+}
+
+// ─── Domain exclusion for dedicated scrapers ───────────────────────────────
+
+const EXCLUDED_DOMAINS = [
+  "allconferencealert.net",
+  "conferencenext.com",
+  "eventseye.com",
+  "internationalconferencealerts.com",
+  "showsbee.com",
+  "tradefest.io",
+]
+
+function isExcludedDomain(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname
+    return EXCLUDED_DOMAINS.some(domain => hostname === domain || hostname.endsWith(`.${domain}`))
+  } catch {
+    return false
+  }
 }
 
 // ─── Search phase ──────────────────────────────────────────────────────────
@@ -152,6 +227,11 @@ async function runSearches(
 
           for (const sr of results) {
             if (seenUrls.has(sr.url)) continue
+            // Skip results from dedicated scraper domains
+            if (isExcludedDomain(sr.url)) {
+              console.log(`[Search] Skipping excluded domain: ${sr.url}`)
+              continue
+            }
             seenUrls.add(sr.url)
             hits.push({
               url: sr.url,
@@ -234,9 +314,21 @@ async function scrapeAndExtractSafe(
       continue
     }
 
-    if (!hit.locationId) {
-      console.warn(`[Scrape] "${eventName}" has no locationId, skipping save (general-search hit)`)
-      continue
+    let locationId = hit.locationId
+    let locationName = hit.locationName
+    
+    // For general search hits, try to match location from event data
+    if (!locationId) {
+      const locations = await getAllLocations()
+      const matched = matchLocation(eventName, locations)
+      if (matched) {
+        locationId = matched.id
+        locationName = matched.name
+        console.log(`[Location Match] "${eventName}" matched to location: ${matched.name}`)
+      } else {
+        console.warn(`[Scrape] "${eventName}" has no locationId and no match found, skipping save (general-search hit)`)
+        continue
+      }
     }
 
     let eventDateStart: Date | null = null
@@ -294,7 +386,7 @@ async function scrapeAndExtractSafe(
       continue
     }
 
-    if (await isDuplicate(eventName, hit.locationId, finalDates.eventDateStart)) {
+    if (await isDuplicate(eventName, locationId, finalDates.eventDateStart)) {
       console.log(`[Scrape] Duplicate: "${eventName}" already exists`)
       continue
     }
@@ -302,7 +394,7 @@ async function scrapeAndExtractSafe(
     try {
       const event = await prisma.event.create({
         data: {
-          locationId: hit.locationId,
+          locationId,
           eventName,
           eventDateStart: finalDates.eventDateStart,
           eventDateEnd: finalDates.eventDateEnd,
@@ -403,7 +495,7 @@ export async function runSearchScraper(
   console.log(`[Search] ${queries.length} queries`)
 
   const { hits, lastProvider, failedQueries } = await runSearches(
-    queries, registry, runId, opts.searchConcurrency ?? 5
+    queries, registry, runId, opts.searchConcurrency ?? 10
   )
 
   // ── Which locations got zero hits? ──
@@ -430,7 +522,7 @@ export async function runSearchScraper(
   console.log(`[Search] ${allHits.length} total unique URLs to scrape, ${failedQueries.length} queries failed`)
 
   const { totalFound, totalNew } = await runScrapes(
-    allHits, registry, runId, opts.scrapeConcurrency ?? 3, { dryRun: opts.dryRun }
+    allHits, registry, runId, opts.scrapeConcurrency ?? 8, { dryRun: opts.dryRun }
   )
 
   return { scraper: "search", recordsFound: totalFound, recordsNew: totalNew, provider: lastProvider }

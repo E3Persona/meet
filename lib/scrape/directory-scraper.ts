@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as cheerio from "cheerio"
 import { extractEventsWithLLM } from "./llm-extractor"
+import { createJinaProvider } from "@/lib/providers/scrape/jina"
 
 export interface SourceSiteConfigInput {
   paginationType: string | null
@@ -44,7 +45,7 @@ export interface PageResult {
   events: ExtractedEvent[]
   detailEvents: ExtractedEvent[]
   aiEvents: ExtractedEvent[]
-  fetchMethod: "plain" | "firecrawl"
+  fetchMethod: "jina" | "firecrawl"
   error?: string
 }
 
@@ -123,17 +124,53 @@ function extractHref(el: cheerio.Cheerio<any>, selector: string | null): string 
   return href?.trim() || null
 }
 
+// Domains with dedicated scrapers - exclude from generic directory scraper
+const EXCLUDED_DOMAINS = [
+  "allconferencealert.net",
+  "conferencenext.com",
+  "eventseye.com",
+  "internationalconferencealerts.com",
+  "showsbee.com",
+  "tradefest.io",
+]
+
+function isExcludedDomain(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname
+    return EXCLUDED_DOMAINS.some(domain => hostname === domain || hostname.endsWith(`.${domain}`))
+  } catch {
+    return false
+  }
+}
+
+// Permanent errors that should not be retried
+const PERMANENT_ERROR_PATTERNS = [
+  /404|not found/i,
+  /403|forbidden/i,
+  /410|gone/i,
+  /no such host/i,
+  /ENOTFOUND/i,
+  /connection refused/i,
+]
+
+function isPermanentError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err)
+  return PERMANENT_ERROR_PATTERNS.some(pattern => pattern.test(msg))
+}
+
+const jinaProvider = createJinaProvider()
+
 async function fetchHtml(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.5",
-    },
-    signal: AbortSignal.timeout(15000),
-  })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.text()
+  // Use Jina as primary (free, handles anti-bot)
+  const jinaResult = await jinaProvider.scrape(url, { timeout: 20000 })
+  if (jinaResult.markdown) {
+    // Convert markdown back to HTML for cheerio
+    // Jina returns markdown, but we can still parse it with cheerio
+    // For better compatibility, we'll use the markdown as-is
+    // and let the LLM handle extraction from markdown
+    return jinaResult.markdown
+  }
+  throw new Error(jinaResult.error || "Jina failed")
 }
 
 async function fetchWithFirecrawl(url: string): Promise<string> {
@@ -165,11 +202,16 @@ async function fetchWithFirecrawl(url: string): Promise<string> {
   return html
 }
 
-async function fetchHtmlWithFallback(url: string, useFirecrawl: boolean): Promise<{ html: string; method: "plain" | "firecrawl" }> {
+async function fetchHtmlWithFallback(url: string, useFirecrawl: boolean): Promise<{ html: string; method: "jina" | "firecrawl" }> {
   try {
     const html = await fetchHtml(url)
-    return { html, method: "plain" }
+    return { html, method: "jina" }
   } catch (err) {
+    // Fast-fail on permanent errors
+    if (isPermanentError(err)) {
+      console.log(`[Fast-fail] ${url} - permanent error, skipping Firecrawl fallback:`, err instanceof Error ? err.message : err)
+      throw err
+    }
     if (!useFirecrawl) throw err
     const html = await fetchWithFirecrawl(url)
     return { html, method: "firecrawl" }
@@ -268,6 +310,10 @@ export async function scrapeDirectory(
   }
 
   const baseUrl = replaceTemplates(config.listingUrlTemplate, ctx)
+  if (isExcludedDomain(baseUrl)) {
+    return { pages, totalContainers: 0, totalEvents: 0, errors: [`Domain excluded - has dedicated scraper: ${baseUrl}`], aiFallbackUsed, firecrawlFallbackUsed }
+  }
+
   let totalContainers = 0
   let totalEvents = 0
 
@@ -302,15 +348,41 @@ export async function scrapeDirectory(
       const detailEvents: ExtractedEvent[] = []
       const sourceEvents = useAi ? aiEvents : events
       if (config.followDetailPage && config.selectorEventUrl && !useAi) {
-        for (const ev of sourceEvents) {
-          if (ev.sourceUrl) {
-            await new Promise((r) => setTimeout(r, 500))
-            const enriched = await extractDetailEvent(ev.sourceUrl, config, ev)
-            detailEvents.push(enriched)
-          } else {
-            detailEvents.push(ev)
-          }
+        // Fetch detail pages in parallel with concurrency limit
+        const detailConcurrency = 3
+        const eventsWithUrls = sourceEvents.filter(ev => ev.sourceUrl)
+        const eventsWithoutUrls = sourceEvents.filter(ev => !ev.sourceUrl)
+        
+        let active = 0
+        let index = 0
+        const detailPromises: Promise<ExtractedEvent>[] = []
+        
+        const processNext = (): void => {
+          if (index >= eventsWithUrls.length) return
+          const ev = eventsWithUrls[index++]
+          const promise = (async () => {
+            await new Promise((r) => setTimeout(r, 300)) // Reduced delay for parallel fetching
+            return await extractDetailEvent(ev.sourceUrl!, config, ev)
+          })()
+          detailPromises.push(promise)
+          active++
+          promise.finally(() => {
+            active--
+            if (active < detailConcurrency && index < eventsWithUrls.length) {
+              processNext()
+            }
+          })
         }
+        
+        // Start initial batch
+        for (let i = 0; i < Math.min(detailConcurrency, eventsWithUrls.length); i++) {
+          processNext()
+        }
+        
+        const enrichedEvents = await Promise.all(detailPromises)
+        detailEvents.push(...enrichedEvents, ...eventsWithoutUrls)
+      } else {
+        detailEvents.push(...sourceEvents)
       }
 
       totalEvents += (detailEvents.length || sourceEvents.length)

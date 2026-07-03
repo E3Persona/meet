@@ -204,6 +204,7 @@ model IngestionSchedule {
   sourceSiteIds String[]
   active        Boolean  @default(true)
   lastRunAt     DateTime?
+  runHistory    Json?    // Track runs per location/search term for frequency limiting
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

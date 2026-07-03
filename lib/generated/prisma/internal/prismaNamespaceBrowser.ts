@@ -211,6 +211,7 @@ export const IngestionScheduleScalarFieldEnum = {
   sourceSiteIds: 'sourceSiteIds',
   active: 'active',
   lastRunAt: 'lastRunAt',
+  runHistory: 'runHistory',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
