@@ -247,6 +247,58 @@ async function llmExtractContacts(
   confidence: string
   sourceUrl: string
 }[]> {
+  const maxLen = 6000
+  const content = pageContent.length > maxLen
+    ? pageContent.slice(0, maxLen) + "\n[truncated]"
+    : pageContent
+
+  const prompt = `You are an expert contact information extractor for professional events.
+
+EVENT WE ARE FINDING CONTACTS FOR: ${eventName}
+PAGE TITLE: ${pageTitle}
+PAGE URL: ${pageUrl}
+
+PAGE CONTENT:
+${content}
+
+TASK:
+Find ALL contact persons for this specific event mentioned on this page. Look for:
+- Registration contacts / Registration managers
+- Event managers / Event coordinators
+- Conference planners / Meeting planners
+- CMPs (Certified Meeting Planners)
+- Lead retrieval contacts
+- Director of Sales for events
+- Group sales managers
+- Program managers
+- Any person listed as an event organizer or point of contact
+
+EXTRACT EVERY PERSON FOUND. For each person, provide:
+1. name: Full name (first and last)
+2. title: Their exact title/role
+3. email: Their email address
+4. phone: Their phone number (include area code)
+
+RULES:
+- Extract ALL specific persons found, not just one
+- Do NOT extract generic venue phone numbers or info@ addresses
+- Each person must be associated with THIS specific event, not the venue generally
+- If no contact info found on this page, return an empty array
+- Return up to 10 contacts maximum
+
+RESPOND WITH VALID JSON ONLY:
+{
+  "contacts": [
+    {
+      "name": "Full Name",
+      "title": "Title" or null,
+      "email": "email@domain.com" or null,
+      "phone": "123-456-7891" or null,
+      "confidence": "high" | "medium" | "low"
+    }
+  ]
+}`
+
   // Try Groq first (primary)
   const groqApiKey = process.env.GROQ_API_KEY
   if (groqApiKey) {
@@ -300,58 +352,6 @@ async function llmExtractContacts(
   // Fallback: OpenRouter
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) return []
-
-  const maxLen = 6000
-  const content = pageContent.length > maxLen
-    ? pageContent.slice(0, maxLen) + "\n[truncated]"
-    : pageContent
-
-  const prompt = `You are an expert contact information extractor for professional events.
-
-EVENT WE ARE FINDING CONTACTS FOR: ${eventName}
-PAGE TITLE: ${pageTitle}
-PAGE URL: ${pageUrl}
-
-PAGE CONTENT:
-${content}
-
-TASK:
-Find ALL contact persons for this specific event mentioned on this page. Look for:
-- Registration contacts / Registration managers
-- Event managers / Event coordinators
-- Conference planners / Meeting planners
-- CMPs (Certified Meeting Planners)
-- Lead retrieval contacts
-- Director of Sales for events
-- Group sales managers
-- Program managers
-- Any person listed as an event organizer or point of contact
-
-EXTRACT EVERY PERSON FOUND. For each person, provide:
-1. name: Full name (first and last)
-2. title: Their exact title/role
-3. email: Their email address
-4. phone: Their phone number (include area code)
-
-RULES:
-- Extract ALL specific persons found, not just one
-- Do NOT extract generic venue phone numbers or info@ addresses
-- Each person must be associated with THIS specific event, not the venue generally
-- If no contact info found on this page, return an empty array
-- Return up to 10 contacts maximum
-
-RESPOND WITH VALID JSON ONLY:
-{
-  "contacts": [
-    {
-      "name": "First Last",
-      "title": "Title" or null,
-      "email": "email@domain.com" or null,
-      "phone": "123-456-7891" or null,
-      "confidence": "high" | "medium" | "low"
-    }
-  ]
-}`
 
   try {
     await openRouterRateLimiter.waitIfNeeded()
