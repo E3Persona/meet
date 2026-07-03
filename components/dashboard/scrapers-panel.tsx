@@ -58,6 +58,34 @@ const SCRAPERS: ScraperDef[] = [
     apiPath: "/api/ingest/eventseye",
     description: "Trade fair listings from Eventseye",
   },
+  {
+    id: "asae",
+    name: "ASAE",
+    site: "asaecenter.org",
+    apiPath: "/api/ingest/asae",
+    description: "Association events from ASAE (PheedLoop embed, Puppeteer)",
+  },
+  {
+    id: "blackmeetings",
+    name: "Black Meetings",
+    site: "blackmeetingsandtourism.com",
+    apiPath: "/api/ingest/blackmeetings",
+    description: "Events and venues from Black Meetings & Tourism magazine",
+  },
+  {
+    id: "thetradeshowcalendar",
+    name: "Trade Show Calendar",
+    site: "thetradeshowcalendar.com",
+    apiPath: "/api/ingest/thetradeshowcalendar",
+    description: "Trade show listings via Exhibit City News (DC/PHL/BAL regions)",
+  },
+  {
+    id: "sgmp",
+    name: "SGMP",
+    site: "sgmp.org",
+    apiPath: "/api/ingest/sgmp",
+    description: "Government meeting events from SGMP calendar",
+  },
 ]
 
 export function ScrapersPanel() {

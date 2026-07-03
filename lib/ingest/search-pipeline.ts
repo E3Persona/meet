@@ -162,10 +162,15 @@ async function withRetry<T>(
 
 const EXCLUDED_DOMAINS = [
   "allconferencealert.net",
+  "asaecenter.org",
+  "blackmeetingsandtourism.com",
   "conferencenext.com",
   "eventseye.com",
+  "exhibitcitynews.com",
   "internationalconferencealerts.com",
+  "sgmp.org",
   "showsbee.com",
+  "thetradeshowcalendar.com",
   "tradefest.io",
 ]
 

@@ -78,9 +78,16 @@ async function filterByFrequency(
   // Build frequency map: locationId -> count
   const locationRunCount = new Map<string, number>()
   const searchTermRunCount = new Map<string, number>()
+  // Build last run time map: locationId -> last run timestamp
+  const locationLastRun = new Map<string, number>()
   
   for (const entry of recentEntries) {
     locationRunCount.set(entry.locationId, (locationRunCount.get(entry.locationId) || 0) + 1)
+    const runTime = new Date(entry.runAt).getTime()
+    const currentLast = locationLastRun.get(entry.locationId) || 0
+    if (runTime > currentLast) {
+      locationLastRun.set(entry.locationId, runTime)
+    }
     if (entry.searchTerm) {
       searchTermRunCount.set(entry.searchTerm, (searchTermRunCount.get(entry.searchTerm) || 0) + 1)
     }
@@ -111,6 +118,31 @@ async function filterByFrequency(
     filteredLocations.push({
       ...loc,
       searchTerms: filteredSearchTerms,
+    })
+  }
+  
+  // Sort locations by least recently handled first (priority)
+  // Locations with no runs come first, then sorted by last run time (oldest first)
+  filteredLocations.sort((a, b) => {
+    const aLastRun = locationLastRun.get(a.id) || 0
+    const bLastRun = locationLastRun.get(b.id) || 0
+    
+    // If neither has been run, maintain original order
+    if (aLastRun === 0 && bLastRun === 0) return 0
+    // If only a has been run, b comes first
+    if (aLastRun > 0 && bLastRun === 0) return 1
+    // If only b has been run, a comes first
+    if (aLastRun === 0 && bLastRun > 0) return -1
+    // Both have been run, sort by oldest first
+    return aLastRun - bLastRun
+  })
+  
+  if (filteredLocations.length > 0) {
+    console.log(`[Ingest] Priority order (least recently handled first):`)
+    filteredLocations.slice(0, 5).forEach((loc, i) => {
+      const lastRun = locationLastRun.get(loc.id)
+      const lastRunStr = lastRun ? new Date(lastRun).toLocaleDateString() : "never"
+      console.log(`  ${i + 1}. ${loc.name} (${loc.city || "unknown city"}) - last run: ${lastRunStr}`)
     })
   }
   
@@ -146,10 +178,15 @@ async function filterByFrequency(
 
 const EXCLUDED_DOMAINS = [
   "allconferencealert.net",
+  "asaecenter.org",
+  "blackmeetingsandtourism.com",
   "conferencenext.com",
   "eventseye.com",
+  "exhibitcitynews.com",
   "internationalconferencealerts.com",
+  "sgmp.org",
   "showsbee.com",
+  "thetradeshowcalendar.com",
   "tradefest.io",
 ]
 

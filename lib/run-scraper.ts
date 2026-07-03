@@ -8,6 +8,10 @@ const SCRAPER_KEYS: Record<string, string> = {
   "ingest-tf.ts": "tf",
   "ingest-showsbee.ts": "showsbee",
   "ingest-eventseye.ts": "eventseye",
+  "ingest-asae.ts": "asae",
+  "ingest-blackmeetings.ts": "blackmeetings",
+  "ingest-sgmp.ts": "sgmp",
+  "ingest-thetradeshowcalendar.ts": "thetradeshowcalendar",
 }
 
 export async function startScraperRun(

@@ -127,10 +127,15 @@ function extractHref(el: cheerio.Cheerio<any>, selector: string | null): string 
 // Domains with dedicated scrapers - exclude from generic directory scraper
 const EXCLUDED_DOMAINS = [
   "allconferencealert.net",
+  "asaecenter.org",
+  "blackmeetingsandtourism.com",
   "conferencenext.com",
   "eventseye.com",
+  "exhibitcitynews.com",
   "internationalconferencealerts.com",
+  "sgmp.org",
   "showsbee.com",
+  "thetradeshowcalendar.com",
   "tradefest.io",
 ]
 
