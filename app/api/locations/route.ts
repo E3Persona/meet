@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { prisma, withRetry } from "@/lib/prisma"
 
 export async function GET() {
-  const locations = await prisma.location.findMany({
-    include: {
-      searchTerms: { orderBy: { keyword: "asc" } },
-      venues: { where: { active: true }, select: { id: true, name: true, shortName: true } },
-      parent: { select: { id: true, name: true } },
-    },
-    orderBy: [{ type: "asc" }, { name: "asc" }],
-  })
+  const locations = await withRetry(() =>
+    prisma.location.findMany({
+      include: {
+        searchTerms: { orderBy: { keyword: "asc" } },
+        venues: { where: { active: true }, select: { id: true, name: true, shortName: true } },
+        parent: { select: { id: true, name: true } },
+      },
+      orderBy: [{ type: "asc" }, { name: "asc" }],
+    })
+  )
   return NextResponse.json(locations)
 }
 

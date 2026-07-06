@@ -15,3 +15,18 @@ function createPrismaClient() {
 export const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
+
+// Retry helper for Neon connection-drop errors (P1017)
+export async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn()
+    } catch (err: any) {
+      if (attempt < retries && err?.code === "P1017") {
+        continue
+      }
+      throw err
+    }
+  }
+  throw new Error("Unreachable")
+}

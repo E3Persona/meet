@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { prisma, withRetry } from "@/lib/prisma"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -60,22 +60,24 @@ export async function GET(request: Request) {
     where.AND = andConditions
   }
 
-  const [events, total] = await Promise.all([
-    prisma.event.findMany({
-      where,
-      include: {
-        location: { select: { name: true, city: true, state: true } },
-        contacts: {
-          select: { id: true, name: true, isPrimary: true, email: true, phone: true, title: true },
-          orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+  const [events, total] = await withRetry(() =>
+    Promise.all([
+      prisma.event.findMany({
+        where,
+        include: {
+          location: { select: { name: true, city: true, state: true } },
+          contacts: {
+            select: { id: true, name: true, isPrimary: true, email: true, phone: true, title: true },
+            orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+          },
         },
-      },
-      orderBy: { eventDateStart: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.event.count({ where }),
-  ])
+        orderBy: { eventDateStart: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.event.count({ where }),
+    ])
+  )
 
   return NextResponse.json({ events, total, page, pageSize })
 }
