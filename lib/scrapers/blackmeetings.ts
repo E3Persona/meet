@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio"
+import { createJinaProvider } from "../providers/scrape/jina"
 
 const BASE = "https://www.blackmeetingsandtourism.com"
 const CURRENT_EVENTS_URL = `${BASE}/News-Center/Business-Exclusives/Current-Events.aspx`
@@ -302,14 +303,9 @@ async function fetchListingCards(
   return cards
 }
 
-async function scrapeDetailPage(url: string): Promise<{
-  bodyText: string | null
-}> {
-  const html = await fetchWithRetry(url)
+function extractCheerioText(html: string): string | null {
   const $ = cheerio.load(html)
-
-  // Try multiple content selectors found on blackmeetingsandtourism.com detail pages
-  const bodyText =
+  return (
     $(".presscenter_data").text().trim() ||
     $("#ArticleDetail .presscenter_data").text().trim() ||
     $(".Content").text().trim() ||
@@ -321,7 +317,6 @@ async function scrapeDetailPage(url: string): Promise<{
     $(".main-content").text().trim() ||
     $("#CenterContent").text().trim() ||
     $("#box1").text().trim() ||
-    // Last resort: grab all visible text from the body, skipping nav/header/footer
     $("body")
       .clone()
       .find("script, style, nav, header, footer, .nav, .menu, .sidebar, .footer, .header")
@@ -330,7 +325,31 @@ async function scrapeDetailPage(url: string): Promise<{
       .text()
       .trim() ||
     null
-  return { bodyText }
+  )
+}
+
+async function scrapeDetailPage(url: string): Promise<{
+  bodyText: string | null
+  htmlText: string | null
+  rawHtml: string | null
+}> {
+  // Jina Reader returns clean markdown — primary source for contact extraction
+  const jina = createJinaProvider()
+  const jinaResult = await jina.scrape(url, { timeout: 25000 })
+  const bodyText = jinaResult.markdown || null
+  if (!bodyText && jinaResult.error) {
+    console.warn(`[blackmeetings] Jina failed for ${url}: ${jinaResult.error}`)
+  }
+
+  // Fetch raw HTML (needed for link extraction + contact fallback)
+  let rawHtml: string | null = null
+  try {
+    rawHtml = await fetchWithRetry(url)
+  } catch {}
+
+  const htmlText = rawHtml ? extractCheerioText(rawHtml) : null
+
+  return { bodyText, htmlText, rawHtml }
 }
 
 export async function scrapeBMEvents(
@@ -358,11 +377,15 @@ export async function scrapeBMEvents(
     if (events.length >= maxDetailPages) break
 
     let bodyText: string | null = null
+    let htmlText: string | null = null
+    let rawHtml: string | null = null
 
     if (!skipDetailPages && card.detailUrl) {
       try {
         const detail = await scrapeDetailPage(card.detailUrl)
         bodyText = detail.bodyText
+        htmlText = detail.htmlText
+        rawHtml = detail.rawHtml
         detailsVisited++
       } catch (err) {
         console.error(`[blackmeetings] detail failed for ${card.detailUrl}:`, err)
@@ -372,8 +395,14 @@ export async function scrapeBMEvents(
 
     const contentForExtraction = bodyText || card.previewText || ""
     const dates = contentForExtraction ? parseEventDates(contentForExtraction) : { start: null, end: null }
+    // Primary: extract contacts from Jina markdown (clean text).
+    // Fallback: if Jina found nothing, try cheerio-extracted text.
     const contacts = contentForExtraction ? extractContacts(contentForExtraction) : []
-    const externalLinks = bodyText ? extractExternalLinks(bodyText) : []
+    if (contacts.length === 0 && htmlText) {
+      const fallback = extractContacts(htmlText)
+      contacts.push(...fallback)
+    }
+    const externalLinks = (rawHtml || bodyText) ? extractExternalLinks(rawHtml || bodyText || "") : []
 
     let venueName: string | null = null
     let venueLocation: string | null = null
