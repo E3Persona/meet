@@ -67,6 +67,7 @@ export interface CNEvent {
   venueCountry: string
   contacts: CNContact[]
   indexedIn: string[]
+  expectedAttendees: number | null
   sourceSite: "conferencenext.com"
 }
 
@@ -355,6 +356,7 @@ export async function scrapeCN(options?: {
               },
             ],
             indexedIn: detail.indexedIn || [],
+            expectedAttendees: null,
             sourceSite: "conferencenext.com",
           })
         }

@@ -7,27 +7,26 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Trash2, Plus } from "lucide-react"
+import { Trash2, Plus, Play, Clock } from "lucide-react"
 import type { FormSection as FormSectionType } from "@/types/components"
 import { toast } from "sonner"
 import { ColumnDef } from "@tanstack/react-table"
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SourceSite {
   id: string
   name: string
   url: string | null
   active: boolean
+  sourceMode: "automated" | "manual"
   urlPattern: string | null
   scrapeMode: string
   notes: string | null
   lastScrapedAt: string | null
   lastScrapeStatus: string | null
+  manualCheckFrequencyDays: number | null
+  lastManualCheckAt: string | null
   eventsFound: number
 }
-
-// ─── Form Sections ────────────────────────────────────────────────────────────
 
 const SOURCE_SITE_FORM_SECTIONS: FormSectionType[] = [
   {
@@ -49,6 +48,24 @@ const SOURCE_SITE_FORM_SECTIONS: FormSectionType[] = [
         label: "Base URL",
         type: "text",
         placeholder: "https://...",
+        colSpan: 2,
+      },
+      {
+        name: "sourceMode",
+        label: "Source Mode",
+        type: "select",
+        options: [
+          { label: "Automated (scraped programmatically)", value: "automated" },
+          { label: "Manual (human review required)", value: "manual" },
+        ],
+        colSpan: 2,
+      },
+      {
+        name: "manualCheckFrequencyDays",
+        label: "Check Every (days)",
+        type: "number",
+        placeholder: "14",
+        helperText: "Only for manual sources — how often to remind for review",
         colSpan: 2,
       },
       {
@@ -76,15 +93,13 @@ const SOURCE_SITE_FORM_SECTIONS: FormSectionType[] = [
         name: "notes",
         label: "Scraping Notes",
         type: "textarea",
-        placeholder: "LLM instructions for this site, e.g. 'Events listed in HTML tables. Columns: Event name, dates, city.'",
+        placeholder: "LLM instructions for this site...",
         helperText: "Injected into the LLM extraction prompt for this site",
         colSpan: 4,
       },
     ],
   },
 ]
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const SCRAPE_MODE_LABELS: Record<string, string> = {
   auto: "Auto",
@@ -116,8 +131,6 @@ const STATUS_VARIANTS: Record<string, "success" | "warning" | "error" | "neutral
   blocked: "error",
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export function SourceSitesManager() {
   const [sites, setSites] = useState<SourceSite[]>([])
   const [loading, setLoading] = useState(true)
@@ -125,6 +138,7 @@ export function SourceSitesManager() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
+  const [runningSite, setRunningSite] = useState<string | null>(null)
 
   const fetchSites = useCallback(async () => {
     try {
@@ -151,6 +165,10 @@ export function SourceSitesManager() {
         body: JSON.stringify({
           name: values.name,
           url: values.url || null,
+          sourceMode: values.sourceMode || "automated",
+          manualCheckFrequencyDays: values.manualCheckFrequencyDays
+            ? parseInt(values.manualCheckFrequencyDays as string)
+            : null,
           scrapeMode: values.scrapeMode || "auto",
           urlPattern: values.urlPattern || null,
           notes: values.notes || null,
@@ -193,6 +211,42 @@ export function SourceSitesManager() {
     }
   }
 
+  const runSiteCheck = async (s: SourceSite) => {
+    setRunningSite(s.id)
+    toast.info(`Checking ${s.name}...`)
+
+    try {
+      const res = await fetch("/api/ingest/run?trigger=manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceSiteId: s.id }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error(data.error ?? `${s.name} check failed`)
+        return
+      }
+
+      if (data.manualResults) {
+        const checked = data.manualResults.find((r: any) => r.status === "checked")
+        const skipped = data.manualResults.find((r: any) => r.status === "skipped_fresh")
+        if (checked) {
+          toast.success(`${s.name} check recorded`)
+        } else if (skipped) {
+          toast.info(`${s.name} was already checked recently`)
+        }
+      } else {
+        toast.success(`${s.name} — ${data.recordsNew} new events found`)
+      }
+      fetchSites()
+    } catch {
+      toast.error(`${s.name} check request failed`)
+    } finally {
+      setRunningSite(null)
+    }
+  }
+
   const formatDate = (iso: string | null) => {
     if (!iso) return "—"
     return new Date(iso).toLocaleDateString("en-US", {
@@ -203,12 +257,9 @@ export function SourceSitesManager() {
     })
   }
 
-  // ── Derived counts ─────────────────────────────────────────────────────────
-
   const activeSites = sites.filter((s) => s.active && s.scrapeMode !== "skip")
   const skippedSites = sites.filter((s) => s.scrapeMode === "skip")
-
-  // ── Columns ──────────────────────────────────────────────────────────────
+  const manualSites = sites.filter((s) => s.sourceMode === "manual")
 
   const columns: ColumnDef<SourceSite, unknown>[] = [
     {
@@ -229,6 +280,18 @@ export function SourceSitesManager() {
       },
     },
     {
+      id: "sourceMode",
+      header: "Source",
+      cell: ({ row }) => {
+        const sm = row.original.sourceMode
+        return (
+          <Badge variant={sm === "manual" ? "warning" : "success"} size="sm">
+            {sm === "manual" ? "Manual" : "Auto"}
+          </Badge>
+        )
+      },
+    },
+    {
       id: "scrapeMode",
       header: "Mode",
       cell: ({ row }) => (
@@ -238,14 +301,15 @@ export function SourceSitesManager() {
       ),
     },
     {
-      id: "lastScraped",
-      header: "Last Scraped",
+      id: "lastCheck",
+      header: "Last Checked",
       cell: ({ row }) => {
         const s = row.original
-        if (!s.lastScrapedAt) return <span className="text-xs text-muted-foreground">Never</span>
+        const lastAt = s.sourceMode === "manual" ? s.lastManualCheckAt : s.lastScrapedAt
+        if (!lastAt) return <span className="text-xs text-muted-foreground">Never</span>
         return (
           <div>
-            <p className="text-xs">{formatDate(s.lastScrapedAt)}</p>
+            <p className="text-xs">{formatDate(lastAt)}</p>
             {s.lastScrapeStatus && (
               <Badge variant={STATUS_VARIANTS[s.lastScrapeStatus] ?? "neutral"} size="sm">
                 {STATUS_LABELS[s.lastScrapeStatus] ?? s.lastScrapeStatus}
@@ -280,27 +344,41 @@ export function SourceSitesManager() {
   ]
 
   const rowActions = (s: SourceSite) => (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={(e) => {
-        e.stopPropagation()
-        deleteSite(s)
-      }}
-      title="Delete source site"
-    >
-      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-    </Button>
+    <div className="flex items-center gap-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation()
+          runSiteCheck(s)
+        }}
+        loading={runningSite === s.id}
+        disabled={runningSite !== null}
+        title={`Check ${s.name} now`}
+      >
+        <Play className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation()
+          deleteSite(s)
+        }}
+        title="Delete source site"
+      >
+        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+      </Button>
+    </div>
   )
-
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
-      {/* Add Source Site Button + Summary */}
       <div className="flex items-center justify-between">
         <div className="flex gap-4 text-sm text-muted-foreground">
-          <span>{activeSites.length} active (scraped in Phase 1)</span>
+          <span>{activeSites.length} active</span>
+          <span>·</span>
+          <span>{manualSites.length} manual</span>
           <span>·</span>
           <span>{skippedSites.length} skipped</span>
           <span>·</span>
@@ -311,7 +389,6 @@ export function SourceSitesManager() {
         </Button>
       </div>
 
-      {/* Add Source Site Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>

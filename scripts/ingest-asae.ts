@@ -6,6 +6,8 @@ import { scrapeASAE } from "../lib/scrapers/asae"
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 const runId = process.env.RUN_ID ?? null
+const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
+const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
 const MONTH_NAMES: Record<string, number> = {
   january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
@@ -121,6 +123,9 @@ async function main() {
     if (existing) continue
 
     const eventDateStart = parseEventDate(ev.eventMonth, ev.eventDay)
+
+    if (dateFrom && eventDateStart && eventDateStart < dateFrom) continue
+    if (dateTo && eventDateStart && eventDateStart > dateTo) continue
     const contact = ev.contact ?? null
     const hasContact = contact && (contact.organizerEmail || contact.organizerPhone)
 
@@ -132,6 +137,7 @@ async function main() {
         sourceUrl: ev.detailUrl,
         sourceSiteId,
         runId: runId ?? undefined,
+        expectedAttendees: null,
         organizerEmail: contact?.organizerEmail ?? null,
         organizerPhone: contact?.organizerPhone ?? null,
       },

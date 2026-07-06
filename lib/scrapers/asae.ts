@@ -29,6 +29,7 @@ export interface ASAEContact {
 
 export interface ASAEEvent extends ASAEEventCard {
   contact: ASAEContact
+  expectedAttendees: number | null
   sourceSite: "asaecenter.org"
 }
 
@@ -255,7 +256,7 @@ export async function scrapeASAE(options?: {
       await wait(jitter(1000))
     }
 
-    results.push({ ...card, contact, sourceSite: "asaecenter.org" })
+    results.push({ ...card, contact, expectedAttendees: null, sourceSite: "asaecenter.org" })
   }
 
   return results

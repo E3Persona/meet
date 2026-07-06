@@ -46,6 +46,7 @@ export interface EventseyeEvent extends EventseyeEventCard {
     phone: string | null
     website: string | null
   } | null
+  expectedAttendees: number | null
   sourceSite: "eventseye.com"
 }
 
@@ -389,6 +390,7 @@ export async function scrapeEventseye(
               website: org.website || null,
             }
           : null,
+        expectedAttendees: null,
         sourceSite: "eventseye.com",
       })
     }

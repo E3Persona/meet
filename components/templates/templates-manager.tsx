@@ -12,17 +12,26 @@ import type { FormSection as FormSectionType } from "@/types/components"
 import { toast } from "sonner"
 import { ColumnDef } from "@tanstack/react-table"
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface SearchTemplate {
   id: string
   template: string
+  scope: "CITY" | "VENUE" | "GLOBAL"
   active: boolean
   createdAt: string
   updatedAt: string
 }
 
-// ─── Form Sections ────────────────────────────────────────────────────────────
+const SCOPE_LABELS: Record<string, string> = {
+  CITY: "City",
+  VENUE: "Venue",
+  GLOBAL: "Global",
+}
+
+const SCOPE_VARIANTS: Record<string, "info" | "success" | "neutral"> = {
+  CITY: "info",
+  VENUE: "success",
+  GLOBAL: "neutral",
+}
 
 const TEMPLATE_FORM_SECTIONS: FormSectionType[] = [
   {
@@ -40,11 +49,21 @@ const TEMPLATE_FORM_SECTIONS: FormSectionType[] = [
         required: true,
         colSpan: 4,
       },
+      {
+        name: "scope",
+        label: "Scope",
+        type: "select",
+        options: [
+          { label: "City (resolves per CITY location)", value: "CITY" },
+          { label: "Venue (resolves per VENUE location)", value: "VENUE" },
+          { label: "Global (runs once, no expansion)", value: "GLOBAL" },
+        ],
+        required: true,
+        colSpan: 4,
+      },
     ],
   },
 ]
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export function TemplatesManager() {
   const [templates, setTemplates] = useState<SearchTemplate[]>([])
@@ -76,7 +95,10 @@ export function TemplatesManager() {
       const res = await fetch("/api/search-templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ template: values.template }),
+        body: JSON.stringify({
+          template: values.template,
+          scope: values.scope || "CITY",
+        }),
       })
       if (!res.ok) throw new Error("Failed to create")
       toast.success("Template created")
@@ -115,40 +137,24 @@ export function TemplatesManager() {
     }
   }
 
-  // ── Helpers: detect if template has placeholders ──────────────────────────
-
-  const hasPlaceholders = (tpl: string) => /\{(CITY|VENUE|MONTH|YEAR)\}/.test(tpl)
-
-  // ── Columns ──────────────────────────────────────────────────────────────
-
   const columns: ColumnDef<SearchTemplate, unknown>[] = [
     {
       accessorKey: "template",
       header: "Template",
-      cell: ({ row }) => {
-        const t = row.original
-        const isTemplate = hasPlaceholders(t.template)
-        return (
-          <div>
-            <p className="font-medium text-sm font-mono">{t.template}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {isTemplate ? "Expanded per-location" : "Run as-is"}
-            </p>
-          </div>
-        )
-      },
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium text-sm font-mono">{row.original.template}</p>
+        </div>
+      ),
     },
     {
-      id: "type",
-      header: "Type",
-      cell: ({ row }) => {
-        const isTemplate = hasPlaceholders(row.original.template)
-        return (
-          <Badge variant={isTemplate ? "info" : "neutral"} size="sm">
-            {isTemplate ? "Template" : "Literal"}
-          </Badge>
-        )
-      },
+      id: "scope",
+      header: "Scope",
+      cell: ({ row }) => (
+        <Badge variant={SCOPE_VARIANTS[row.original.scope] ?? "neutral"} size="sm">
+          {SCOPE_LABELS[row.original.scope] ?? row.original.scope}
+        </Badge>
+      ),
     },
     {
       id: "active",
@@ -180,11 +186,8 @@ export function TemplatesManager() {
     </Button>
   )
 
-  // ── Render ───────────────────────────────────────────────────────────────
-
   return (
     <div className="space-y-6">
-      {/* Add Template Button */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {templates.length} template{templates.length !== 1 ? "s" : ""}
@@ -194,7 +197,6 @@ export function TemplatesManager() {
         </Button>
       </div>
 
-      {/* Add Template Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>

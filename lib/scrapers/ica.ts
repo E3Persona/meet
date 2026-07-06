@@ -111,6 +111,7 @@ export interface ICAEvent {
   contacts: ICAContact[]
   registrationDeadline: string | null
   submissionDeadline: string | null
+  expectedAttendees: number | null
   sourceSite: "internationalconferencealerts.com"
 }
 
@@ -653,6 +654,7 @@ export async function scrapeICA(options?: {
               ],
               registrationDeadline: detail.registrationDeadline ?? null,
               submissionDeadline: detail.submissionDeadline ?? null,
+              expectedAttendees: null,
               sourceSite: "internationalconferencealerts.com",
             })
           }

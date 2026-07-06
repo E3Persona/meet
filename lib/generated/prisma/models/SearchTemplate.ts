@@ -27,6 +27,7 @@ export type AggregateSearchTemplate = {
 export type SearchTemplateMinAggregateOutputType = {
   id: string | null
   template: string | null
+  scope: $Enums.TemplateScope | null
   active: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -35,6 +36,7 @@ export type SearchTemplateMinAggregateOutputType = {
 export type SearchTemplateMaxAggregateOutputType = {
   id: string | null
   template: string | null
+  scope: $Enums.TemplateScope | null
   active: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -43,6 +45,7 @@ export type SearchTemplateMaxAggregateOutputType = {
 export type SearchTemplateCountAggregateOutputType = {
   id: number
   template: number
+  scope: number
   active: number
   createdAt: number
   updatedAt: number
@@ -53,6 +56,7 @@ export type SearchTemplateCountAggregateOutputType = {
 export type SearchTemplateMinAggregateInputType = {
   id?: true
   template?: true
+  scope?: true
   active?: true
   createdAt?: true
   updatedAt?: true
@@ -61,6 +65,7 @@ export type SearchTemplateMinAggregateInputType = {
 export type SearchTemplateMaxAggregateInputType = {
   id?: true
   template?: true
+  scope?: true
   active?: true
   createdAt?: true
   updatedAt?: true
@@ -69,6 +74,7 @@ export type SearchTemplateMaxAggregateInputType = {
 export type SearchTemplateCountAggregateInputType = {
   id?: true
   template?: true
+  scope?: true
   active?: true
   createdAt?: true
   updatedAt?: true
@@ -150,6 +156,7 @@ export type SearchTemplateGroupByArgs<ExtArgs extends runtime.Types.Extensions.I
 export type SearchTemplateGroupByOutputType = {
   id: string
   template: string
+  scope: $Enums.TemplateScope
   active: boolean
   createdAt: Date
   updatedAt: Date
@@ -179,6 +186,7 @@ export type SearchTemplateWhereInput = {
   NOT?: Prisma.SearchTemplateWhereInput | Prisma.SearchTemplateWhereInput[]
   id?: Prisma.StringFilter<"SearchTemplate"> | string
   template?: Prisma.StringFilter<"SearchTemplate"> | string
+  scope?: Prisma.EnumTemplateScopeFilter<"SearchTemplate"> | $Enums.TemplateScope
   active?: Prisma.BoolFilter<"SearchTemplate"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SearchTemplate"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SearchTemplate"> | Date | string
@@ -187,6 +195,7 @@ export type SearchTemplateWhereInput = {
 export type SearchTemplateOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   template?: Prisma.SortOrder
+  scope?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -198,6 +207,7 @@ export type SearchTemplateWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.SearchTemplateWhereInput[]
   NOT?: Prisma.SearchTemplateWhereInput | Prisma.SearchTemplateWhereInput[]
   template?: Prisma.StringFilter<"SearchTemplate"> | string
+  scope?: Prisma.EnumTemplateScopeFilter<"SearchTemplate"> | $Enums.TemplateScope
   active?: Prisma.BoolFilter<"SearchTemplate"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SearchTemplate"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SearchTemplate"> | Date | string
@@ -206,6 +216,7 @@ export type SearchTemplateWhereUniqueInput = Prisma.AtLeast<{
 export type SearchTemplateOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   template?: Prisma.SortOrder
+  scope?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -220,6 +231,7 @@ export type SearchTemplateScalarWhereWithAggregatesInput = {
   NOT?: Prisma.SearchTemplateScalarWhereWithAggregatesInput | Prisma.SearchTemplateScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"SearchTemplate"> | string
   template?: Prisma.StringWithAggregatesFilter<"SearchTemplate"> | string
+  scope?: Prisma.EnumTemplateScopeWithAggregatesFilter<"SearchTemplate"> | $Enums.TemplateScope
   active?: Prisma.BoolWithAggregatesFilter<"SearchTemplate"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SearchTemplate"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SearchTemplate"> | Date | string
@@ -228,6 +240,7 @@ export type SearchTemplateScalarWhereWithAggregatesInput = {
 export type SearchTemplateCreateInput = {
   id?: string
   template: string
+  scope?: $Enums.TemplateScope
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -236,6 +249,7 @@ export type SearchTemplateCreateInput = {
 export type SearchTemplateUncheckedCreateInput = {
   id?: string
   template: string
+  scope?: $Enums.TemplateScope
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -244,6 +258,7 @@ export type SearchTemplateUncheckedCreateInput = {
 export type SearchTemplateUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   template?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.EnumTemplateScopeFieldUpdateOperationsInput | $Enums.TemplateScope
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -252,6 +267,7 @@ export type SearchTemplateUpdateInput = {
 export type SearchTemplateUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   template?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.EnumTemplateScopeFieldUpdateOperationsInput | $Enums.TemplateScope
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -260,6 +276,7 @@ export type SearchTemplateUncheckedUpdateInput = {
 export type SearchTemplateCreateManyInput = {
   id?: string
   template: string
+  scope?: $Enums.TemplateScope
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -268,6 +285,7 @@ export type SearchTemplateCreateManyInput = {
 export type SearchTemplateUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   template?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.EnumTemplateScopeFieldUpdateOperationsInput | $Enums.TemplateScope
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -276,6 +294,7 @@ export type SearchTemplateUpdateManyMutationInput = {
 export type SearchTemplateUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   template?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.EnumTemplateScopeFieldUpdateOperationsInput | $Enums.TemplateScope
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -284,6 +303,7 @@ export type SearchTemplateUncheckedUpdateManyInput = {
 export type SearchTemplateCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   template?: Prisma.SortOrder
+  scope?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -292,6 +312,7 @@ export type SearchTemplateCountOrderByAggregateInput = {
 export type SearchTemplateMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   template?: Prisma.SortOrder
+  scope?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -300,9 +321,14 @@ export type SearchTemplateMaxOrderByAggregateInput = {
 export type SearchTemplateMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   template?: Prisma.SortOrder
+  scope?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type EnumTemplateScopeFieldUpdateOperationsInput = {
+  set?: $Enums.TemplateScope
 }
 
 
@@ -310,6 +336,7 @@ export type SearchTemplateMinOrderByAggregateInput = {
 export type SearchTemplateSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   template?: boolean
+  scope?: boolean
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -318,6 +345,7 @@ export type SearchTemplateSelect<ExtArgs extends runtime.Types.Extensions.Intern
 export type SearchTemplateSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   template?: boolean
+  scope?: boolean
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -326,6 +354,7 @@ export type SearchTemplateSelectCreateManyAndReturn<ExtArgs extends runtime.Type
 export type SearchTemplateSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   template?: boolean
+  scope?: boolean
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -334,12 +363,13 @@ export type SearchTemplateSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
 export type SearchTemplateSelectScalar = {
   id?: boolean
   template?: boolean
+  scope?: boolean
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SearchTemplateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "template" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["searchTemplate"]>
+export type SearchTemplateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "template" | "scope" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["searchTemplate"]>
 
 export type $SearchTemplatePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SearchTemplate"
@@ -347,6 +377,7 @@ export type $SearchTemplatePayload<ExtArgs extends runtime.Types.Extensions.Inte
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     template: string
+    scope: $Enums.TemplateScope
     active: boolean
     createdAt: Date
     updatedAt: Date
@@ -775,6 +806,7 @@ export interface Prisma__SearchTemplateClient<T, Null = never, ExtArgs extends r
 export interface SearchTemplateFieldRefs {
   readonly id: Prisma.FieldRef<"SearchTemplate", 'String'>
   readonly template: Prisma.FieldRef<"SearchTemplate", 'String'>
+  readonly scope: Prisma.FieldRef<"SearchTemplate", 'TemplateScope'>
   readonly active: Prisma.FieldRef<"SearchTemplate", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"SearchTemplate", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SearchTemplate", 'DateTime'>

@@ -4,12 +4,14 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}))
-  const { maxMonths, maxPages, maxLocations, active, fast } = body as {
+  const { maxMonths, maxPages, maxLocations, active, fast, dateFrom, dateTo } = body as {
     maxMonths?: number
     maxPages?: number
     maxLocations?: number
     active?: boolean
     fast?: boolean
+    dateFrom?: string
+    dateTo?: string
   }
 
   if (active === false) {
@@ -34,6 +36,6 @@ export async function POST(request: Request) {
     })
   }
 
-  const { runId } = await startScraperRun("ingest-ica.ts", "internationalconferencealerts.com", "manual", fast)
+  const { runId } = await startScraperRun("ingest-ica.ts", "internationalconferencealerts.com", "manual", fast, dateFrom, dateTo)
   return NextResponse.json({ runId, status: "running" })
 }

@@ -8,13 +8,14 @@ export async function PATCH(
   const { id } = await params
   const body = await request.json()
 
-  // Only allow updating organizer fields and status — NEVER auto-populated
+  // Only allow updating organizer fields, status, and contactNote — NEVER auto-populated
   const allowed = {
     organizerName: body.organizerName,
     organizerTitle: body.organizerTitle,
     organizerEmail: body.organizerEmail,
     organizerPhone: body.organizerPhone,
     status: body.status,
+    contactNote: body.contactNote,
   }
 
   // Strip undefined values so we don't overwrite with null accidentally

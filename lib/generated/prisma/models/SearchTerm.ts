@@ -156,7 +156,7 @@ export type SearchTermGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inter
 export type SearchTermGroupByOutputType = {
   id: string
   keyword: string
-  locationId: string
+  locationId: string | null
   active: boolean
   createdAt: Date
   updatedAt: Date
@@ -186,17 +186,17 @@ export type SearchTermWhereInput = {
   NOT?: Prisma.SearchTermWhereInput | Prisma.SearchTermWhereInput[]
   id?: Prisma.StringFilter<"SearchTerm"> | string
   keyword?: Prisma.StringFilter<"SearchTerm"> | string
-  locationId?: Prisma.StringFilter<"SearchTerm"> | string
+  locationId?: Prisma.StringNullableFilter<"SearchTerm"> | string | null
   active?: Prisma.BoolFilter<"SearchTerm"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
-  location?: Prisma.XOR<Prisma.LocationScalarRelationFilter, Prisma.LocationWhereInput>
+  location?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
 }
 
 export type SearchTermOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   keyword?: Prisma.SortOrder
-  locationId?: Prisma.SortOrder
+  locationId?: Prisma.SortOrderInput | Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -209,17 +209,17 @@ export type SearchTermWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.SearchTermWhereInput[]
   NOT?: Prisma.SearchTermWhereInput | Prisma.SearchTermWhereInput[]
   keyword?: Prisma.StringFilter<"SearchTerm"> | string
-  locationId?: Prisma.StringFilter<"SearchTerm"> | string
+  locationId?: Prisma.StringNullableFilter<"SearchTerm"> | string | null
   active?: Prisma.BoolFilter<"SearchTerm"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
-  location?: Prisma.XOR<Prisma.LocationScalarRelationFilter, Prisma.LocationWhereInput>
+  location?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
 }, "id">
 
 export type SearchTermOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   keyword?: Prisma.SortOrder
-  locationId?: Prisma.SortOrder
+  locationId?: Prisma.SortOrderInput | Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -234,7 +234,7 @@ export type SearchTermScalarWhereWithAggregatesInput = {
   NOT?: Prisma.SearchTermScalarWhereWithAggregatesInput | Prisma.SearchTermScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"SearchTerm"> | string
   keyword?: Prisma.StringWithAggregatesFilter<"SearchTerm"> | string
-  locationId?: Prisma.StringWithAggregatesFilter<"SearchTerm"> | string
+  locationId?: Prisma.StringNullableWithAggregatesFilter<"SearchTerm"> | string | null
   active?: Prisma.BoolWithAggregatesFilter<"SearchTerm"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SearchTerm"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SearchTerm"> | Date | string
@@ -246,13 +246,13 @@ export type SearchTermCreateInput = {
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  location: Prisma.LocationCreateNestedOneWithoutSearchTermsInput
+  location?: Prisma.LocationCreateNestedOneWithoutSearchTermsInput
 }
 
 export type SearchTermUncheckedCreateInput = {
   id?: string
   keyword: string
-  locationId: string
+  locationId?: string | null
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -264,13 +264,13 @@ export type SearchTermUpdateInput = {
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  location?: Prisma.LocationUpdateOneRequiredWithoutSearchTermsNestedInput
+  location?: Prisma.LocationUpdateOneWithoutSearchTermsNestedInput
 }
 
 export type SearchTermUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   keyword?: Prisma.StringFieldUpdateOperationsInput | string
-  locationId?: Prisma.StringFieldUpdateOperationsInput | string
+  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -279,7 +279,7 @@ export type SearchTermUncheckedUpdateInput = {
 export type SearchTermCreateManyInput = {
   id?: string
   keyword: string
-  locationId: string
+  locationId?: string | null
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -296,7 +296,7 @@ export type SearchTermUpdateManyMutationInput = {
 export type SearchTermUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   keyword?: Prisma.StringFieldUpdateOperationsInput | string
-  locationId?: Prisma.StringFieldUpdateOperationsInput | string
+  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -429,7 +429,7 @@ export type SearchTermScalarWhereInput = {
   NOT?: Prisma.SearchTermScalarWhereInput | Prisma.SearchTermScalarWhereInput[]
   id?: Prisma.StringFilter<"SearchTerm"> | string
   keyword?: Prisma.StringFilter<"SearchTerm"> | string
-  locationId?: Prisma.StringFilter<"SearchTerm"> | string
+  locationId?: Prisma.StringNullableFilter<"SearchTerm"> | string | null
   active?: Prisma.BoolFilter<"SearchTerm"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
@@ -476,7 +476,7 @@ export type SearchTermSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
+  location?: boolean | Prisma.SearchTerm$locationArgs<ExtArgs>
 }, ExtArgs["result"]["searchTerm"]>
 
 export type SearchTermSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -486,7 +486,7 @@ export type SearchTermSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
+  location?: boolean | Prisma.SearchTerm$locationArgs<ExtArgs>
 }, ExtArgs["result"]["searchTerm"]>
 
 export type SearchTermSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -496,7 +496,7 @@ export type SearchTermSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
+  location?: boolean | Prisma.SearchTerm$locationArgs<ExtArgs>
 }, ExtArgs["result"]["searchTerm"]>
 
 export type SearchTermSelectScalar = {
@@ -510,24 +510,24 @@ export type SearchTermSelectScalar = {
 
 export type SearchTermOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "keyword" | "locationId" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["searchTerm"]>
 export type SearchTermInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
+  location?: boolean | Prisma.SearchTerm$locationArgs<ExtArgs>
 }
 export type SearchTermIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
+  location?: boolean | Prisma.SearchTerm$locationArgs<ExtArgs>
 }
 export type SearchTermIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
+  location?: boolean | Prisma.SearchTerm$locationArgs<ExtArgs>
 }
 
 export type $SearchTermPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SearchTerm"
   objects: {
-    location: Prisma.$LocationPayload<ExtArgs>
+    location: Prisma.$LocationPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     keyword: string
-    locationId: string
+    locationId: string | null
     active: boolean
     createdAt: Date
     updatedAt: Date
@@ -925,7 +925,7 @@ readonly fields: SearchTermFieldRefs;
  */
 export interface Prisma__SearchTermClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  location<T extends Prisma.LocationDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.LocationDefaultArgs<ExtArgs>>): Prisma.Prisma__LocationClient<runtime.Types.Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  location<T extends Prisma.SearchTerm$locationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SearchTerm$locationArgs<ExtArgs>>): Prisma.Prisma__LocationClient<runtime.Types.Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1359,6 +1359,25 @@ export type SearchTermDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * Limit how many SearchTerms to delete.
    */
   limit?: number
+}
+
+/**
+ * SearchTerm.location
+ */
+export type SearchTerm$locationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Location
+   */
+  select?: Prisma.LocationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Location
+   */
+  omit?: Prisma.LocationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.LocationInclude<ExtArgs> | null
+  where?: Prisma.LocationWhereInput
 }
 
 /**

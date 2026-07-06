@@ -20,8 +20,18 @@ export type EventModel = runtime.Types.Result.DefaultSelection<Prisma.$EventPayl
 
 export type AggregateEvent = {
   _count: EventCountAggregateOutputType | null
+  _avg: EventAvgAggregateOutputType | null
+  _sum: EventSumAggregateOutputType | null
   _min: EventMinAggregateOutputType | null
   _max: EventMaxAggregateOutputType | null
+}
+
+export type EventAvgAggregateOutputType = {
+  expectedAttendees: number | null
+}
+
+export type EventSumAggregateOutputType = {
+  expectedAttendees: number | null
 }
 
 export type EventMinAggregateOutputType = {
@@ -30,12 +40,14 @@ export type EventMinAggregateOutputType = {
   eventName: string | null
   eventDateStart: Date | null
   eventDateEnd: Date | null
+  expectedAttendees: number | null
   sourceUrl: string | null
   sourceSiteId: string | null
   organizerName: string | null
   organizerTitle: string | null
   organizerEmail: string | null
   organizerPhone: string | null
+  contactNote: string | null
   status: $Enums.EventStatus | null
   dateAdded: Date | null
   runId: string | null
@@ -47,12 +59,14 @@ export type EventMaxAggregateOutputType = {
   eventName: string | null
   eventDateStart: Date | null
   eventDateEnd: Date | null
+  expectedAttendees: number | null
   sourceUrl: string | null
   sourceSiteId: string | null
   organizerName: string | null
   organizerTitle: string | null
   organizerEmail: string | null
   organizerPhone: string | null
+  contactNote: string | null
   status: $Enums.EventStatus | null
   dateAdded: Date | null
   runId: string | null
@@ -64,12 +78,14 @@ export type EventCountAggregateOutputType = {
   eventName: number
   eventDateStart: number
   eventDateEnd: number
+  expectedAttendees: number
   sourceUrl: number
   sourceSiteId: number
   organizerName: number
   organizerTitle: number
   organizerEmail: number
   organizerPhone: number
+  contactNote: number
   status: number
   dateAdded: number
   runId: number
@@ -77,18 +93,28 @@ export type EventCountAggregateOutputType = {
 }
 
 
+export type EventAvgAggregateInputType = {
+  expectedAttendees?: true
+}
+
+export type EventSumAggregateInputType = {
+  expectedAttendees?: true
+}
+
 export type EventMinAggregateInputType = {
   id?: true
   locationId?: true
   eventName?: true
   eventDateStart?: true
   eventDateEnd?: true
+  expectedAttendees?: true
   sourceUrl?: true
   sourceSiteId?: true
   organizerName?: true
   organizerTitle?: true
   organizerEmail?: true
   organizerPhone?: true
+  contactNote?: true
   status?: true
   dateAdded?: true
   runId?: true
@@ -100,12 +126,14 @@ export type EventMaxAggregateInputType = {
   eventName?: true
   eventDateStart?: true
   eventDateEnd?: true
+  expectedAttendees?: true
   sourceUrl?: true
   sourceSiteId?: true
   organizerName?: true
   organizerTitle?: true
   organizerEmail?: true
   organizerPhone?: true
+  contactNote?: true
   status?: true
   dateAdded?: true
   runId?: true
@@ -117,12 +145,14 @@ export type EventCountAggregateInputType = {
   eventName?: true
   eventDateStart?: true
   eventDateEnd?: true
+  expectedAttendees?: true
   sourceUrl?: true
   sourceSiteId?: true
   organizerName?: true
   organizerTitle?: true
   organizerEmail?: true
   organizerPhone?: true
+  contactNote?: true
   status?: true
   dateAdded?: true
   runId?: true
@@ -167,6 +197,18 @@ export type EventAggregateArgs<ExtArgs extends runtime.Types.Extensions.Internal
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: EventAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: EventSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: EventMinAggregateInputType
@@ -197,6 +239,8 @@ export type EventGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
   take?: number
   skip?: number
   _count?: EventCountAggregateInputType | true
+  _avg?: EventAvgAggregateInputType
+  _sum?: EventSumAggregateInputType
   _min?: EventMinAggregateInputType
   _max?: EventMaxAggregateInputType
 }
@@ -207,16 +251,20 @@ export type EventGroupByOutputType = {
   eventName: string
   eventDateStart: Date | null
   eventDateEnd: Date | null
+  expectedAttendees: number | null
   sourceUrl: string | null
   sourceSiteId: string | null
   organizerName: string | null
   organizerTitle: string | null
   organizerEmail: string | null
   organizerPhone: string | null
+  contactNote: string | null
   status: $Enums.EventStatus
   dateAdded: Date
   runId: string | null
   _count: EventCountAggregateOutputType | null
+  _avg: EventAvgAggregateOutputType | null
+  _sum: EventSumAggregateOutputType | null
   _min: EventMinAggregateOutputType | null
   _max: EventMaxAggregateOutputType | null
 }
@@ -245,12 +293,14 @@ export type EventWhereInput = {
   eventName?: Prisma.StringFilter<"Event"> | string
   eventDateStart?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   eventDateEnd?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
+  expectedAttendees?: Prisma.IntNullableFilter<"Event"> | number | null
   sourceUrl?: Prisma.StringNullableFilter<"Event"> | string | null
   sourceSiteId?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerName?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerTitle?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerEmail?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerPhone?: Prisma.StringNullableFilter<"Event"> | string | null
+  contactNote?: Prisma.StringNullableFilter<"Event"> | string | null
   status?: Prisma.EnumEventStatusFilter<"Event"> | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFilter<"Event"> | Date | string
   runId?: Prisma.StringNullableFilter<"Event"> | string | null
@@ -266,12 +316,14 @@ export type EventOrderByWithRelationInput = {
   eventName?: Prisma.SortOrder
   eventDateStart?: Prisma.SortOrderInput | Prisma.SortOrder
   eventDateEnd?: Prisma.SortOrderInput | Prisma.SortOrder
+  expectedAttendees?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceSiteId?: Prisma.SortOrderInput | Prisma.SortOrder
   organizerName?: Prisma.SortOrderInput | Prisma.SortOrder
   organizerTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   organizerEmail?: Prisma.SortOrderInput | Prisma.SortOrder
   organizerPhone?: Prisma.SortOrderInput | Prisma.SortOrder
+  contactNote?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   dateAdded?: Prisma.SortOrder
   runId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -291,12 +343,14 @@ export type EventWhereUniqueInput = Prisma.AtLeast<{
   eventName?: Prisma.StringFilter<"Event"> | string
   eventDateStart?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   eventDateEnd?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
+  expectedAttendees?: Prisma.IntNullableFilter<"Event"> | number | null
   sourceUrl?: Prisma.StringNullableFilter<"Event"> | string | null
   sourceSiteId?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerName?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerTitle?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerEmail?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerPhone?: Prisma.StringNullableFilter<"Event"> | string | null
+  contactNote?: Prisma.StringNullableFilter<"Event"> | string | null
   status?: Prisma.EnumEventStatusFilter<"Event"> | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFilter<"Event"> | Date | string
   runId?: Prisma.StringNullableFilter<"Event"> | string | null
@@ -312,18 +366,22 @@ export type EventOrderByWithAggregationInput = {
   eventName?: Prisma.SortOrder
   eventDateStart?: Prisma.SortOrderInput | Prisma.SortOrder
   eventDateEnd?: Prisma.SortOrderInput | Prisma.SortOrder
+  expectedAttendees?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceSiteId?: Prisma.SortOrderInput | Prisma.SortOrder
   organizerName?: Prisma.SortOrderInput | Prisma.SortOrder
   organizerTitle?: Prisma.SortOrderInput | Prisma.SortOrder
   organizerEmail?: Prisma.SortOrderInput | Prisma.SortOrder
   organizerPhone?: Prisma.SortOrderInput | Prisma.SortOrder
+  contactNote?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   dateAdded?: Prisma.SortOrder
   runId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.EventCountOrderByAggregateInput
+  _avg?: Prisma.EventAvgOrderByAggregateInput
   _max?: Prisma.EventMaxOrderByAggregateInput
   _min?: Prisma.EventMinOrderByAggregateInput
+  _sum?: Prisma.EventSumOrderByAggregateInput
 }
 
 export type EventScalarWhereWithAggregatesInput = {
@@ -335,12 +393,14 @@ export type EventScalarWhereWithAggregatesInput = {
   eventName?: Prisma.StringWithAggregatesFilter<"Event"> | string
   eventDateStart?: Prisma.DateTimeNullableWithAggregatesFilter<"Event"> | Date | string | null
   eventDateEnd?: Prisma.DateTimeNullableWithAggregatesFilter<"Event"> | Date | string | null
+  expectedAttendees?: Prisma.IntNullableWithAggregatesFilter<"Event"> | number | null
   sourceUrl?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   sourceSiteId?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   organizerName?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   organizerTitle?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   organizerEmail?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   organizerPhone?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
+  contactNote?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   status?: Prisma.EnumEventStatusWithAggregatesFilter<"Event"> | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeWithAggregatesFilter<"Event"> | Date | string
   runId?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
@@ -351,11 +411,13 @@ export type EventCreateInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
@@ -370,12 +432,14 @@ export type EventUncheckedCreateInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   sourceSiteId?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   runId?: string | null
@@ -387,11 +451,13 @@ export type EventUpdateInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
@@ -406,12 +472,14 @@ export type EventUncheckedUpdateInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceSiteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   runId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -424,12 +492,14 @@ export type EventCreateManyInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   sourceSiteId?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   runId?: string | null
@@ -440,11 +510,13 @@ export type EventUpdateManyMutationInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -455,12 +527,14 @@ export type EventUncheckedUpdateManyInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceSiteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   runId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -488,15 +562,21 @@ export type EventCountOrderByAggregateInput = {
   eventName?: Prisma.SortOrder
   eventDateStart?: Prisma.SortOrder
   eventDateEnd?: Prisma.SortOrder
+  expectedAttendees?: Prisma.SortOrder
   sourceUrl?: Prisma.SortOrder
   sourceSiteId?: Prisma.SortOrder
   organizerName?: Prisma.SortOrder
   organizerTitle?: Prisma.SortOrder
   organizerEmail?: Prisma.SortOrder
   organizerPhone?: Prisma.SortOrder
+  contactNote?: Prisma.SortOrder
   status?: Prisma.SortOrder
   dateAdded?: Prisma.SortOrder
   runId?: Prisma.SortOrder
+}
+
+export type EventAvgOrderByAggregateInput = {
+  expectedAttendees?: Prisma.SortOrder
 }
 
 export type EventMaxOrderByAggregateInput = {
@@ -505,12 +585,14 @@ export type EventMaxOrderByAggregateInput = {
   eventName?: Prisma.SortOrder
   eventDateStart?: Prisma.SortOrder
   eventDateEnd?: Prisma.SortOrder
+  expectedAttendees?: Prisma.SortOrder
   sourceUrl?: Prisma.SortOrder
   sourceSiteId?: Prisma.SortOrder
   organizerName?: Prisma.SortOrder
   organizerTitle?: Prisma.SortOrder
   organizerEmail?: Prisma.SortOrder
   organizerPhone?: Prisma.SortOrder
+  contactNote?: Prisma.SortOrder
   status?: Prisma.SortOrder
   dateAdded?: Prisma.SortOrder
   runId?: Prisma.SortOrder
@@ -522,15 +604,21 @@ export type EventMinOrderByAggregateInput = {
   eventName?: Prisma.SortOrder
   eventDateStart?: Prisma.SortOrder
   eventDateEnd?: Prisma.SortOrder
+  expectedAttendees?: Prisma.SortOrder
   sourceUrl?: Prisma.SortOrder
   sourceSiteId?: Prisma.SortOrder
   organizerName?: Prisma.SortOrder
   organizerTitle?: Prisma.SortOrder
   organizerEmail?: Prisma.SortOrder
   organizerPhone?: Prisma.SortOrder
+  contactNote?: Prisma.SortOrder
   status?: Prisma.SortOrder
   dateAdded?: Prisma.SortOrder
   runId?: Prisma.SortOrder
+}
+
+export type EventSumOrderByAggregateInput = {
+  expectedAttendees?: Prisma.SortOrder
 }
 
 export type EventScalarRelationFilter = {
@@ -582,6 +670,14 @@ export type EventUncheckedUpdateManyWithoutLocationNestedInput = {
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type EnumEventStatusFieldUpdateOperationsInput = {
@@ -691,11 +787,13 @@ export type EventCreateWithoutLocationInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   run?: Prisma.IngestionRunCreateNestedOneWithoutEventsInput
@@ -708,12 +806,14 @@ export type EventUncheckedCreateWithoutLocationInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   sourceSiteId?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   runId?: string | null
@@ -755,12 +855,14 @@ export type EventScalarWhereInput = {
   eventName?: Prisma.StringFilter<"Event"> | string
   eventDateStart?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   eventDateEnd?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
+  expectedAttendees?: Prisma.IntNullableFilter<"Event"> | number | null
   sourceUrl?: Prisma.StringNullableFilter<"Event"> | string | null
   sourceSiteId?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerName?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerTitle?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerEmail?: Prisma.StringNullableFilter<"Event"> | string | null
   organizerPhone?: Prisma.StringNullableFilter<"Event"> | string | null
+  contactNote?: Prisma.StringNullableFilter<"Event"> | string | null
   status?: Prisma.EnumEventStatusFilter<"Event"> | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFilter<"Event"> | Date | string
   runId?: Prisma.StringNullableFilter<"Event"> | string | null
@@ -771,11 +873,13 @@ export type EventCreateWithoutRunInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
@@ -789,12 +893,14 @@ export type EventUncheckedCreateWithoutRunInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   sourceSiteId?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
@@ -831,11 +937,13 @@ export type EventCreateWithoutSourceSiteInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
@@ -849,11 +957,13 @@ export type EventUncheckedCreateWithoutSourceSiteInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   runId?: string | null
@@ -891,11 +1001,13 @@ export type EventCreateWithoutContactsInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
@@ -909,12 +1021,14 @@ export type EventUncheckedCreateWithoutContactsInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   sourceSiteId?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   runId?: string | null
@@ -941,11 +1055,13 @@ export type EventUpdateWithoutContactsInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
@@ -959,12 +1075,14 @@ export type EventUncheckedUpdateWithoutContactsInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceSiteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   runId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -975,12 +1093,14 @@ export type EventCreateManyLocationInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   sourceSiteId?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   runId?: string | null
@@ -991,11 +1111,13 @@ export type EventUpdateWithoutLocationInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   run?: Prisma.IngestionRunUpdateOneWithoutEventsNestedInput
@@ -1008,12 +1130,14 @@ export type EventUncheckedUpdateWithoutLocationInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceSiteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   runId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1025,12 +1149,14 @@ export type EventUncheckedUpdateManyWithoutLocationInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceSiteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   runId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1042,12 +1168,14 @@ export type EventCreateManyRunInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   sourceSiteId?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
 }
@@ -1057,11 +1185,13 @@ export type EventUpdateWithoutRunInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
@@ -1075,12 +1205,14 @@ export type EventUncheckedUpdateWithoutRunInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceSiteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
@@ -1092,12 +1224,14 @@ export type EventUncheckedUpdateManyWithoutRunInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceSiteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1108,11 +1242,13 @@ export type EventCreateManySourceSiteInput = {
   eventName: string
   eventDateStart?: Date | string | null
   eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
   sourceUrl?: string | null
   organizerName?: string | null
   organizerTitle?: string | null
   organizerEmail?: string | null
   organizerPhone?: string | null
+  contactNote?: string | null
   status?: $Enums.EventStatus
   dateAdded?: Date | string
   runId?: string | null
@@ -1123,11 +1259,13 @@ export type EventUpdateWithoutSourceSiteInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
@@ -1141,11 +1279,13 @@ export type EventUncheckedUpdateWithoutSourceSiteInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   runId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1158,11 +1298,13 @@ export type EventUncheckedUpdateManyWithoutSourceSiteInput = {
   eventName?: Prisma.StringFieldUpdateOperationsInput | string
   eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
   dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   runId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1205,12 +1347,14 @@ export type EventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   eventName?: boolean
   eventDateStart?: boolean
   eventDateEnd?: boolean
+  expectedAttendees?: boolean
   sourceUrl?: boolean
   sourceSiteId?: boolean
   organizerName?: boolean
   organizerTitle?: boolean
   organizerEmail?: boolean
   organizerPhone?: boolean
+  contactNote?: boolean
   status?: boolean
   dateAdded?: boolean
   runId?: boolean
@@ -1227,12 +1371,14 @@ export type EventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   eventName?: boolean
   eventDateStart?: boolean
   eventDateEnd?: boolean
+  expectedAttendees?: boolean
   sourceUrl?: boolean
   sourceSiteId?: boolean
   organizerName?: boolean
   organizerTitle?: boolean
   organizerEmail?: boolean
   organizerPhone?: boolean
+  contactNote?: boolean
   status?: boolean
   dateAdded?: boolean
   runId?: boolean
@@ -1247,12 +1393,14 @@ export type EventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   eventName?: boolean
   eventDateStart?: boolean
   eventDateEnd?: boolean
+  expectedAttendees?: boolean
   sourceUrl?: boolean
   sourceSiteId?: boolean
   organizerName?: boolean
   organizerTitle?: boolean
   organizerEmail?: boolean
   organizerPhone?: boolean
+  contactNote?: boolean
   status?: boolean
   dateAdded?: boolean
   runId?: boolean
@@ -1267,18 +1415,20 @@ export type EventSelectScalar = {
   eventName?: boolean
   eventDateStart?: boolean
   eventDateEnd?: boolean
+  expectedAttendees?: boolean
   sourceUrl?: boolean
   sourceSiteId?: boolean
   organizerName?: boolean
   organizerTitle?: boolean
   organizerEmail?: boolean
   organizerPhone?: boolean
+  contactNote?: boolean
   status?: boolean
   dateAdded?: boolean
   runId?: boolean
 }
 
-export type EventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "locationId" | "eventName" | "eventDateStart" | "eventDateEnd" | "sourceUrl" | "sourceSiteId" | "organizerName" | "organizerTitle" | "organizerEmail" | "organizerPhone" | "status" | "dateAdded" | "runId", ExtArgs["result"]["event"]>
+export type EventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "locationId" | "eventName" | "eventDateStart" | "eventDateEnd" | "expectedAttendees" | "sourceUrl" | "sourceSiteId" | "organizerName" | "organizerTitle" | "organizerEmail" | "organizerPhone" | "contactNote" | "status" | "dateAdded" | "runId", ExtArgs["result"]["event"]>
 export type EventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
   run?: boolean | Prisma.Event$runArgs<ExtArgs>
@@ -1311,12 +1461,14 @@ export type $EventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     eventName: string
     eventDateStart: Date | null
     eventDateEnd: Date | null
+    expectedAttendees: number | null
     sourceUrl: string | null
     sourceSiteId: string | null
     organizerName: string | null
     organizerTitle: string | null
     organizerEmail: string | null
     organizerPhone: string | null
+    contactNote: string | null
     status: $Enums.EventStatus
     dateAdded: Date
     runId: string | null
@@ -1752,12 +1904,14 @@ export interface EventFieldRefs {
   readonly eventName: Prisma.FieldRef<"Event", 'String'>
   readonly eventDateStart: Prisma.FieldRef<"Event", 'DateTime'>
   readonly eventDateEnd: Prisma.FieldRef<"Event", 'DateTime'>
+  readonly expectedAttendees: Prisma.FieldRef<"Event", 'Int'>
   readonly sourceUrl: Prisma.FieldRef<"Event", 'String'>
   readonly sourceSiteId: Prisma.FieldRef<"Event", 'String'>
   readonly organizerName: Prisma.FieldRef<"Event", 'String'>
   readonly organizerTitle: Prisma.FieldRef<"Event", 'String'>
   readonly organizerEmail: Prisma.FieldRef<"Event", 'String'>
   readonly organizerPhone: Prisma.FieldRef<"Event", 'String'>
+  readonly contactNote: Prisma.FieldRef<"Event", 'String'>
   readonly status: Prisma.FieldRef<"Event", 'EventStatus'>
   readonly dateAdded: Prisma.FieldRef<"Event", 'DateTime'>
   readonly runId: Prisma.FieldRef<"Event", 'String'>

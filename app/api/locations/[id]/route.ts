@@ -7,13 +7,15 @@ export async function PATCH(
 ) {
   const { id } = await params
   const body = await request.json()
-  const { name, address, city, state, sourceUrl, active } = body as {
+  const { name, address, city, state, sourceUrl, active, type, parentId } = body as {
     name?: string
     address?: string
     city?: string
     state?: string
     sourceUrl?: string
     active?: boolean
+    type?: "CITY" | "VENUE"
+    parentId?: string | null
   }
 
   const location = await prisma.location.update({
@@ -25,6 +27,8 @@ export async function PATCH(
       ...(state !== undefined && { state: state?.trim() || null }),
       ...(sourceUrl !== undefined && { sourceUrl: sourceUrl?.trim() || null }),
       ...(active !== undefined && { active }),
+      ...(type !== undefined && { type }),
+      ...(parentId !== undefined && { parentId: parentId ?? null }),
     },
     include: { searchTerms: true },
   })

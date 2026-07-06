@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback, useEffect, useMemo } from "react"
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import {
   flexRender,
   getCoreRowModel,
@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -27,8 +28,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowUpDown, Download, Pencil, Check, X, Search, Loader2, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  ArrowUpDown,
+  Download,
+  Upload,
+  Pencil,
+  Check,
+  X,
+  Search,
+  Loader2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  FileText,
+  StickyNote,
+} from "lucide-react"
 import { toast } from "sonner"
 import { ContactFinderModal } from "./contact-finder-modal"
 
@@ -53,6 +85,7 @@ interface EventRow {
   organizerTitle: string | null
   organizerEmail: string | null
   organizerPhone: string | null
+  contactNote: string | null
   status: "new" | "reviewed" | "contacted"
   dateAdded: string
   location: { name: string; city: string | null; state: string | null }
@@ -62,6 +95,10 @@ interface EventRow {
 interface Location {
   id: string
   name: string
+  type: "CITY" | "VENUE"
+  city: string | null
+  state: string | null
+  parentId: string | null
 }
 
 // ─── Inline Edit Cell ─────────────────────────────────────────────────────────
@@ -202,6 +239,7 @@ export function EventsTable() {
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [filterCity, setFilterCity] = useState<string>("all")
   const [filterLocation, setFilterLocation] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [sorting, setSorting] = useState<SortingState>([
@@ -225,6 +263,19 @@ export function EventsTable() {
   const [eventsMissingContacts, setEventsMissingContacts] = useState(0)
   const [eventsWithContacts, setEventsWithContacts] = useState(0)
 
+  // Import dialog state
+  const [importOpen, setImportOpen] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importLoading, setImportLoading] = useState(false)
+  const [importResult, setImportResult] = useState<{
+    created: number
+    skipped: number
+    errors: number
+    details: string[]
+  } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const setCityFilter = (val: string) => { setFilterCity(val); setFilterLocation("all"); setPage(1) }
   const setLocationFilter = (val: string) => { setFilterLocation(val); setPage(1) }
   const setStatusFilter = (val: string) => { setFilterStatus(val); setPage(1) }
   const setSearchFilter = (val: string) => { setSearch(val); setPage(1) }
@@ -233,6 +284,7 @@ export function EventsTable() {
   const fetchEvents = useCallback(async () => {
     try {
       const params = new URLSearchParams()
+      if (filterCity !== "all" && filterLocation === "all") params.set("cityId", filterCity)
       if (filterLocation !== "all") params.set("locationId", filterLocation)
       if (filterStatus !== "all") params.set("status", filterStatus)
       if (filterHasContact !== "all") params.set("hasContact", filterHasContact)
@@ -250,7 +302,7 @@ export function EventsTable() {
     } finally {
       setLoading(false)
     }
-  }, [filterLocation, filterStatus, filterHasContact, search, page, pageSize])
+  }, [filterCity, filterLocation, filterStatus, filterHasContact, search, page, pageSize])
 
   const fetchLocations = useCallback(async () => {
     const res = await fetch("/api/locations")
@@ -335,6 +387,14 @@ export function EventsTable() {
     } finally {
       setDeleteAllLoading(false)
     }
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  const isPast = (row: EventRow) => {
+    const d = row.eventDateEnd ?? row.eventDateStart
+    if (!d) return false
+    return new Date(d) < new Date()
   }
 
   // ── Columns ───────────────────────────────────────────────────────────────
@@ -460,6 +520,18 @@ export function EventsTable() {
         ),
       },
       {
+        id: "contactNote",
+        header: "Notes",
+        cell: ({ row }) => (
+          <InlineEditCell
+            value={row.original.contactNote}
+            eventId={row.original.id}
+            field="contactNote"
+            onSaved={fetchEvents}
+          />
+        ),
+      },
+      {
         id: "actions",
         header: "",
         meta: { align: "center" },
@@ -467,21 +539,27 @@ export function EventsTable() {
           const event = row.original
           const contactCount = event.contacts?.length ?? 0
           return (
-            <Button
-              variant={contactCount > 0 ? "ghost" : "outline"}
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() =>
-                setContactModal({
-                  open: true,
-                  eventId: event.id,
-                  eventName: event.eventName,
-                })
-              }
-            >
-              <Search className="h-3 w-3 mr-1" />
-              {contactCount > 0 ? `${contactCount} Contact${contactCount > 1 ? "s" : ""}` : "Find Contact"}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-40">
+                <DropdownMenuItem
+                  onClick={() =>
+                    setContactModal({
+                      open: true,
+                      eventId: event.id,
+                      eventName: event.eventName,
+                    })
+                  }
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  {contactCount > 0 ? "View Contacts" : "Find Contact"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )
         },
       },
@@ -534,17 +612,36 @@ export function EventsTable() {
           onChange={(e) => setSearchFilter(e.target.value)}
           className="w-64"
         />
-        <Select value={filterLocation} onValueChange={setLocationFilter}>
-          <SelectTrigger className="w-48" size="sm">
-            <SelectValue placeholder="All locations" />
+        <Select value={filterCity} onValueChange={setCityFilter}>
+          <SelectTrigger className="w-44" size="sm">
+            <SelectValue placeholder="All cities" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All locations</SelectItem>
-            {locations.map((loc) => (
-              <SelectItem key={loc.id} value={loc.id}>
-                {loc.name}
-              </SelectItem>
-            ))}
+            <SelectItem value="all">All cities</SelectItem>
+            {locations
+              .filter((loc) => loc.type === "CITY")
+              .map((loc) => (
+                <SelectItem key={loc.id} value={loc.id}>
+                  {loc.name}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterLocation} onValueChange={setLocationFilter}>
+          <SelectTrigger className="w-56" size="sm">
+            <SelectValue placeholder="All venues" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All venues</SelectItem>
+            {locations
+              .filter((loc) => loc.type === "VENUE")
+              .filter((loc) => filterCity === "all" || loc.parentId === filterCity)
+              .map((loc) => (
+                <SelectItem key={loc.id} value={loc.id}>
+                  {loc.name}
+                  {loc.city ? ` (${loc.city}${loc.state ? `, ${loc.state}` : ""})` : ""}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setStatusFilter}>
@@ -590,8 +687,103 @@ export function EventsTable() {
         </Select>
         <Button variant="outline" size="sm" onClick={exportToExcel}>
           <Download className="h-4 w-4 mr-1.5" />
-          Export to Excel
+          Export
         </Button>
+        <Dialog open={importOpen} onOpenChange={(open) => { setImportOpen(open); if (!open) { setImportFile(null); setImportResult(null) } }}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Upload className="h-4 w-4 mr-1.5" />
+              Import
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Import Events from Excel</DialogTitle>
+              <DialogDescription>
+                Upload an .xlsx file to batch-create events. Download the sample template first to see the expected format.
+              </DialogDescription>
+            </DialogHeader>
+
+            {importResult ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-emerald-600 font-medium">✓ {importResult.created} created</span>
+                  {importResult.skipped > 0 && <span className="text-muted-foreground">↷ {importResult.skipped} skipped</span>}
+                  {importResult.errors > 0 && <span className="text-destructive font-medium">✗ {importResult.errors} errors</span>}
+                </div>
+                {importResult.details.length > 0 && (
+                  <div className="max-h-40 overflow-y-auto rounded border p-2 text-xs text-muted-foreground space-y-1">
+                    {importResult.details.map((d, i) => (
+                      <p key={i}>{d}</p>
+                    ))}
+                  </div>
+                )}
+                <DialogFooter showCloseButton />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <a
+                  href="/api/events/import/sample"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  <FileText className="h-4 w-4" />
+                  Download sample template
+                </a>
+                <div
+                  className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-8 text-center cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  <p className="text-sm font-medium">
+                    {importFile ? importFile.name : "Click to select an .xlsx file"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    .xlsx files only
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      if (f) setImportFile(f)
+                    }}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button
+                    disabled={!importFile || importLoading}
+                    onClick={async () => {
+                      if (!importFile) return
+                      setImportLoading(true)
+                      setImportResult(null)
+                      try {
+                        const fd = new FormData()
+                        fd.set("file", importFile)
+                        const res = await fetch("/api/events/import", { method: "POST", body: fd })
+                        const data = await res.json()
+                        if (!res.ok) throw new Error(data.error)
+                        setImportResult(data)
+                        fetchEvents()
+                        refreshStats()
+                      } catch (err) {
+                        toast.error(err instanceof Error ? err.message : "Import failed")
+                      } finally {
+                        setImportLoading(false)
+                      }
+                    }}
+                  >
+                    {importLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                    ) : null}
+                    Upload & Import
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
         <Button
           variant="outline"
           size="sm"
@@ -675,6 +867,7 @@ export function EventsTable() {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() ? "selected" : undefined}
+                    className={isPast(row.original) ? "opacity-50 [&_td]:text-muted-foreground" : ""}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="py-2">

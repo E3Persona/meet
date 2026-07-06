@@ -78,7 +78,7 @@ export default function DashboardPage() {
                   {section.description}
                 </p>
               </div>
-              {/* {active === "events" && <RunNowButton onComplete={refresh} />} */}
+              {active === "events" && <RunNowButton onComplete={refresh} />}
             </div>
 
             {/* Stats — events view only */}

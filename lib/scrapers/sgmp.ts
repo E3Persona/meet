@@ -19,6 +19,7 @@ export interface SGMPEvent {
   contactName: string | null
   contactEmail: string | null
   contactPhone: string | null
+  expectedAttendees: number | null
   sourceUrl: string
   sourceSite: "sgmp.org"
 }
@@ -337,6 +338,7 @@ export async function scrapeSgmpEvents(
           contactName: detail.contactName,
           contactEmail: detail.contactEmail,
           contactPhone: detail.contactPhone,
+          expectedAttendees: null,
           sourceUrl: ev.detailUrl,
           sourceSite: "sgmp.org",
         })

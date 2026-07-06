@@ -8,58 +8,96 @@ datasource db {
 }
 
 // ─── Location ─────────────────────────────────────────────────────────────────
+// Self-relation so a City can have many Venues under it. This lets you run
+// city-wide search phrases once per city, and venue-specific phrases once
+// per venue, while keeping venues queryable/groupable by their parent city.
+
+enum LocationType {
+  CITY
+  VENUE
+}
 
 model Location {
-  id        String   @id @default(cuid())
-  name      String
-  shortName String?
-  address   String?
-  city      String?
+  id        String       @id @default(cuid())
+  type      LocationType
+  name      String       // City: "Philadelphia" | Venue: "Philadelphia Marriott Downtown"
+  shortName String?      // Venue only: "Marriott" (from "Tab Name (Short)")
+  address   String?      // Venue only
+  city      String?      // denormalized for fast filtering, both types
   state     String?
+  parentId  String?      // Venue -> its City. Null for CITY rows.
   sourceUrl String?
-  active    Boolean  @default(true)
-  isCity    Boolean  @default(false)  // true = ICA/CN can target this as a city slug
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
+  parent      Location?    @relation("CityVenues", fields: [parentId], references: [id], onDelete: Cascade)
+  venues      Location[]   @relation("CityVenues")
   searchTerms SearchTerm[]
   events      Event[]
 
+  @@index([type, parentId])
   @@map("locations")
 }
 
 // ─── Search Term ──────────────────────────────────────────────────────────────
+// Two ways a search gets run:
+//   1. A SearchTemplate (with {CITY}/{VENUE}/{MONTH}/{YEAR} placeholders) is
+//      resolved against every active Location of the matching scope.
+//   2. A SearchTerm is a literal, already-resolved phrase — either pinned to
+//      one specific Location (locationId set) or fully global (locationId null,
+//      e.g. "CME Credit", "Road Show").
+// This replaces treating every literal keyword as location-bound.
 
 model SearchTerm {
   id         String   @id @default(cuid())
   keyword    String
-  locationId String
+  locationId String?           // null = global keyword, run everywhere
   active     Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  location Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
   @@map("search_terms")
+}
+
+enum TemplateScope {
+  CITY    // uses {CITY} — resolved once per active CITY location
+  VENUE   // uses {VENUE} — resolved once per active VENUE location
+  GLOBAL  // no location placeholder — resolved once, run as-is
+}
+
+model SearchTemplate {
+  id        String        @id @default(cuid())
+  template  String        // e.g. "events at {VENUE}", "{CITY} trade show listings"
+  scope     TemplateScope @default(CITY)
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("search_templates")
 }
 
 // ─── Event ────────────────────────────────────────────────────────────────────
 
 model Event {
-  id               String    @id @default(cuid())
-  locationId       String
-  eventName        String
-  eventDateStart   DateTime?
-  eventDateEnd     DateTime?
-  sourceUrl        String?
-  sourceSiteId     String?
-  organizerName    String?
-  organizerTitle   String?
-  organizerEmail   String?
-  organizerPhone   String?
-  status           EventStatus @default(new)
-  dateAdded        DateTime  @default(now())
-  runId            String?
+  id                 String      @id @default(cuid())
+  locationId         String
+  eventName          String
+  eventDateStart     DateTime?
+  eventDateEnd       DateTime?
+  expectedAttendees  Int?
+  sourceUrl          String?
+  sourceSiteId       String?
+  organizerName      String?
+  organizerTitle     String?
+  organizerEmail     String?
+  organizerPhone     String?
+  contactNote        String?
+  status             EventStatus @default(new)
+  dateAdded          DateTime    @default(now())
+  runId              String?
 
   location   Location        @relation(fields: [locationId], references: [id], onDelete: Cascade)
   run        IngestionRun?   @relation(fields: [runId], references: [id], onDelete: SetNull)
@@ -105,35 +143,33 @@ enum RunStatus {
   failed
 }
 
-// ─── Search Template ─────────────────────────────────────────────────────────
+// ─── Source Site ──────────────────────────────────────────────────────────────
+// sourceMode separates "can this even be automated" from "how" (scrapeMode).
+// Manual sources skip SourceSiteConfig entirely and just get a reminder cadence.
 
-model SearchTemplate {
-  id        String   @id @default(cuid())
-  template  String
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("search_templates")
+enum SourceMode {
+  automated
+  manual
 }
 
-// ─── Source Site ──────────────────────────────────────────────────────────────
-
 model SourceSite {
-  id              String        @id @default(cuid())
-  name            String
-  url             String?
-  active          Boolean       @default(true)
-  urlPattern      String?
-  scrapeMode      ScrapeMode    @default(auto)
-  notes           String?
-  lastScrapedAt   DateTime?
-  lastScrapeStatus ScrapeStatus?
-  eventsFound     Int           @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                    String        @id @default(cuid())
+  name                  String
+  url                   String?
+  active                Boolean       @default(true)
+  sourceMode            SourceMode    @default(automated)
+  urlPattern            String?
+  scrapeMode            ScrapeMode    @default(auto)
+  notes                 String?
+  lastScrapedAt         DateTime?
+  lastScrapeStatus      ScrapeStatus?
+  manualCheckFrequencyDays Int?
+  lastManualCheckAt     DateTime?
+  eventsFound           Int           @default(0)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
-  events          Event[]
+  events           Event[]
   sourceSiteConfig SourceSiteConfig?
 
   @@map("source_sites")

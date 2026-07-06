@@ -4,12 +4,16 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}))
-  const { active } = body as { active?: boolean }
+  const { active, dateFrom, dateTo } = body as {
+    active?: boolean
+    dateFrom?: string
+    dateTo?: string
+  }
 
   if (active === false) {
     return NextResponse.json({ error: "ASAE is disabled via config" }, { status: 409 })
   }
 
-  const { runId } = await startScraperRun("ingest-asae.ts", "asaecenter.org")
+  const { runId } = await startScraperRun("ingest-asae.ts", "asaecenter.org", "manual", false, dateFrom, dateTo)
   return NextResponse.json({ runId, status: "running" })
 }

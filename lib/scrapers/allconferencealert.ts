@@ -36,6 +36,7 @@ export interface ACAEvent {
   venueCountry: string
   objective: string | null
   contact: ACAContact
+  expectedAttendees: number | null
   sourceSite: "allconferencealert.net"
 }
 
@@ -372,6 +373,7 @@ export async function scrapeACA(options?: {
         venueCountry: row.venueCountry,
         objective,
         contact: { contactPerson, organizedBy, inquiryEmail },
+        expectedAttendees: null,
         sourceSite: "allconferencealert.net",
       })
     }

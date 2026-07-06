@@ -140,6 +140,7 @@ export async function POST() {
 
       await prisma.location.create({
         data: {
+          type: "VENUE",
           name: loc.name,
           city: loc.city,
           state: loc.state,

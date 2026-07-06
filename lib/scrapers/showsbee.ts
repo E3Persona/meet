@@ -32,6 +32,7 @@ export interface ShowsbeeEvent extends ShowsbeeEventCard {
     phone: string | null
     website: string | null
   } | null
+  expectedAttendees: number | null
   sourceSite: "showsbee.com"
 }
 
@@ -366,6 +367,7 @@ export async function scrapeShowsbee(
                 website: organizers[0].website || null,
               }
             : null,
+          expectedAttendees: null,
           sourceSite: "showsbee.com",
         })
       }

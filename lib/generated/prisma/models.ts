@@ -10,9 +10,9 @@
  */
 export type * from './models/Location'
 export type * from './models/SearchTerm'
+export type * from './models/SearchTemplate'
 export type * from './models/Event'
 export type * from './models/IngestionRun'
-export type * from './models/SearchTemplate'
 export type * from './models/SourceSite'
 export type * from './models/SourceSiteConfig'
 export type * from './models/IngestionSchedule'

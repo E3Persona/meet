@@ -4,9 +4,11 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}))
-  const { maxMonths, active } = body as {
+  const { maxMonths, active, dateFrom, dateTo } = body as {
     maxMonths?: number
     active?: boolean
+    dateFrom?: string
+    dateTo?: string
   }
 
   if (active === false) {
@@ -23,6 +25,6 @@ export async function POST(request: Request) {
     })
   }
 
-  const { runId } = await startScraperRun("ingest-sgmp.ts", "sgmp.org")
+  const { runId } = await startScraperRun("ingest-sgmp.ts", "sgmp.org", "manual", false, dateFrom, dateTo)
   return NextResponse.json({ runId, status: "running" })
 }

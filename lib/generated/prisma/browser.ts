@@ -28,6 +28,11 @@ export type Location = Prisma.LocationModel
  */
 export type SearchTerm = Prisma.SearchTermModel
 /**
+ * Model SearchTemplate
+ * 
+ */
+export type SearchTemplate = Prisma.SearchTemplateModel
+/**
  * Model Event
  * 
  */
@@ -37,11 +42,6 @@ export type Event = Prisma.EventModel
  * 
  */
 export type IngestionRun = Prisma.IngestionRunModel
-/**
- * Model SearchTemplate
- * 
- */
-export type SearchTemplate = Prisma.SearchTemplateModel
 /**
  * Model SourceSite
  * 

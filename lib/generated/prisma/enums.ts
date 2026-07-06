@@ -9,6 +9,23 @@
 * 🟢 You can import this file directly.
 */
 
+export const LocationType = {
+  CITY: 'CITY',
+  VENUE: 'VENUE'
+} as const
+
+export type LocationType = (typeof LocationType)[keyof typeof LocationType]
+
+
+export const TemplateScope = {
+  CITY: 'CITY',
+  VENUE: 'VENUE',
+  GLOBAL: 'GLOBAL'
+} as const
+
+export type TemplateScope = (typeof TemplateScope)[keyof typeof TemplateScope]
+
+
 export const EventStatus = {
   new: 'new',
   reviewed: 'reviewed',
@@ -33,6 +50,14 @@ export const RunStatus = {
 } as const
 
 export type RunStatus = (typeof RunStatus)[keyof typeof RunStatus]
+
+
+export const SourceMode = {
+  automated: 'automated',
+  manual: 'manual'
+} as const
+
+export type SourceMode = (typeof SourceMode)[keyof typeof SourceMode]
 
 
 export const ScrapeMode = {

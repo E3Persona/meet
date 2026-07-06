@@ -1,0 +1,126 @@
+{
+  "templates": [
+    {
+      "template": "{CITY} convention listings",
+      "example": "Philadelphia convention listings",
+      "scope": "CITY"
+    },
+    {
+      "template": "{CITY} trade show listings",
+      "example": "Philadelphia trade show listings",
+      "scope": "CITY"
+    },
+    {
+      "template": "{CITY} business event listings",
+      "example": "Philadelphia business event listings",
+      "scope": "CITY"
+    },
+    {
+      "template": "{CITY} professional event calendar",
+      "example": "Philadelphia professional event calendar",
+      "scope": "CITY"
+    },
+    {
+      "template": "{CITY} expo listings",
+      "example": "Philadelphia Expo listings",
+      "scope": "CITY"
+    },
+    {
+      "template": "{CITY} conference listings",
+      "example": "Philadelphia conference listings",
+      "scope": "CITY"
+    },
+    {
+      "template": "{CITY} industry event calendar",
+      "example": "Philadelphia industry event calendar",
+      "scope": "CITY"
+    },
+    {
+      "template": "upcoming meetings in {CITY}",
+      "example": "upcoming meetings in Philadelphia",
+      "scope": "CITY"
+    },
+    {
+      "template": "upcoming conventions in {CITY}",
+      "example": "upcoming conventions in Philadelphia",
+      "scope": "CITY"
+    },
+    {
+      "template": "{CITY} convention schedule",
+      "example": "Philadelphia convention schedule",
+      "scope": "CITY"
+    },
+    {
+      "template": "national conventions {CITY}",
+      "example": "national conventions Philadelphia",
+      "scope": "CITY"
+    },
+    {
+      "template": "upcoming trade shows in {CITY}",
+      "example": "upcoming trade shows in Philadelphia",
+      "scope": "CITY"
+    },
+    {
+      "template": "{CITY} trade show calendar",
+      "example": "Philadelphia trade show calendar",
+      "scope": "CITY"
+    },
+    {
+      "template": "events at {VENUE}",
+      "example": "events at Philadelphia Marriott Downtown",
+      "scope": "VENUE"
+    },
+    {
+      "template": "{MONTH} {YEAR} conference {VENUE}",
+      "example": "October 2026 conference Philadelphia Marriott Downtown",
+      "scope": "VENUE"
+    },
+    {
+      "template": "{MONTH} {YEAR} convention {VENUE}",
+      "example": "October 2026 convention Philadelphia Marriott Downtown",
+      "scope": "VENUE"
+    },
+    {
+      "template": "{MONTH} {YEAR} trade show {VENUE}",
+      "example": "October 2026 trade show Philadelphia Marriott Downtown",
+      "scope": "VENUE"
+    },
+    {
+      "template": "{MONTH} {YEAR} meeting {VENUE}",
+      "example": "October 2026 meeting Philadelphia Marriott Downtown",
+      "scope": "VENUE"
+    }
+  ],
+  "literalKeywords": [
+    "upcoming tradeshow in Philadelphia",
+    "Symposium Baltimore Convention Center",
+    "Summit Baltimore Convention Center",
+    "Sales Meeting Baltimore Convention Center",
+    "Financial Meeting Baltimore Convention Center",
+    "Congress Baltimore Convention Center",
+    "Consumer Show Baltimore Convention Center",
+    "Association Baltimore Convention Center",
+    "Association Meeting Baltimore Convention Center",
+    "Clinical Meeting Baltimore Convention Center",
+    "Public Show Baltimore Convention Center",
+    "Training Summit Baltimore Convention Center",
+    "Annual Meeting Baltimore Convention Center",
+    "Forum Baltimore Convention Center",
+    "Exposition Baltimore Convention Center",
+    "User Group Baltimore Convention Center",
+    "Compliance Baltimore Convention Center",
+    "Road Show",
+    "Food Event Baltimore Convention Center",
+    "Festival Baltimore Convention Center",
+    "Wine Event Baltimore Convention Center",
+    "Convocation Baltimore Convention Center",
+    "Assembly Baltimore Convention Center",
+    "Forum Baltimore Convention Center",
+    "CME Credit",
+    "CLE Credit",
+    "Caucus  Baltimore Convention Center",
+    "Roundtable Baltimore Convention Center",
+    "Promotional Tour",
+    "Sampling Tour"
+  ]
+}

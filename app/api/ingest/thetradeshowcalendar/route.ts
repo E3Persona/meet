@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}))
-  const { maxPages, maxLocations, active } = body as {
+  const { maxPages, maxLocations, active, dateFrom, dateTo } = body as {
     maxPages?: number
     maxLocations?: number
     active?: boolean
+    dateFrom?: string
+    dateTo?: string
   }
 
   if (active === false) {
@@ -25,6 +27,6 @@ export async function POST(request: Request) {
     })
   }
 
-  const { runId } = await startScraperRun("ingest-thetradeshowcalendar.ts", "thetradeshowcalendar.com")
+  const { runId } = await startScraperRun("ingest-thetradeshowcalendar.ts", "thetradeshowcalendar.com", "manual", false, dateFrom, dateTo)
   return NextResponse.json({ runId, status: "running" })
 }

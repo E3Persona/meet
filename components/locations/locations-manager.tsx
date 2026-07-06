@@ -6,7 +6,7 @@ import { UniversalList } from "@/components/ui/list/universallist"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Trash2, Plus } from "lucide-react"
 import type { FormSection as FormSectionType } from "@/types/components"
@@ -14,13 +14,17 @@ import { EVENT_TYPE_KEYWORDS } from "@/lib/constants/events"
 import { toast } from "sonner"
 import { ColumnDef } from "@tanstack/react-table"
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface SearchTerm {
   id: string
   keyword: string
   active: boolean
-  locationId: string
+  locationId: string | null
+}
+
+interface NestedLocation {
+  id: string
+  name: string
+  shortName: string | null
 }
 
 interface Location {
@@ -31,23 +35,44 @@ interface Location {
   state: string | null
   sourceUrl: string | null
   active: boolean
+  type: "CITY" | "VENUE"
+  parentId: string | null
+  parent: { id: string; name: string } | null
+  venues: NestedLocation[]
   searchTerms: SearchTerm[]
 }
-
-// ─── Location Form Sections ───────────────────────────────────────────────────
 
 const LOCATION_FORM_SECTIONS: FormSectionType[] = [
   {
     id: "details",
     title: "Location Details",
-    description: "Add a venue or location to track events at",
+    description: "Add a city or venue to track events at",
     columns: 4,
     fields: [
       {
-        name: "name",
-        label: "Venue / Location Name",
+        name: "type",
+        label: "Type",
+        type: "select",
+        options: [
+          { label: "Venue", value: "VENUE" },
+          { label: "City", value: "CITY" },
+        ],
+        required: true,
+        colSpan: 2,
+      },
+      {
+        name: "parentId",
+        label: "Parent City Name",
         type: "text",
-        placeholder: "e.g. Gaylord National Harbor",
+        placeholder: "e.g. Philadelphia",
+        colSpan: 2,
+        helperText: "For Venues only — type the name of the city this venue belongs to. Leave blank for Cities.",
+      },
+      {
+        name: "name",
+        label: "Name",
+        type: "text",
+        placeholder: "e.g. Philadelphia Marriott Downtown",
         required: true,
         colSpan: 4,
       },
@@ -55,21 +80,21 @@ const LOCATION_FORM_SECTIONS: FormSectionType[] = [
         name: "address",
         label: "Address",
         type: "text",
-        placeholder: "e.g. 201 Waterfront St",
+        placeholder: "e.g. 1201 Market Street",
         colSpan: 4,
       },
       {
         name: "city",
         label: "City",
         type: "text",
-        placeholder: "e.g. National Harbor",
+        placeholder: "e.g. Philadelphia",
         colSpan: 2,
       },
       {
         name: "state",
         label: "State",
         type: "text",
-        placeholder: "e.g. MD",
+        placeholder: "e.g. PA",
         colSpan: 2,
       },
       {
@@ -83,8 +108,6 @@ const LOCATION_FORM_SECTIONS: FormSectionType[] = [
   },
 ]
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export function LocationsManager() {
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
@@ -92,8 +115,6 @@ export function LocationsManager() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
-
-  // ── Fetch locations ────────────────────────────────────────────────────────
 
   const fetchLocations = useCallback(async () => {
     try {
@@ -112,8 +133,6 @@ export function LocationsManager() {
     fetchLocations()
   }, [fetchLocations])
 
-  // ── Create location ────────────────────────────────────────────────────────
-
   const handleCreateLocation = async (values: Record<string, unknown>) => {
     setIsSubmitting(true)
     try {
@@ -126,11 +145,13 @@ export function LocationsManager() {
           city: values.city,
           state: values.state,
           sourceUrl: values.sourceUrl,
+          type: values.type || "VENUE",
+          parentId: values.parentId || null,
           searchTerms: EVENT_TYPE_KEYWORDS,
         }),
       })
       if (!res.ok) throw new Error("Failed to create")
-      toast.success("Location created with all search term keywords")
+      toast.success("Location created")
       setFormValues({})
       setFormErrors({})
       setFormOpen(false)
@@ -141,8 +162,6 @@ export function LocationsManager() {
       setIsSubmitting(false)
     }
   }
-
-  // ── Toggle location active ─────────────────────────────────────────────────
 
   const toggleLocation = async (location: Location, active: boolean) => {
     try {
@@ -157,10 +176,8 @@ export function LocationsManager() {
     }
   }
 
-  // ── Delete location ────────────────────────────────────────────────────────
-
   const deleteLocation = async (location: Location) => {
-    if (!confirm(`Delete "${location.name}" and all its search terms?`)) return
+    if (!confirm(`Delete "${location.name}" and all its events?`)) return
     try {
       await fetch(`/api/locations/${location.id}`, { method: "DELETE" })
       toast.success("Location deleted")
@@ -169,8 +186,6 @@ export function LocationsManager() {
       toast.error("Failed to delete location")
     }
   }
-
-  // ── Toggle search term ─────────────────────────────────────────────────────
 
   const toggleSearchTerm = async (term: SearchTerm, active: boolean) => {
     try {
@@ -185,8 +200,6 @@ export function LocationsManager() {
     }
   }
 
-  // ── Delete search term ─────────────────────────────────────────────────────
-
   const deleteSearchTerm = async (term: SearchTerm) => {
     try {
       await fetch(`/api/search-terms/${term.id}`, { method: "DELETE" })
@@ -196,35 +209,12 @@ export function LocationsManager() {
     }
   }
 
-  // ── Add missing keywords to a location ─────────────────────────────────────
-
-  const addMissingKeywords = async (location: Location) => {
-    const existing = new Set(location.searchTerms.map((t) => t.keyword))
-    const missing = EVENT_TYPE_KEYWORDS.filter((k) => !existing.has(k))
-    if (missing.length === 0) {
-      toast.info("All keywords already added")
-      return
-    }
-    try {
-      for (const keyword of missing) {
-        await fetch("/api/search-terms", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ keyword, locationId: location.id }),
-        })
-      }
-      toast.success(`Added ${missing.length} missing keywords`)
-      fetchLocations()
-    } catch {
-      toast.error("Failed to add keywords")
-    }
-  }
-
-  // ── Columns for the locations list ─────────────────────────────────────────
+  const cities = locations.filter((l) => l.type === "CITY")
+  const venues = locations.filter((l) => l.type === "VENUE")
 
   const columns: ColumnDef<Location, unknown>[] = [
     {
-      accessorKey: "name",
+      id: "name",
       header: "Location",
       cell: ({ row }) => {
         const loc = row.original
@@ -236,7 +226,33 @@ export function LocationsManager() {
                 {loc.city}, {loc.state}
               </p>
             )}
+            {loc.type === "VENUE" && loc.parent && (
+              <p className="text-xs text-muted-foreground">
+                ← {loc.parent.name}
+              </p>
+            )}
           </div>
+        )
+      },
+    },
+    {
+      id: "type",
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge variant={row.original.type === "CITY" ? "info" : "neutral"} size="sm">
+          {row.original.type === "CITY" ? "City" : "Venue"}
+        </Badge>
+      ),
+    },
+    {
+      id: "venues",
+      header: "Venues",
+      meta: { align: "center" },
+      cell: ({ row }) => {
+        const loc = row.original
+        if (loc.type !== "CITY") return <span className="text-xs text-muted-foreground">—</span>
+        return (
+          <span className="text-sm">{loc.venues.length}</span>
         )
       },
     },
@@ -277,21 +293,8 @@ export function LocationsManager() {
     },
   ]
 
-  // ── Row actions ────────────────────────────────────────────────────────────
-
   const rowActions = (location: Location) => (
     <div className="flex items-center gap-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={(e) => {
-          e.stopPropagation()
-          addMissingKeywords(location)
-        }}
-        title="Add missing keywords"
-      >
-        <Plus className="h-3.5 w-3.5" />
-      </Button>
       <Button
         variant="ghost"
         size="sm"
@@ -306,26 +309,22 @@ export function LocationsManager() {
     </div>
   )
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   return (
     <div className="space-y-6">
-      {/* Add Location Button */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {locations.length} location{locations.length !== 1 ? "s" : ""}
+          {cities.length} cit{cities.length === 1 ? "y" : "ies"} · {venues.length} venues
         </p>
         <Button onClick={() => setFormOpen(true)} leftIcon={Plus}>
           Add Location
         </Button>
       </div>
 
-      {/* Add Location Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Add Location</DialogTitle>
-            <DialogDescription>Add a venue to start tracking events.</DialogDescription>
+            <DialogDescription>Add a city or venue to start tracking events.</DialogDescription>
           </DialogHeader>
           <UniversalForm
             title=""
@@ -349,7 +348,6 @@ export function LocationsManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Locations List */}
       <UniversalList
         columns={columns}
         data={locations}
@@ -361,7 +359,6 @@ export function LocationsManager() {
         searchPlaceholder="Search locations..."
       />
 
-      {/* Location Detail — Search Terms */}
       {locations.map((loc) => (
         <LocationSearchTerms
           key={loc.id}
@@ -372,8 +369,6 @@ export function LocationsManager() {
     </div>
   )
 }
-
-// ─── Search Terms Sub-Panel ───────────────────────────────────────────────────
 
 function LocationSearchTerms({
   location,
@@ -397,24 +392,6 @@ function LocationSearchTerms({
 
   const removeTerm = async (term: SearchTerm) => {
     await fetch(`/api/search-terms/${term.id}`, { method: "DELETE" })
-    onRefresh()
-  }
-
-  const addMissing = async () => {
-    const existing = new Set(location.searchTerms.map((t) => t.keyword))
-    const missing = EVENT_TYPE_KEYWORDS.filter((k) => !existing.has(k))
-    if (missing.length === 0) {
-      toast.info("All keywords already added")
-      return
-    }
-    for (const keyword of missing) {
-      await fetch("/api/search-terms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword, locationId: location.id }),
-      })
-    }
-    toast.success(`Added ${missing.length} missing keywords`)
     onRefresh()
   }
 
@@ -460,12 +437,6 @@ function LocationSearchTerms({
                 </button>
               </div>
             ))}
-          </div>
-          <div className="mt-3">
-            <Button variant="outline" size="sm" onClick={addMissing}>
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              Add Missing Keywords
-            </Button>
           </div>
         </CardContent>
       )}

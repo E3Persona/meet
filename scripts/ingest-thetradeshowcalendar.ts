@@ -6,6 +6,8 @@ import { scrapeECN } from "../lib/scrapers/thetradeshowcalendar"
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 const runId = process.env.RUN_ID ?? null
+const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
+const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
 async function getConfig() {
   const cfg = await prisma.ingestConfig.findUnique({
@@ -92,6 +94,9 @@ async function main() {
     if (existing) continue
 
     const { start, end } = parseRange(ev.eventDateStart, ev.eventDateEnd)
+
+    if (dateFrom && start && start < dateFrom) continue
+    if (dateTo && start && start > dateTo) continue
     const contact = ev.contacts?.[0] ?? null
     const hasContact = contact && (contact.organizerName || contact.organizerEmail)
 
@@ -101,9 +106,10 @@ async function main() {
         eventName: ev.eventName,
         eventDateStart: start ?? undefined,
         eventDateEnd: end ?? undefined,
-        sourceUrl: ev.officialWebsite || ev.venueName ? undefined : null,
+        sourceUrl: ev.officialWebsite || null,
         sourceSiteId,
         runId: runId ?? undefined,
+        expectedAttendees: ev.attendees ?? null,
         organizerName: contact?.organizerName ?? null,
         organizerEmail: contact?.organizerEmail ?? null,
         organizerPhone: contact?.organizerPhone ?? null,

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { clearUsage, getUsageSummary } from "@/lib/providers/cost-tracker"
 import { runSearchScraper, SearchQuery } from "@/lib/ingest/search-pipeline"
+import { buildSearchQueries } from "@/lib/ingest/build-queries"
+import { runManualSourceChecks } from "@/lib/ingest/manual-scraper"
 import { Prisma } from "@/lib/generated/prisma/client"
 
 // ─── Scraper types ───────────────────────────────────────────────────────────
@@ -19,7 +21,10 @@ interface ScraperResult {
 interface RunConfig {
   scraperTypes: ScraperType[]
   locationIds?: string[]
-  maxQueries?: number // For resource limiting
+  maxQueries?: number
+  dateFrom?: string
+  dateTo?: string
+  sourceSiteId?: string
 }
 
 // ─── Frequency tracking using IngestionSchedule ─────────────────────────────
@@ -27,38 +32,34 @@ interface RunConfig {
 interface RunHistoryEntry {
   locationId: string
   searchTerm: string | null
-  runAt: string // ISO date
+  runAt: string
 }
 
 interface RunHistory {
   entries: RunHistoryEntry[]
 }
 
-const FREQUENCY_LIMIT = 2 // max runs per month per location/search term
-const FREQUENCY_WINDOW_DAYS = 30 // 30-day window
+const FREQUENCY_LIMIT = 2
+const FREQUENCY_WINDOW_DAYS = 30
 
 async function filterByFrequency(
-  locations: { id: string; name: string; city: string | null; searchTerms: { keyword: string }[] }[],
-  templates: { template: string }[],
+  locationIds: string[],
   trigger: "scheduled" | "manual"
 ): Promise<{
-  filteredLocations: typeof locations
-  filteredTemplates: typeof templates
+  filteredLocationIds: string[]
   skipped: string[]
 }> {
-  // Manual runs bypass frequency limits
   if (trigger === "manual") {
-    return { filteredLocations: locations, filteredTemplates: templates, skipped: [] }
+    return { filteredLocationIds: locationIds, skipped: [] }
   }
 
   const now = new Date()
   const cutoffDate = new Date(now.getTime() - FREQUENCY_WINDOW_DAYS * 24 * 60 * 60 * 1000)
-  
-  // Get or create the default schedule for frequency tracking
+
   let schedule = await prisma.ingestionSchedule.findFirst({
     where: { name: "default-frequency-tracker" },
   })
-  
+
   if (!schedule) {
     schedule = await prisma.ingestionSchedule.create({
       data: {
@@ -71,16 +72,13 @@ async function filterByFrequency(
       },
     })
   }
-  
+
   const history: RunHistory = (schedule.runHistory as unknown as RunHistory) || { entries: [] }
-  const recentEntries = history.entries.filter(e => new Date(e.runAt) >= cutoffDate)
-  
-  // Build frequency map: locationId -> count
+  const recentEntries = history.entries.filter((e) => new Date(e.runAt) >= cutoffDate)
+
   const locationRunCount = new Map<string, number>()
-  const searchTermRunCount = new Map<string, number>()
-  // Build last run time map: locationId -> last run timestamp
   const locationLastRun = new Map<string, number>()
-  
+
   for (const entry of recentEntries) {
     locationRunCount.set(entry.locationId, (locationRunCount.get(entry.locationId) || 0) + 1)
     const runTime = new Date(entry.runAt).getTime()
@@ -88,77 +86,40 @@ async function filterByFrequency(
     if (runTime > currentLast) {
       locationLastRun.set(entry.locationId, runTime)
     }
-    if (entry.searchTerm) {
-      searchTermRunCount.set(entry.searchTerm, (searchTermRunCount.get(entry.searchTerm) || 0) + 1)
-    }
   }
-  
-  // Filter locations and search terms based on frequency limits
+
   const skipped: string[] = []
-  const filteredLocations: typeof locations = []
-  
-  for (const loc of locations) {
-    const locCount = locationRunCount.get(loc.id) || 0
-    if (locCount >= FREQUENCY_LIMIT) {
-      skipped.push(`Location ${loc.name} (ran ${locCount} times in ${FREQUENCY_WINDOW_DAYS} days)`)
+  const filteredLocationIds: string[] = []
+
+  for (const id of locationIds) {
+    const count = locationRunCount.get(id) || 0
+    if (count >= FREQUENCY_LIMIT) {
+      skipped.push(`Location ${id} (ran ${count} times in ${FREQUENCY_WINDOW_DAYS} days)`)
       continue
     }
-    
-    // Filter search terms for this location
-    const filteredSearchTerms = loc.searchTerms.filter(term => {
-      const termKey = `${loc.id}:${term.keyword}`
-      const termCount = searchTermRunCount.get(termKey) || 0
-      if (termCount >= FREQUENCY_LIMIT) {
-        skipped.push(`Search term "${term.keyword}" for ${loc.name} (ran ${termCount} times)`)
-        return false
-      }
-      return true
-    })
-    
-    filteredLocations.push({
-      ...loc,
-      searchTerms: filteredSearchTerms,
-    })
+    filteredLocationIds.push(id)
   }
-  
-  // Sort locations by least recently handled first (priority)
-  // Locations with no runs come first, then sorted by last run time (oldest first)
-  filteredLocations.sort((a, b) => {
-    const aLastRun = locationLastRun.get(a.id) || 0
-    const bLastRun = locationLastRun.get(b.id) || 0
-    
-    // If neither has been run, maintain original order
-    if (aLastRun === 0 && bLastRun === 0) return 0
-    // If only a has been run, b comes first
-    if (aLastRun > 0 && bLastRun === 0) return 1
-    // If only b has been run, a comes first
-    if (aLastRun === 0 && bLastRun > 0) return -1
-    // Both have been run, sort by oldest first
-    return aLastRun - bLastRun
+
+  filteredLocationIds.sort((a, b) => {
+    const aLast = locationLastRun.get(a) || 0
+    const bLast = locationLastRun.get(b) || 0
+    if (aLast === 0 && bLast === 0) return 0
+    if (aLast > 0 && bLast === 0) return 1
+    if (aLast === 0 && bLast > 0) return -1
+    return aLast - bLast
   })
-  
-  if (filteredLocations.length > 0) {
-    console.log(`[Ingest] Priority order (least recently handled first):`)
-    filteredLocations.slice(0, 5).forEach((loc, i) => {
-      const lastRun = locationLastRun.get(loc.id)
-      const lastRunStr = lastRun ? new Date(lastRun).toLocaleDateString() : "never"
-      console.log(`  ${i + 1}. ${loc.name} (${loc.city || "unknown city"}) - last run: ${lastRunStr}`)
-    })
-  }
-  
-  // Record this run in history
-  const newEntries: RunHistoryEntry[] = []
-  for (const loc of filteredLocations) {
-    newEntries.push({ locationId: loc.id, searchTerm: null, runAt: now.toISOString() })
-    for (const term of loc.searchTerms) {
-      newEntries.push({ locationId: loc.id, searchTerm: term.keyword, runAt: now.toISOString() })
-    }
-  }
-  
-  // Update schedule with new history (keep only last 90 days)
+
+  const newEntries: RunHistoryEntry[] = filteredLocationIds.map((id) => ({
+    locationId: id,
+    searchTerm: null,
+    runAt: now.toISOString(),
+  }))
+
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
-  const allEntries = [...recentEntries, ...newEntries].filter(e => new Date(e.runAt) >= ninetyDaysAgo)
-  
+  const allEntries = [...recentEntries, ...newEntries].filter(
+    (e) => new Date(e.runAt) >= ninetyDaysAgo
+  )
+
   await prisma.ingestionSchedule.update({
     where: { id: schedule.id },
     data: {
@@ -166,12 +127,8 @@ async function filterByFrequency(
       lastRunAt: now,
     },
   })
-  
-  return {
-    filteredLocations,
-    filteredTemplates: templates,
-    skipped,
-  }
+
+  return { filteredLocationIds, skipped }
 }
 
 // ─── Domain exclusion for dedicated scrapers ───────────────────────────────
@@ -193,61 +150,12 @@ const EXCLUDED_DOMAINS = [
 function isExcludedDomain(url: string): boolean {
   try {
     const hostname = new URL(url).hostname
-    return EXCLUDED_DOMAINS.some(domain => hostname === domain || hostname.endsWith(`.${domain}`))
+    return EXCLUDED_DOMAINS.some(
+      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
+    )
   } catch {
     return false
   }
-}
-
-
-// ─── Build search queries from templates + locations ────────────────────────
-
-function buildSearchQueries(
-  templates: { template: string }[],
-  locations: { id: string; name: string; city: string | null; searchTerms: { keyword: string }[] }[],
-  maxQueries?: number
-): SearchQuery[] {
-  const queries: SearchQuery[] = []
-  const now = new Date()
-
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
-    const monthLabel = `${d.toLocaleString("en-US", { month: "long" })} ${d.getFullYear()}`
-
-    for (const loc of locations) {
-      for (const tmpl of templates) {
-        const expanded = tmpl.template
-          .replace(/\{CITY\}/g, loc.city ?? "")
-          .replace(/\{VENUE\}/g, loc.name)
-          .replace(/\{MONTH\}/g, monthLabel.split(" ")[0])
-          .replace(/\{YEAR\}/g, monthLabel.split(" ")[1] ?? String(new Date().getFullYear()))
-        
-        queries.push({
-          locationId: loc.id,
-          locationName: loc.name,
-          monthLabel,
-          query: expanded,
-        })
-      }
-
-      for (const term of loc.searchTerms) {
-        queries.push({
-          locationId: loc.id,
-          locationName: loc.name,
-          monthLabel,
-          query: `${monthLabel} ${term.keyword} ${loc.city ?? loc.name}`,
-        })
-      }
-    }
-  }
-
-  // Apply maxQueries limit if specified
-  if (maxQueries && queries.length > maxQueries) {
-    console.log(`[Ingest] Limiting queries to ${maxQueries} (from ${queries.length} total)`)
-    return queries.slice(0, maxQueries)
-  }
-
-  return queries
 }
 
 // ─── POST /api/ingest/run ───────────────────────────────────────────────────
@@ -264,78 +172,179 @@ export async function POST(request: Request) {
     }
     if (raw.locationIds) body.locationIds = raw.locationIds
     if (raw.maxQueries) body.maxQueries = raw.maxQueries
-  } catch { /* no body */ }
+    if (raw.dateFrom) body.dateFrom = raw.dateFrom
+    if (raw.dateTo) body.dateTo = raw.dateTo
+    if (raw.sourceSiteId) body.sourceSiteId = raw.sourceSiteId
+  } catch {
+    /* no body */
+  }
 
   console.log(`\n[Ingest] Starting ${trigger} run at ${new Date().toISOString()}`)
-  console.log(`[Ingest] Scrapers: ${body.scraperTypes.join(", ")}`)
+  if (body.locationIds?.length) {
+    console.log(`[Ingest] Targeting ${body.locationIds.length} specific location(s)`)
+  }
+  if (body.dateFrom || body.dateTo) {
+    console.log(`[Ingest] Date range: ${body.dateFrom ?? "any"} → ${body.dateTo ?? "any"}`)
+  }
+  if (body.sourceSiteId) {
+    console.log(`[Ingest] Targeting single source site: ${body.sourceSiteId}`)
+  }
 
   const run = await prisma.ingestionRun.create({ data: { trigger, status: "running" } })
   clearUsage(run.id)
 
   try {
-    // Load locations and templates once
-    const [locations, templates] = await Promise.all([
-      prisma.location.findMany({
-        where: { active: true, ...(body.locationIds?.length ? { id: { in: body.locationIds } } : {}) },
-        include: { searchTerms: { where: { active: true } } },
-      }),
-      prisma.searchTemplate.findMany({ where: { active: true } }),
-    ])
+    // ── Single source site run ──────────────────────────────────────────
+    if (body.sourceSiteId) {
+      const site = await prisma.sourceSite.findUnique({
+        where: { id: body.sourceSiteId },
+      })
+      if (!site) {
+        return NextResponse.json({ error: "Source site not found" }, { status: 404 })
+      }
 
-    if (locations.length === 0) {
+      if (site.sourceMode === "manual") {
+        const manualResults = await runManualSourceChecks(run.id, {
+          sourceSiteId: body.sourceSiteId,
+        })
+        await prisma.ingestionRun.update({
+          where: { id: run.id },
+          data: {
+            status: "success",
+            finishedAt: new Date(),
+            recordsFound: 0,
+            recordsNew: 0,
+            providersUsed: getUsageSummary(run.id),
+          },
+        })
+        return NextResponse.json({
+          runId: run.id,
+          manualResults,
+          note: "Manual source check recorded — no automated scraping performed",
+        })
+      }
+
+      // For automated sources, run the search pipeline scoped to this site
+      const queries: SearchQuery[] = [{
+        locationId: null,
+        locationName: site.name,
+        monthLabel: "site-specific",
+        query: site.url ? `site:${new URL(site.url).hostname} events` : site.name,
+      }]
+      const result = await runSearchScraper(queries, run.id, {
+        searchConcurrency: 5,
+        scrapeConcurrency: 3,
+      })
+      await prisma.sourceSite.update({
+        where: { id: body.sourceSiteId },
+        data: { lastScrapedAt: new Date(), lastScrapeStatus: "success" },
+      })
       await prisma.ingestionRun.update({
         where: { id: run.id },
-        data: { status: "success", finishedAt: new Date(), recordsFound: 0, recordsNew: 0, errorMessage: "No active locations" },
+        data: {
+          status: "success",
+          finishedAt: new Date(),
+          recordsFound: result.recordsFound,
+          recordsNew: result.recordsNew,
+          providersUsed: getUsageSummary(run.id),
+        },
       })
-      return NextResponse.json({ runId: run.id, recordsFound: 0, recordsNew: 0 })
+      return NextResponse.json({
+        runId: run.id,
+        recordsFound: result.recordsFound,
+        recordsNew: result.recordsNew,
+        sourceSite: site.name,
+      })
     }
 
-    // Apply frequency filtering for scheduled runs
-    const { filteredLocations, filteredTemplates, skipped } = await filterByFrequency(locations, templates, trigger)
-    
-    if (skipped.length > 0) {
-      console.log(`[Ingest] Skipped due to frequency limits (${FREQUENCY_LIMIT}x/${FREQUENCY_WINDOW_DAYS} days):`)
-      skipped.forEach(s => console.log(`  - ${s}`))
+    // ── Run manual source checks (always, for awareness) ─────────────────
+    const manualResults = await runManualSourceChecks(run.id)
+    const checkedManual = manualResults.filter((r) => r.status === "checked")
+    const skippedManual = manualResults.filter((r) => r.status === "skipped_fresh")
+    if (checkedManual.length > 0) {
+      console.log(`[Ingest] Checked ${checkedManual.length} manual source(s)`)
     }
-    
-    if (filteredLocations.length === 0) {
+    if (skippedManual.length > 0) {
+      console.log(`[Ingest] ${skippedManual.length} manual source(s) skipped (fresh)`)
+    }
+
+    // ── Resolve location IDs ────────────────────────────────────────────
+    let locationIds = body.locationIds
+    if (!locationIds?.length) {
+      const allActive = await prisma.location.findMany({
+        where: { active: true },
+        select: { id: true },
+      })
+      locationIds = allActive.map((l) => l.id)
+    }
+
+    if (locationIds.length === 0) {
       await prisma.ingestionRun.update({
         where: { id: run.id },
-        data: { status: "success", finishedAt: new Date(), recordsFound: 0, recordsNew: 0, errorMessage: "All locations/search terms skipped due to frequency limits" },
+        data: {
+          status: "success",
+          finishedAt: new Date(),
+          recordsFound: 0,
+          recordsNew: 0,
+          errorMessage: "No active locations",
+        },
       })
-      return NextResponse.json({ runId: run.id, recordsFound: 0, recordsNew: 0, skipped })
+      return NextResponse.json({ runId: run.id, recordsFound: 0, recordsNew: 0, manualResults })
     }
 
-    // Apply batching based on trigger type
-    let batchedLocations = filteredLocations
+    // ── Apply frequency filtering for scheduled runs ────────────────────
+    const { filteredLocationIds, skipped } = await filterByFrequency(locationIds, trigger)
+
+    if (filteredLocationIds.length === 0) {
+      await prisma.ingestionRun.update({
+        where: { id: run.id },
+        data: {
+          status: "success",
+          finishedAt: new Date(),
+          recordsFound: 0,
+          recordsNew: 0,
+          errorMessage: "All locations skipped due to frequency limits",
+        },
+      })
+      return NextResponse.json({ runId: run.id, recordsFound: 0, recordsNew: 0, skipped, manualResults })
+    }
+
+    // ── Apply batching based on trigger type ────────────────────────────
+    let batchedIds = filteredLocationIds
     let maxQueries = body.maxQueries
-    
+
     if (trigger === "scheduled") {
-      // Scheduled runs: limit to 5 locations and 50 queries max (after frequency filtering)
       const maxLocations = 5
-      if (filteredLocations.length > maxLocations) {
-        // Rotate locations based on run ID to ensure fairness over time
-        const startIndex = parseInt(run.id.slice(-2), 16) % filteredLocations.length
-        const rotated = [...filteredLocations.slice(startIndex), ...filteredLocations.slice(0, startIndex)]
-        batchedLocations = rotated.slice(0, maxLocations)
-        console.log(`[Ingest] Scheduled run: batching to ${maxLocations} locations (${filteredLocations.length} after frequency filtering)`)
+      if (filteredLocationIds.length > maxLocations) {
+        const startIndex = parseInt(run.id.slice(-2), 16) % filteredLocationIds.length
+        const rotated = [
+          ...filteredLocationIds.slice(startIndex),
+          ...filteredLocationIds.slice(0, startIndex),
+        ]
+        batchedIds = rotated.slice(0, maxLocations)
       }
       maxQueries = maxQueries ?? 50
     } else {
-      // Manual runs: process all requested locations, higher query limit
       maxQueries = maxQueries ?? 200
     }
 
+    // ── Build queries using scope-aware builder ─────────────────────────
+    const queries = await buildSearchQueries({
+      locationIds: batchedIds,
+      dateFrom: body.dateFrom,
+      dateTo: body.dateTo,
+      maxQueries,
+    })
+
+    // ── Run scraper types ───────────────────────────────────────────────
     const results: ScraperResult[] = []
     let totalFound = 0
     let totalNew = 0
 
-    // ── Run each scraper type in sequence ─────────────────────────────────
     for (const scraperType of body.scraperTypes) {
       console.log(`\n[Ingest] Running scraper: ${scraperType}`)
 
       if (scraperType === "search") {
-        const queries = buildSearchQueries(templates, batchedLocations, maxQueries)
         const r = await runSearchScraper(queries, run.id, {
           searchConcurrency: trigger === "scheduled" ? 5 : 10,
           scrapeConcurrency: trigger === "scheduled" ? 3 : 8,
@@ -346,13 +355,9 @@ export async function POST(request: Request) {
         totalNew += r.recordsNew
         console.log(`[Ingest] ${scraperType}: ${r.recordsNew} new from ${r.recordsFound}`)
       }
-      // Future scraper types can be added here:
-      // else if (scraperType === "ica") { ... }
-      // else if (scraperType === "tf") { ... }
-      // etc.
     }
 
-    // ── Finalize ─────────────────────────────────────────────────────────
+    // ── Finalize ────────────────────────────────────────────────────────
     const providersUsed = getUsageSummary(run.id)
     await prisma.ingestionRun.update({
       where: { id: run.id },
@@ -366,7 +371,15 @@ export async function POST(request: Request) {
     })
 
     console.log(`\n[Ingest] Complete: ${totalNew} new from ${totalFound} total`)
-    return NextResponse.json({ runId: run.id, recordsFound: totalFound, recordsNew: totalNew, results, providersUsed, skipped })
+    return NextResponse.json({
+      runId: run.id,
+      recordsFound: totalFound,
+      recordsNew: totalNew,
+      results,
+      providersUsed,
+      skipped,
+      manualResults: { checked: checkedManual.length, skipped: skippedManual.length },
+    })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown"
     console.error(`[Ingest] Fatal:`, error)

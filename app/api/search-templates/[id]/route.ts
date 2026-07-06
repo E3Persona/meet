@@ -7,13 +7,18 @@ export async function PATCH(
 ) {
   const { id } = await params
   const body = await request.json()
-  const { template, active } = body as { template?: string; active?: boolean }
+  const { template, active, scope } = body as {
+    template?: string
+    active?: boolean
+    scope?: "CITY" | "VENUE" | "GLOBAL"
+  }
 
   const updated = await prisma.searchTemplate.update({
     where: { id },
     data: {
       ...(template !== undefined && { template: template.trim() }),
       ...(active !== undefined && { active }),
+      ...(scope !== undefined && { scope }),
     },
   })
 

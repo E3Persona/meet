@@ -27,10 +27,12 @@ export type AggregateSourceSite = {
 }
 
 export type SourceSiteAvgAggregateOutputType = {
+  manualCheckFrequencyDays: number | null
   eventsFound: number | null
 }
 
 export type SourceSiteSumAggregateOutputType = {
+  manualCheckFrequencyDays: number | null
   eventsFound: number | null
 }
 
@@ -39,11 +41,14 @@ export type SourceSiteMinAggregateOutputType = {
   name: string | null
   url: string | null
   active: boolean | null
+  sourceMode: $Enums.SourceMode | null
   urlPattern: string | null
   scrapeMode: $Enums.ScrapeMode | null
   notes: string | null
   lastScrapedAt: Date | null
   lastScrapeStatus: $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays: number | null
+  lastManualCheckAt: Date | null
   eventsFound: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -54,11 +59,14 @@ export type SourceSiteMaxAggregateOutputType = {
   name: string | null
   url: string | null
   active: boolean | null
+  sourceMode: $Enums.SourceMode | null
   urlPattern: string | null
   scrapeMode: $Enums.ScrapeMode | null
   notes: string | null
   lastScrapedAt: Date | null
   lastScrapeStatus: $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays: number | null
+  lastManualCheckAt: Date | null
   eventsFound: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -69,11 +77,14 @@ export type SourceSiteCountAggregateOutputType = {
   name: number
   url: number
   active: number
+  sourceMode: number
   urlPattern: number
   scrapeMode: number
   notes: number
   lastScrapedAt: number
   lastScrapeStatus: number
+  manualCheckFrequencyDays: number
+  lastManualCheckAt: number
   eventsFound: number
   createdAt: number
   updatedAt: number
@@ -82,10 +93,12 @@ export type SourceSiteCountAggregateOutputType = {
 
 
 export type SourceSiteAvgAggregateInputType = {
+  manualCheckFrequencyDays?: true
   eventsFound?: true
 }
 
 export type SourceSiteSumAggregateInputType = {
+  manualCheckFrequencyDays?: true
   eventsFound?: true
 }
 
@@ -94,11 +107,14 @@ export type SourceSiteMinAggregateInputType = {
   name?: true
   url?: true
   active?: true
+  sourceMode?: true
   urlPattern?: true
   scrapeMode?: true
   notes?: true
   lastScrapedAt?: true
   lastScrapeStatus?: true
+  manualCheckFrequencyDays?: true
+  lastManualCheckAt?: true
   eventsFound?: true
   createdAt?: true
   updatedAt?: true
@@ -109,11 +125,14 @@ export type SourceSiteMaxAggregateInputType = {
   name?: true
   url?: true
   active?: true
+  sourceMode?: true
   urlPattern?: true
   scrapeMode?: true
   notes?: true
   lastScrapedAt?: true
   lastScrapeStatus?: true
+  manualCheckFrequencyDays?: true
+  lastManualCheckAt?: true
   eventsFound?: true
   createdAt?: true
   updatedAt?: true
@@ -124,11 +143,14 @@ export type SourceSiteCountAggregateInputType = {
   name?: true
   url?: true
   active?: true
+  sourceMode?: true
   urlPattern?: true
   scrapeMode?: true
   notes?: true
   lastScrapedAt?: true
   lastScrapeStatus?: true
+  manualCheckFrequencyDays?: true
+  lastManualCheckAt?: true
   eventsFound?: true
   createdAt?: true
   updatedAt?: true
@@ -226,11 +248,14 @@ export type SourceSiteGroupByOutputType = {
   name: string
   url: string | null
   active: boolean
+  sourceMode: $Enums.SourceMode
   urlPattern: string | null
   scrapeMode: $Enums.ScrapeMode
   notes: string | null
   lastScrapedAt: Date | null
   lastScrapeStatus: $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays: number | null
+  lastManualCheckAt: Date | null
   eventsFound: number
   createdAt: Date
   updatedAt: Date
@@ -264,11 +289,14 @@ export type SourceSiteWhereInput = {
   name?: Prisma.StringFilter<"SourceSite"> | string
   url?: Prisma.StringNullableFilter<"SourceSite"> | string | null
   active?: Prisma.BoolFilter<"SourceSite"> | boolean
+  sourceMode?: Prisma.EnumSourceModeFilter<"SourceSite"> | $Enums.SourceMode
   urlPattern?: Prisma.StringNullableFilter<"SourceSite"> | string | null
   scrapeMode?: Prisma.EnumScrapeModeFilter<"SourceSite"> | $Enums.ScrapeMode
   notes?: Prisma.StringNullableFilter<"SourceSite"> | string | null
   lastScrapedAt?: Prisma.DateTimeNullableFilter<"SourceSite"> | Date | string | null
   lastScrapeStatus?: Prisma.EnumScrapeStatusNullableFilter<"SourceSite"> | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.IntNullableFilter<"SourceSite"> | number | null
+  lastManualCheckAt?: Prisma.DateTimeNullableFilter<"SourceSite"> | Date | string | null
   eventsFound?: Prisma.IntFilter<"SourceSite"> | number
   createdAt?: Prisma.DateTimeFilter<"SourceSite"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SourceSite"> | Date | string
@@ -281,11 +309,14 @@ export type SourceSiteOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   url?: Prisma.SortOrderInput | Prisma.SortOrder
   active?: Prisma.SortOrder
+  sourceMode?: Prisma.SortOrder
   urlPattern?: Prisma.SortOrderInput | Prisma.SortOrder
   scrapeMode?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   lastScrapedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   lastScrapeStatus?: Prisma.SortOrderInput | Prisma.SortOrder
+  manualCheckFrequencyDays?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastManualCheckAt?: Prisma.SortOrderInput | Prisma.SortOrder
   eventsFound?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -301,11 +332,14 @@ export type SourceSiteWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"SourceSite"> | string
   url?: Prisma.StringNullableFilter<"SourceSite"> | string | null
   active?: Prisma.BoolFilter<"SourceSite"> | boolean
+  sourceMode?: Prisma.EnumSourceModeFilter<"SourceSite"> | $Enums.SourceMode
   urlPattern?: Prisma.StringNullableFilter<"SourceSite"> | string | null
   scrapeMode?: Prisma.EnumScrapeModeFilter<"SourceSite"> | $Enums.ScrapeMode
   notes?: Prisma.StringNullableFilter<"SourceSite"> | string | null
   lastScrapedAt?: Prisma.DateTimeNullableFilter<"SourceSite"> | Date | string | null
   lastScrapeStatus?: Prisma.EnumScrapeStatusNullableFilter<"SourceSite"> | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.IntNullableFilter<"SourceSite"> | number | null
+  lastManualCheckAt?: Prisma.DateTimeNullableFilter<"SourceSite"> | Date | string | null
   eventsFound?: Prisma.IntFilter<"SourceSite"> | number
   createdAt?: Prisma.DateTimeFilter<"SourceSite"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SourceSite"> | Date | string
@@ -318,11 +352,14 @@ export type SourceSiteOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   url?: Prisma.SortOrderInput | Prisma.SortOrder
   active?: Prisma.SortOrder
+  sourceMode?: Prisma.SortOrder
   urlPattern?: Prisma.SortOrderInput | Prisma.SortOrder
   scrapeMode?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   lastScrapedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   lastScrapeStatus?: Prisma.SortOrderInput | Prisma.SortOrder
+  manualCheckFrequencyDays?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastManualCheckAt?: Prisma.SortOrderInput | Prisma.SortOrder
   eventsFound?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -341,11 +378,14 @@ export type SourceSiteScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"SourceSite"> | string
   url?: Prisma.StringNullableWithAggregatesFilter<"SourceSite"> | string | null
   active?: Prisma.BoolWithAggregatesFilter<"SourceSite"> | boolean
+  sourceMode?: Prisma.EnumSourceModeWithAggregatesFilter<"SourceSite"> | $Enums.SourceMode
   urlPattern?: Prisma.StringNullableWithAggregatesFilter<"SourceSite"> | string | null
   scrapeMode?: Prisma.EnumScrapeModeWithAggregatesFilter<"SourceSite"> | $Enums.ScrapeMode
   notes?: Prisma.StringNullableWithAggregatesFilter<"SourceSite"> | string | null
   lastScrapedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"SourceSite"> | Date | string | null
   lastScrapeStatus?: Prisma.EnumScrapeStatusNullableWithAggregatesFilter<"SourceSite"> | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.IntNullableWithAggregatesFilter<"SourceSite"> | number | null
+  lastManualCheckAt?: Prisma.DateTimeNullableWithAggregatesFilter<"SourceSite"> | Date | string | null
   eventsFound?: Prisma.IntWithAggregatesFilter<"SourceSite"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SourceSite"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SourceSite"> | Date | string
@@ -356,11 +396,14 @@ export type SourceSiteCreateInput = {
   name: string
   url?: string | null
   active?: boolean
+  sourceMode?: $Enums.SourceMode
   urlPattern?: string | null
   scrapeMode?: $Enums.ScrapeMode
   notes?: string | null
   lastScrapedAt?: Date | string | null
   lastScrapeStatus?: $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: number | null
+  lastManualCheckAt?: Date | string | null
   eventsFound?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -373,11 +416,14 @@ export type SourceSiteUncheckedCreateInput = {
   name: string
   url?: string | null
   active?: boolean
+  sourceMode?: $Enums.SourceMode
   urlPattern?: string | null
   scrapeMode?: $Enums.ScrapeMode
   notes?: string | null
   lastScrapedAt?: Date | string | null
   lastScrapeStatus?: $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: number | null
+  lastManualCheckAt?: Date | string | null
   eventsFound?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -390,11 +436,14 @@ export type SourceSiteUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sourceMode?: Prisma.EnumSourceModeFieldUpdateOperationsInput | $Enums.SourceMode
   urlPattern?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scrapeMode?: Prisma.EnumScrapeModeFieldUpdateOperationsInput | $Enums.ScrapeMode
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastScrapedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastScrapeStatus?: Prisma.NullableEnumScrapeStatusFieldUpdateOperationsInput | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lastManualCheckAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -407,11 +456,14 @@ export type SourceSiteUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sourceMode?: Prisma.EnumSourceModeFieldUpdateOperationsInput | $Enums.SourceMode
   urlPattern?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scrapeMode?: Prisma.EnumScrapeModeFieldUpdateOperationsInput | $Enums.ScrapeMode
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastScrapedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastScrapeStatus?: Prisma.NullableEnumScrapeStatusFieldUpdateOperationsInput | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lastManualCheckAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -424,11 +476,14 @@ export type SourceSiteCreateManyInput = {
   name: string
   url?: string | null
   active?: boolean
+  sourceMode?: $Enums.SourceMode
   urlPattern?: string | null
   scrapeMode?: $Enums.ScrapeMode
   notes?: string | null
   lastScrapedAt?: Date | string | null
   lastScrapeStatus?: $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: number | null
+  lastManualCheckAt?: Date | string | null
   eventsFound?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -439,11 +494,14 @@ export type SourceSiteUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sourceMode?: Prisma.EnumSourceModeFieldUpdateOperationsInput | $Enums.SourceMode
   urlPattern?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scrapeMode?: Prisma.EnumScrapeModeFieldUpdateOperationsInput | $Enums.ScrapeMode
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastScrapedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastScrapeStatus?: Prisma.NullableEnumScrapeStatusFieldUpdateOperationsInput | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lastManualCheckAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -454,11 +512,14 @@ export type SourceSiteUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sourceMode?: Prisma.EnumSourceModeFieldUpdateOperationsInput | $Enums.SourceMode
   urlPattern?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scrapeMode?: Prisma.EnumScrapeModeFieldUpdateOperationsInput | $Enums.ScrapeMode
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastScrapedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastScrapeStatus?: Prisma.NullableEnumScrapeStatusFieldUpdateOperationsInput | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lastManualCheckAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -474,17 +535,21 @@ export type SourceSiteCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   url?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  sourceMode?: Prisma.SortOrder
   urlPattern?: Prisma.SortOrder
   scrapeMode?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   lastScrapedAt?: Prisma.SortOrder
   lastScrapeStatus?: Prisma.SortOrder
+  manualCheckFrequencyDays?: Prisma.SortOrder
+  lastManualCheckAt?: Prisma.SortOrder
   eventsFound?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type SourceSiteAvgOrderByAggregateInput = {
+  manualCheckFrequencyDays?: Prisma.SortOrder
   eventsFound?: Prisma.SortOrder
 }
 
@@ -493,11 +558,14 @@ export type SourceSiteMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   url?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  sourceMode?: Prisma.SortOrder
   urlPattern?: Prisma.SortOrder
   scrapeMode?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   lastScrapedAt?: Prisma.SortOrder
   lastScrapeStatus?: Prisma.SortOrder
+  manualCheckFrequencyDays?: Prisma.SortOrder
+  lastManualCheckAt?: Prisma.SortOrder
   eventsFound?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -508,17 +576,21 @@ export type SourceSiteMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   url?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  sourceMode?: Prisma.SortOrder
   urlPattern?: Prisma.SortOrder
   scrapeMode?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   lastScrapedAt?: Prisma.SortOrder
   lastScrapeStatus?: Prisma.SortOrder
+  manualCheckFrequencyDays?: Prisma.SortOrder
+  lastManualCheckAt?: Prisma.SortOrder
   eventsFound?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type SourceSiteSumOrderByAggregateInput = {
+  manualCheckFrequencyDays?: Prisma.SortOrder
   eventsFound?: Prisma.SortOrder
 }
 
@@ -541,6 +613,10 @@ export type SourceSiteUpdateOneWithoutEventsNestedInput = {
   delete?: Prisma.SourceSiteWhereInput | boolean
   connect?: Prisma.SourceSiteWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.SourceSiteUpdateToOneWithWhereWithoutEventsInput, Prisma.SourceSiteUpdateWithoutEventsInput>, Prisma.SourceSiteUncheckedUpdateWithoutEventsInput>
+}
+
+export type EnumSourceModeFieldUpdateOperationsInput = {
+  set?: $Enums.SourceMode
 }
 
 export type EnumScrapeModeFieldUpdateOperationsInput = {
@@ -570,11 +646,14 @@ export type SourceSiteCreateWithoutEventsInput = {
   name: string
   url?: string | null
   active?: boolean
+  sourceMode?: $Enums.SourceMode
   urlPattern?: string | null
   scrapeMode?: $Enums.ScrapeMode
   notes?: string | null
   lastScrapedAt?: Date | string | null
   lastScrapeStatus?: $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: number | null
+  lastManualCheckAt?: Date | string | null
   eventsFound?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -586,11 +665,14 @@ export type SourceSiteUncheckedCreateWithoutEventsInput = {
   name: string
   url?: string | null
   active?: boolean
+  sourceMode?: $Enums.SourceMode
   urlPattern?: string | null
   scrapeMode?: $Enums.ScrapeMode
   notes?: string | null
   lastScrapedAt?: Date | string | null
   lastScrapeStatus?: $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: number | null
+  lastManualCheckAt?: Date | string | null
   eventsFound?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -618,11 +700,14 @@ export type SourceSiteUpdateWithoutEventsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sourceMode?: Prisma.EnumSourceModeFieldUpdateOperationsInput | $Enums.SourceMode
   urlPattern?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scrapeMode?: Prisma.EnumScrapeModeFieldUpdateOperationsInput | $Enums.ScrapeMode
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastScrapedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastScrapeStatus?: Prisma.NullableEnumScrapeStatusFieldUpdateOperationsInput | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lastManualCheckAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -634,11 +719,14 @@ export type SourceSiteUncheckedUpdateWithoutEventsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sourceMode?: Prisma.EnumSourceModeFieldUpdateOperationsInput | $Enums.SourceMode
   urlPattern?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scrapeMode?: Prisma.EnumScrapeModeFieldUpdateOperationsInput | $Enums.ScrapeMode
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastScrapedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastScrapeStatus?: Prisma.NullableEnumScrapeStatusFieldUpdateOperationsInput | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lastManualCheckAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -650,11 +738,14 @@ export type SourceSiteCreateWithoutSourceSiteConfigInput = {
   name: string
   url?: string | null
   active?: boolean
+  sourceMode?: $Enums.SourceMode
   urlPattern?: string | null
   scrapeMode?: $Enums.ScrapeMode
   notes?: string | null
   lastScrapedAt?: Date | string | null
   lastScrapeStatus?: $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: number | null
+  lastManualCheckAt?: Date | string | null
   eventsFound?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -666,11 +757,14 @@ export type SourceSiteUncheckedCreateWithoutSourceSiteConfigInput = {
   name: string
   url?: string | null
   active?: boolean
+  sourceMode?: $Enums.SourceMode
   urlPattern?: string | null
   scrapeMode?: $Enums.ScrapeMode
   notes?: string | null
   lastScrapedAt?: Date | string | null
   lastScrapeStatus?: $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: number | null
+  lastManualCheckAt?: Date | string | null
   eventsFound?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -698,11 +792,14 @@ export type SourceSiteUpdateWithoutSourceSiteConfigInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sourceMode?: Prisma.EnumSourceModeFieldUpdateOperationsInput | $Enums.SourceMode
   urlPattern?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scrapeMode?: Prisma.EnumScrapeModeFieldUpdateOperationsInput | $Enums.ScrapeMode
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastScrapedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastScrapeStatus?: Prisma.NullableEnumScrapeStatusFieldUpdateOperationsInput | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lastManualCheckAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -714,11 +811,14 @@ export type SourceSiteUncheckedUpdateWithoutSourceSiteConfigInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sourceMode?: Prisma.EnumSourceModeFieldUpdateOperationsInput | $Enums.SourceMode
   urlPattern?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scrapeMode?: Prisma.EnumScrapeModeFieldUpdateOperationsInput | $Enums.ScrapeMode
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastScrapedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lastScrapeStatus?: Prisma.NullableEnumScrapeStatusFieldUpdateOperationsInput | $Enums.ScrapeStatus | null
+  manualCheckFrequencyDays?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  lastManualCheckAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   eventsFound?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -761,11 +861,14 @@ export type SourceSiteSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   name?: boolean
   url?: boolean
   active?: boolean
+  sourceMode?: boolean
   urlPattern?: boolean
   scrapeMode?: boolean
   notes?: boolean
   lastScrapedAt?: boolean
   lastScrapeStatus?: boolean
+  manualCheckFrequencyDays?: boolean
+  lastManualCheckAt?: boolean
   eventsFound?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -779,11 +882,14 @@ export type SourceSiteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   name?: boolean
   url?: boolean
   active?: boolean
+  sourceMode?: boolean
   urlPattern?: boolean
   scrapeMode?: boolean
   notes?: boolean
   lastScrapedAt?: boolean
   lastScrapeStatus?: boolean
+  manualCheckFrequencyDays?: boolean
+  lastManualCheckAt?: boolean
   eventsFound?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -794,11 +900,14 @@ export type SourceSiteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   name?: boolean
   url?: boolean
   active?: boolean
+  sourceMode?: boolean
   urlPattern?: boolean
   scrapeMode?: boolean
   notes?: boolean
   lastScrapedAt?: boolean
   lastScrapeStatus?: boolean
+  manualCheckFrequencyDays?: boolean
+  lastManualCheckAt?: boolean
   eventsFound?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -809,17 +918,20 @@ export type SourceSiteSelectScalar = {
   name?: boolean
   url?: boolean
   active?: boolean
+  sourceMode?: boolean
   urlPattern?: boolean
   scrapeMode?: boolean
   notes?: boolean
   lastScrapedAt?: boolean
   lastScrapeStatus?: boolean
+  manualCheckFrequencyDays?: boolean
+  lastManualCheckAt?: boolean
   eventsFound?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SourceSiteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "url" | "active" | "urlPattern" | "scrapeMode" | "notes" | "lastScrapedAt" | "lastScrapeStatus" | "eventsFound" | "createdAt" | "updatedAt", ExtArgs["result"]["sourceSite"]>
+export type SourceSiteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "url" | "active" | "sourceMode" | "urlPattern" | "scrapeMode" | "notes" | "lastScrapedAt" | "lastScrapeStatus" | "manualCheckFrequencyDays" | "lastManualCheckAt" | "eventsFound" | "createdAt" | "updatedAt", ExtArgs["result"]["sourceSite"]>
 export type SourceSiteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   events?: boolean | Prisma.SourceSite$eventsArgs<ExtArgs>
   sourceSiteConfig?: boolean | Prisma.SourceSite$sourceSiteConfigArgs<ExtArgs>
@@ -839,11 +951,14 @@ export type $SourceSitePayload<ExtArgs extends runtime.Types.Extensions.Internal
     name: string
     url: string | null
     active: boolean
+    sourceMode: $Enums.SourceMode
     urlPattern: string | null
     scrapeMode: $Enums.ScrapeMode
     notes: string | null
     lastScrapedAt: Date | null
     lastScrapeStatus: $Enums.ScrapeStatus | null
+    manualCheckFrequencyDays: number | null
+    lastManualCheckAt: Date | null
     eventsFound: number
     createdAt: Date
     updatedAt: Date
@@ -1276,11 +1391,14 @@ export interface SourceSiteFieldRefs {
   readonly name: Prisma.FieldRef<"SourceSite", 'String'>
   readonly url: Prisma.FieldRef<"SourceSite", 'String'>
   readonly active: Prisma.FieldRef<"SourceSite", 'Boolean'>
+  readonly sourceMode: Prisma.FieldRef<"SourceSite", 'SourceMode'>
   readonly urlPattern: Prisma.FieldRef<"SourceSite", 'String'>
   readonly scrapeMode: Prisma.FieldRef<"SourceSite", 'ScrapeMode'>
   readonly notes: Prisma.FieldRef<"SourceSite", 'String'>
   readonly lastScrapedAt: Prisma.FieldRef<"SourceSite", 'DateTime'>
   readonly lastScrapeStatus: Prisma.FieldRef<"SourceSite", 'ScrapeStatus'>
+  readonly manualCheckFrequencyDays: Prisma.FieldRef<"SourceSite", 'Int'>
+  readonly lastManualCheckAt: Prisma.FieldRef<"SourceSite", 'DateTime'>
   readonly eventsFound: Prisma.FieldRef<"SourceSite", 'Int'>
   readonly createdAt: Prisma.FieldRef<"SourceSite", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SourceSite", 'DateTime'>

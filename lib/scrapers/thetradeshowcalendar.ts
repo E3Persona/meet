@@ -68,6 +68,7 @@ export interface ECNEvent {
   venueCountry: string
   attendees: number | null
   exhibitors: number | null
+  expectedAttendees: number | null
   regionSlug: string | null
   contacts: ECNContact[]
   sourceSite: "exhibitcitynews.com"
@@ -202,6 +203,7 @@ function parseListingRows(
     const attMatch = attExhText.match(/Attendees:\s*([\d,]+)/i)
     const exhMatch = attExhText.match(/Exhibitors:\s*([\d,]+)/i)
 
+    const att = attMatch ? parseInt(attMatch[1].replace(/,/g, ""), 10) : null
     events.push({
       eventName,
       eventDateStart,
@@ -211,8 +213,9 @@ function parseListingRows(
       venueCity,
       venueState,
       venueCountry,
-      attendees: attMatch ? parseInt(attMatch[1].replace(/,/g, ""), 10) : null,
+      attendees: att,
       exhibitors: exhMatch ? parseInt(exhMatch[1].replace(/,/g, ""), 10) : null,
+      expectedAttendees: att,
     })
   })
 
@@ -450,6 +453,7 @@ export async function scrapeECN(options?: {
     results.push({
       ...ev,
       contacts,
+      expectedAttendees: ev.attendees,
       sourceSite: "exhibitcitynews.com",
     })
   }

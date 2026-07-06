@@ -53,9 +53,9 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Location: 'Location',
   SearchTerm: 'SearchTerm',
+  SearchTemplate: 'SearchTemplate',
   Event: 'Event',
   IngestionRun: 'IngestionRun',
-  SearchTemplate: 'SearchTemplate',
   SourceSite: 'SourceSite',
   SourceSiteConfig: 'SourceSiteConfig',
   IngestionSchedule: 'IngestionSchedule',
@@ -81,14 +81,15 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 
 export const LocationScalarFieldEnum = {
   id: 'id',
+  type: 'type',
   name: 'name',
   shortName: 'shortName',
   address: 'address',
   city: 'city',
   state: 'state',
+  parentId: 'parentId',
   sourceUrl: 'sourceUrl',
   active: 'active',
-  isCity: 'isCity',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -108,18 +109,32 @@ export const SearchTermScalarFieldEnum = {
 export type SearchTermScalarFieldEnum = (typeof SearchTermScalarFieldEnum)[keyof typeof SearchTermScalarFieldEnum]
 
 
+export const SearchTemplateScalarFieldEnum = {
+  id: 'id',
+  template: 'template',
+  scope: 'scope',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SearchTemplateScalarFieldEnum = (typeof SearchTemplateScalarFieldEnum)[keyof typeof SearchTemplateScalarFieldEnum]
+
+
 export const EventScalarFieldEnum = {
   id: 'id',
   locationId: 'locationId',
   eventName: 'eventName',
   eventDateStart: 'eventDateStart',
   eventDateEnd: 'eventDateEnd',
+  expectedAttendees: 'expectedAttendees',
   sourceUrl: 'sourceUrl',
   sourceSiteId: 'sourceSiteId',
   organizerName: 'organizerName',
   organizerTitle: 'organizerTitle',
   organizerEmail: 'organizerEmail',
   organizerPhone: 'organizerPhone',
+  contactNote: 'contactNote',
   status: 'status',
   dateAdded: 'dateAdded',
   runId: 'runId'
@@ -143,27 +158,19 @@ export const IngestionRunScalarFieldEnum = {
 export type IngestionRunScalarFieldEnum = (typeof IngestionRunScalarFieldEnum)[keyof typeof IngestionRunScalarFieldEnum]
 
 
-export const SearchTemplateScalarFieldEnum = {
-  id: 'id',
-  template: 'template',
-  active: 'active',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type SearchTemplateScalarFieldEnum = (typeof SearchTemplateScalarFieldEnum)[keyof typeof SearchTemplateScalarFieldEnum]
-
-
 export const SourceSiteScalarFieldEnum = {
   id: 'id',
   name: 'name',
   url: 'url',
   active: 'active',
+  sourceMode: 'sourceMode',
   urlPattern: 'urlPattern',
   scrapeMode: 'scrapeMode',
   notes: 'notes',
   lastScrapedAt: 'lastScrapedAt',
   lastScrapeStatus: 'lastScrapeStatus',
+  manualCheckFrequencyDays: 'manualCheckFrequencyDays',
+  lastManualCheckAt: 'lastManualCheckAt',
   eventsFound: 'eventsFound',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

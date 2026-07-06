@@ -7,6 +7,8 @@ import { fetchPageMarkdown } from "../lib/contact-finder"
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 const runId = process.env.RUN_ID ?? null
+const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
+const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
 // Map location city names to ACA city slugs
 const CITY_TO_SLUG: Record<string, string> = {
@@ -105,6 +107,9 @@ async function main() {
           if (!isNaN(d.getTime())) eventDate = d
         }
 
+        if (dateFrom && eventDate && eventDate < dateFrom) continue
+        if (dateTo && eventDate && eventDate > dateTo) continue
+
         // Check each location in this city
         for (const loc of locs) {
           const existing = await prisma.event.findFirst({
@@ -146,6 +151,7 @@ async function main() {
               sourceUrl: ev.eventUrl,
               sourceSiteId,
               runId: runId ?? undefined,
+              expectedAttendees: null,
               organizerName: contactPerson ?? null,
               organizerTitle: organizedBy ?? null,
               organizerEmail: inquiryEmail ?? null,

@@ -6,6 +6,8 @@ import { scrapeBMEvents, scrapeBMVenues } from "../lib/scrapers/blackmeetings"
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 const runId = process.env.RUN_ID ?? null
+const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
+const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
 async function getConfig() {
   const cfg = await prisma.ingestConfig.findUnique({
@@ -56,6 +58,7 @@ async function main() {
     if (!existing) {
       await prisma.location.create({
         data: {
+          type: "VENUE",
           name: venue.name,
           sourceUrl: venue.detailUrl,
           active: true,
@@ -90,6 +93,9 @@ async function main() {
     const loc = matchLocation(ev, allLocations)
     if (!loc) continue
 
+    if (dateFrom && ev.eventDateStart && ev.eventDateStart < dateFrom) continue
+    if (dateTo && ev.eventDateStart && ev.eventDateStart > dateTo) continue
+
     const existing = await prisma.event.findFirst({
       where: {
         eventName: { equals: ev.title, mode: "insensitive" },
@@ -110,6 +116,7 @@ async function main() {
         sourceUrl: ev.detailUrl ?? null,
         sourceSiteId,
         runId: runId ?? undefined,
+        expectedAttendees: null,
         organizerName: primaryContact?.name ?? null,
         organizerPhone: primaryContact?.phone ?? null,
         organizerEmail: primaryContact?.email ?? null,

@@ -6,6 +6,8 @@ import { scrapeEventseye } from "../lib/scrapers/eventseye"
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 const runId = process.env.RUN_ID ?? null
+const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
+const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
 async function getConfig() {
   const cfg = await prisma.ingestConfig.findUnique({
@@ -98,6 +100,9 @@ async function main() {
       }
     }
 
+    if (dateFrom && eventDateStart && eventDateStart < dateFrom) continue
+    if (dateTo && eventDateStart && eventDateStart > dateTo) continue
+
     const org = ev.organizerContact ?? null
     const hasContact = org && (org.name || org.email)
 
@@ -110,6 +115,7 @@ async function main() {
         sourceUrl: ev.detailUrl ?? null,
         sourceSiteId,
         runId: runId ?? undefined,
+        expectedAttendees: null,
         organizerName: org?.name ?? null,
         organizerEmail: org?.email ?? null,
         organizerPhone: org?.phone ?? null,

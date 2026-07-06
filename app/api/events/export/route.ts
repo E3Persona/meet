@@ -31,11 +31,16 @@ export async function GET(request: Request) {
   const events = await prisma.event.findMany({
     where,
     include: { location: true, sourceSite: true, contacts: true },
-    orderBy: { eventDateStart: "desc" },
+    orderBy: { dateAdded: "desc" },
   })
 
   const rows = events.map((e) => {
     const primary = e.contacts?.find((c) => c.isPrimary) ?? e.contacts?.[0]
+    const isPast = e.eventDateEnd
+      ? new Date(e.eventDateEnd) < new Date()
+      : e.eventDateStart
+        ? new Date(e.eventDateStart) < new Date()
+        : false
     return {
       "Event Name": e.eventName,
       Location: e.location.name,
@@ -46,7 +51,8 @@ export async function GET(request: Request) {
       "Date of Event": e.eventDateStart
         ? new Date(e.eventDateStart).toLocaleDateString()
         : "",
-      Status: e.status,
+      Status: isPast ? `${e.status} (Past)` : e.status,
+      Notes: e.contactNote ?? "",
       "Source URL": e.sourceUrl ?? "",
       "Source Site": e.sourceSite?.name ?? "",
       "Date Added": new Date(e.dateAdded).toLocaleDateString(),
@@ -63,7 +69,8 @@ export async function GET(request: Request) {
     { wch: 18 },
     { wch: 30 },
     { wch: 15 },
-    { wch: 12 },
+    { wch: 15 },
+    { wch: 30 },
     { wch: 50 },
     { wch: 25 },
     { wch: 15 },

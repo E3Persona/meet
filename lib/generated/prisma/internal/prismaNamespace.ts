@@ -386,9 +386,9 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   Location: 'Location',
   SearchTerm: 'SearchTerm',
+  SearchTemplate: 'SearchTemplate',
   Event: 'Event',
   IngestionRun: 'IngestionRun',
-  SearchTemplate: 'SearchTemplate',
   SourceSite: 'SourceSite',
   SourceSiteConfig: 'SourceSiteConfig',
   IngestionSchedule: 'IngestionSchedule',
@@ -409,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "location" | "searchTerm" | "event" | "ingestionRun" | "searchTemplate" | "sourceSite" | "sourceSiteConfig" | "ingestionSchedule" | "ingestConfig" | "eventContact"
+    modelProps: "location" | "searchTerm" | "searchTemplate" | "event" | "ingestionRun" | "sourceSite" | "sourceSiteConfig" | "ingestionSchedule" | "ingestConfig" | "eventContact"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -561,6 +561,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SearchTemplate: {
+      payload: Prisma.$SearchTemplatePayload<ExtArgs>
+      fields: Prisma.SearchTemplateFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SearchTemplateFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SearchTemplateFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        findFirst: {
+          args: Prisma.SearchTemplateFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SearchTemplateFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        findMany: {
+          args: Prisma.SearchTemplateFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>[]
+        }
+        create: {
+          args: Prisma.SearchTemplateCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        createMany: {
+          args: Prisma.SearchTemplateCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SearchTemplateCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>[]
+        }
+        delete: {
+          args: Prisma.SearchTemplateDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        update: {
+          args: Prisma.SearchTemplateUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        deleteMany: {
+          args: Prisma.SearchTemplateDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SearchTemplateUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SearchTemplateUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>[]
+        }
+        upsert: {
+          args: Prisma.SearchTemplateUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
+        }
+        aggregate: {
+          args: Prisma.SearchTemplateAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSearchTemplate>
+        }
+        groupBy: {
+          args: Prisma.SearchTemplateGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SearchTemplateGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SearchTemplateCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SearchTemplateCountAggregateOutputType> | number
+        }
+      }
+    }
     Event: {
       payload: Prisma.$EventPayload<ExtArgs>
       fields: Prisma.EventFieldRefs
@@ -706,80 +780,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.IngestionRunCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.IngestionRunCountAggregateOutputType> | number
-        }
-      }
-    }
-    SearchTemplate: {
-      payload: Prisma.$SearchTemplatePayload<ExtArgs>
-      fields: Prisma.SearchTemplateFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.SearchTemplateFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.SearchTemplateFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
-        }
-        findFirst: {
-          args: Prisma.SearchTemplateFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.SearchTemplateFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
-        }
-        findMany: {
-          args: Prisma.SearchTemplateFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>[]
-        }
-        create: {
-          args: Prisma.SearchTemplateCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
-        }
-        createMany: {
-          args: Prisma.SearchTemplateCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.SearchTemplateCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>[]
-        }
-        delete: {
-          args: Prisma.SearchTemplateDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
-        }
-        update: {
-          args: Prisma.SearchTemplateUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
-        }
-        deleteMany: {
-          args: Prisma.SearchTemplateDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.SearchTemplateUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.SearchTemplateUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>[]
-        }
-        upsert: {
-          args: Prisma.SearchTemplateUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchTemplatePayload>
-        }
-        aggregate: {
-          args: Prisma.SearchTemplateAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateSearchTemplate>
-        }
-        groupBy: {
-          args: Prisma.SearchTemplateGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.SearchTemplateGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.SearchTemplateCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.SearchTemplateCountAggregateOutputType> | number
         }
       }
     }
@@ -1194,14 +1194,15 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 
 export const LocationScalarFieldEnum = {
   id: 'id',
+  type: 'type',
   name: 'name',
   shortName: 'shortName',
   address: 'address',
   city: 'city',
   state: 'state',
+  parentId: 'parentId',
   sourceUrl: 'sourceUrl',
   active: 'active',
-  isCity: 'isCity',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1221,18 +1222,32 @@ export const SearchTermScalarFieldEnum = {
 export type SearchTermScalarFieldEnum = (typeof SearchTermScalarFieldEnum)[keyof typeof SearchTermScalarFieldEnum]
 
 
+export const SearchTemplateScalarFieldEnum = {
+  id: 'id',
+  template: 'template',
+  scope: 'scope',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SearchTemplateScalarFieldEnum = (typeof SearchTemplateScalarFieldEnum)[keyof typeof SearchTemplateScalarFieldEnum]
+
+
 export const EventScalarFieldEnum = {
   id: 'id',
   locationId: 'locationId',
   eventName: 'eventName',
   eventDateStart: 'eventDateStart',
   eventDateEnd: 'eventDateEnd',
+  expectedAttendees: 'expectedAttendees',
   sourceUrl: 'sourceUrl',
   sourceSiteId: 'sourceSiteId',
   organizerName: 'organizerName',
   organizerTitle: 'organizerTitle',
   organizerEmail: 'organizerEmail',
   organizerPhone: 'organizerPhone',
+  contactNote: 'contactNote',
   status: 'status',
   dateAdded: 'dateAdded',
   runId: 'runId'
@@ -1256,27 +1271,19 @@ export const IngestionRunScalarFieldEnum = {
 export type IngestionRunScalarFieldEnum = (typeof IngestionRunScalarFieldEnum)[keyof typeof IngestionRunScalarFieldEnum]
 
 
-export const SearchTemplateScalarFieldEnum = {
-  id: 'id',
-  template: 'template',
-  active: 'active',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type SearchTemplateScalarFieldEnum = (typeof SearchTemplateScalarFieldEnum)[keyof typeof SearchTemplateScalarFieldEnum]
-
-
 export const SourceSiteScalarFieldEnum = {
   id: 'id',
   name: 'name',
   url: 'url',
   active: 'active',
+  sourceMode: 'sourceMode',
   urlPattern: 'urlPattern',
   scrapeMode: 'scrapeMode',
   notes: 'notes',
   lastScrapedAt: 'lastScrapedAt',
   lastScrapeStatus: 'lastScrapeStatus',
+  manualCheckFrequencyDays: 'manualCheckFrequencyDays',
+  lastManualCheckAt: 'lastManualCheckAt',
   eventsFound: 'eventsFound',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1424,6 +1431,20 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
+ * Reference to a field of type 'LocationType'
+ */
+export type EnumLocationTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LocationType'>
+    
+
+
+/**
+ * Reference to a field of type 'LocationType[]'
+ */
+export type ListEnumLocationTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LocationType[]'>
+    
+
+
+/**
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
@@ -1441,6 +1462,34 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'TemplateScope'
+ */
+export type EnumTemplateScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TemplateScope'>
+    
+
+
+/**
+ * Reference to a field of type 'TemplateScope[]'
+ */
+export type ListEnumTemplateScopeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TemplateScope[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Int'
+ */
+export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+/**
+ * Reference to a field of type 'Int[]'
+ */
+export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 
@@ -1487,20 +1536,6 @@ export type ListEnumRunStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
 
 
 /**
- * Reference to a field of type 'Int'
- */
-export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-/**
- * Reference to a field of type 'Int[]'
- */
-export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
-    
-
-
-/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -1511,6 +1546,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'SourceMode'
+ */
+export type EnumSourceModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SourceMode'>
+    
+
+
+/**
+ * Reference to a field of type 'SourceMode[]'
+ */
+export type ListEnumSourceModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SourceMode[]'>
     
 
 
@@ -1667,9 +1716,9 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   location?: Prisma.LocationOmit
   searchTerm?: Prisma.SearchTermOmit
+  searchTemplate?: Prisma.SearchTemplateOmit
   event?: Prisma.EventOmit
   ingestionRun?: Prisma.IngestionRunOmit
-  searchTemplate?: Prisma.SearchTemplateOmit
   sourceSite?: Prisma.SourceSiteOmit
   sourceSiteConfig?: Prisma.SourceSiteConfigOmit
   ingestionSchedule?: Prisma.IngestionScheduleOmit

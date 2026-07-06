@@ -27,6 +27,7 @@ export interface BMEvent extends BMEventCard {
   eventDateEnd: Date | null
   contacts: BMContact[]
   externalLinks: string[]
+  expectedAttendees: number | null
   sourceSite: "blackmeetingsandtourism.com"
 }
 
@@ -311,6 +312,7 @@ export async function scrapeBMEvents(
       eventDateEnd: dates.end,
       contacts,
       externalLinks,
+      expectedAttendees: null,
       sourceSite: "blackmeetingsandtourism.com",
     })
   }

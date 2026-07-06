@@ -18,7 +18,9 @@ export async function startScraperRun(
   scriptName: string,
   siteName: string,
   trigger: "manual" | "scheduled" = "manual",
-  fast = false
+  fast = false,
+  dateFrom?: string,
+  dateTo?: string,
 ): Promise<{ runId: string }> {
   const run = await prisma.ingestionRun.create({
     data: { trigger, status: "running" },
@@ -43,7 +45,13 @@ export async function startScraperRun(
   }
 
   const scriptPath = `${process.cwd()}/scripts/${scriptName}`
-  const env = { ...process.env, DATABASE_URL: process.env.DATABASE_URL!, RUN_ID: run.id }
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    DATABASE_URL: process.env.DATABASE_URL!,
+    RUN_ID: run.id,
+    ...(dateFrom ? { DATE_FROM: dateFrom } : {}),
+    ...(dateTo ? { DATE_TO: dateTo } : {}),
+  }
 
   const child = spawn("npx", ["tsx", scriptPath], {
     env,

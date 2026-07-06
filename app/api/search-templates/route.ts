@@ -10,7 +10,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json()
-  const { template, active } = body as { template?: string; active?: boolean }
+  const { template, active, scope } = body as {
+    template?: string
+    active?: boolean
+    scope?: "CITY" | "VENUE" | "GLOBAL"
+  }
 
   if (!template?.trim()) {
     return NextResponse.json({ error: "template is required" }, { status: 400 })
@@ -20,6 +24,7 @@ export async function POST(request: Request) {
     data: {
       template: template.trim(),
       active: active ?? true,
+      scope: scope ?? "CITY",
     },
   })
 

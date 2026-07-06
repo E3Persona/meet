@@ -1,0 +1,471 @@
+[
+  {
+    "cityName": "Chester",
+    "state": "PA",
+    "regionLabel": "Chester",
+    "venues": [
+      {
+        "shortName": "Subaru Park",
+        "fullName": "Subaru Park",
+        "address": "1 Stadium Drive Chester, PA 19013"
+      }
+    ]
+  },
+  {
+    "cityName": "Philadelphia",
+    "state": "PA",
+    "regionLabel": "PHILADELPHIA",
+    "venues": [
+      {
+        "shortName": "Philadelphia Convention Center",
+        "fullName": "Philadelphia Convention Center",
+        "address": "1101 Arch Street, Philadelphia, PA 19107"
+      },
+      {
+        "shortName": "Marriott",
+        "fullName": "Philadelphia Marriott Downtown",
+        "address": "1201 Market Street, Philadelphia, PA 19107"
+      },
+      {
+        "shortName": "Lowes Hotel",
+        "fullName": "Loews Philadelphia Hotel",
+        "address": "1200 Market Street, Philadelphia, PA 19107"
+      },
+      {
+        "shortName": "Element Philadelphia",
+        "fullName": "Element Philadelphia Downtown",
+        "address": "1441 Chestnut Street, Philadelphia, PA 19102"
+      },
+      {
+        "shortName": "Hyatt CC",
+        "fullName": "Hyatt Centric Center City Philadelphia",
+        "address": "1620 Chancellor Street, Philadelphia, PA 19103"
+      },
+      {
+        "shortName": "Sheraton Philadelphia Downtown",
+        "fullName": "Sheraton Philadelphia Downtown Hotel",
+        "address": "201 North 17th Street, Philadelphia, PA 19103"
+      },
+      {
+        "shortName": "W Philadelphia",
+        "fullName": "W Philadelphia",
+        "address": "1439 Chestnut St, Philadelphia, PA 19102"
+      },
+      {
+        "shortName": "The Bellevue",
+        "fullName": "The Bellevue Hotel Philadelphia",
+        "address": "200 South Broad Street, Philadelphia, PA 19102"
+      },
+      {
+        "shortName": "Circa Center",
+        "fullName": "Cira Centre Philadelphia",
+        "address": "2929 Arch Street, Philadelphia, PA 19104"
+      },
+      {
+        "shortName": "The Logan",
+        "fullName": "The Logan Philadelphia Hotel",
+        "address": "One Logan Square, Philadelphia, PA 19103"
+      },
+      {
+        "shortName": "Four Seasons",
+        "fullName": "Four Seasons Hotel Philadelphia at Comcast Center",
+        "address": "1 N. 19th Street, Philadelphia, PA 19103"
+      },
+      {
+        "shortName": "Sofitel",
+        "fullName": "Sofitel Philadelphia at Rittenhouse Square",
+        "address": "120 South 17th Street, Philadelphia, PA 19103"
+      },
+      {
+        "shortName": "The Ritz-Carlton",
+        "fullName": "The Ritz-Carlton Philadelphia",
+        "address": "10 Avenue of the Arts, Philadelphia, PA 19102"
+      },
+      {
+        "shortName": "Union League",
+        "fullName": "The Union League of Philadelphia",
+        "address": "140 South Broad Street, Philadelphia, PA 19102"
+      },
+      {
+        "shortName": "Sonesta",
+        "fullName": "Sonesta Hotel Philadelphia",
+        "address": "1800 Market Street, Philadelphia, PA 19103"
+      },
+      {
+        "shortName": "Marriott Old City",
+        "fullName": "Philadelphia Marriott Old City",
+        "address": "One Dock Street, Philadelphia, PA 19106"
+      },
+      {
+        "shortName": "Kimpton - Palamor",
+        "fullName": "Kimpton Hotel Palomar Philadelphia",
+        "address": "117 South 17th Street, Philadelphia, PA 19103"
+      },
+      {
+        "shortName": "Kimpton-Monaco",
+        "fullName": "Kimpton Hotel Monaco Philadelphia",
+        "address": "433 Chestnut Street, Philadelphia, PA 19106"
+      },
+      {
+        "shortName": "Live Casino",
+        "fullName": "Live! Casino and Hotel Philadelphia",
+        "address": "900 Packer Ave, Philadelphia, PA 19148"
+      },
+      {
+        "shortName": "Hilton Penns Landing",
+        "fullName": "Hilton Philadelphia at Penn's Landing",
+        "address": "201 S Christopher Columbus Blvd, Philadelphia, PA 19106"
+      },
+      {
+        "shortName": "Airport Marriott",
+        "fullName": "Philadelphia Airport Marriott",
+        "address": "One Arrivals Road, Philadelphia International Airport, PA 19153"
+      },
+      {
+        "shortName": "Holiday - Drexel Hill",
+        "fullName": "Holiday Inn & Suites Philadelphia W - Drexel Hill",
+        "address": "5400 Ferne Blvd., Drexel Hill, PA 19026"
+      },
+      {
+        "shortName": "Temple University",
+        "fullName": "Temple University Conference Center",
+        "address": "1925 N 12th St, Philadelphia, PA 19122"
+      },
+      {
+        "shortName": "Warwick Hotel",
+        "fullName": "The Warwick Rittenhouse Square",
+        "address": "220 S 17th Street, Philadelphia, PA 19103"
+      },
+      {
+        "shortName": "Notary Hotel",
+        "fullName": "The Notary Hotel Philadelphia",
+        "address": "21 N Juniper St, Philadelphia, PA 19107"
+      },
+      {
+        "shortName": "Others Philadelphia",
+        "fullName": "Other Philadelphia Venues (Various)",
+        "address": "Philadelphia, PA"
+      },
+      {
+        "shortName": "Stateside Live!",
+        "fullName": "Stateside Live!",
+        "address": "1100 Pattison Ave, Philadelphia, PA 19148"
+      },
+      {
+        "shortName": null,
+        "fullName": "Independence Seaport Museum",
+        "address": "211 South Columbus Boulevard, Philadelphia, PA 19106"
+      },
+      {
+        "shortName": null,
+        "fullName": "Pennsylvania Academy of the Fine Arts",
+        "address": "118-128 North Broad Street, Philadelphia, PA 19102"
+      },
+      {
+        "shortName": null,
+        "fullName": "The Crystal Tea Room",
+        "address": "100 Penn Square East, 9th. Floor, The Wanamaker Building, Philadelphia, PA 19107"
+      },
+      {
+        "shortName": null,
+        "fullName": "The Liberty View",
+        "address": "One North Independence Mall West, Philadelphia, PA 19106"
+      },
+      {
+        "shortName": "VF Casino",
+        "fullName": "Valley Forge Casino Resort",
+        "address": "1160 First Avenue, King of Prussia, PA 19406"
+      }
+    ]
+  },
+  {
+    "cityName": "Oaks",
+    "state": "PA",
+    "regionLabel": "OAKS, PA",
+    "venues": [
+      {
+        "shortName": "Oaks Expo Center",
+        "fullName": "Greater Philadelphia Expo Center at Oaks",
+        "address": "100 Station Avenue, Oaks, PA 19456"
+      }
+    ]
+  },
+  {
+    "cityName": "Washington DC",
+    "state": "DC",
+    "regionLabel": "WASHINGTON DC",
+    "venues": [
+      {
+        "shortName": "DC Convention Center",
+        "fullName": "Walter E. Washington Convention Center",
+        "address": "801 Mount Vernon Pl NW, Washington, DC 20001"
+      },
+      {
+        "shortName": "Marriott Marquis",
+        "fullName": "Marriott Marquis Washington DC",
+        "address": "901 Massachusetts Ave NW, Washington, DC 20001"
+      },
+      {
+        "shortName": "Hilton",
+        "fullName": "Washington Hilton",
+        "address": "1919 Connecticut Ave NW, Washington, DC 20009"
+      },
+      {
+        "shortName": "Renaissance",
+        "fullName": "Renaissance Washington DC Downtown Hotel",
+        "address": "999 9th St NW, Washington, DC 20001"
+      },
+      {
+        "shortName": "Grand Hyatt Washington",
+        "fullName": "Grand Hyatt Washington",
+        "address": "1000 H St NW, Washington, DC 20001"
+      },
+      {
+        "shortName": "Omni Shoreham Hotel",
+        "fullName": "Omni Shoreham Hotel Washington DC",
+        "address": "2500 Calvert St NW, Washington, DC 20008"
+      },
+      {
+        "shortName": "JW Marriott",
+        "fullName": "JW Marriott Washington DC",
+        "address": "1331 Pennsylvania Ave NW, Washington, DC 20004"
+      },
+      {
+        "shortName": "Annual Events DC",
+        "fullName": "Washington DC Annual Events (Various Venues)",
+        "address": "Washington, DC"
+      },
+      {
+        "shortName": "Reagan Building",
+        "fullName": "Ronald Reagan Building",
+        "address": "1300 Pennsylvania Ave NW, Washington, DC 20004"
+      },
+      {
+        "shortName": "America's Main Street",
+        "fullName": null,
+        "address": "Pennsylvania Avenue NW, Washington, D.C."
+      }
+    ]
+  },
+  {
+    "cityName": "Bethesda",
+    "state": "MD",
+    "regionLabel": "Bethesda, MD",
+    "venues": [
+      {
+        "shortName": "Bethesda",
+        "fullName": "Bethesda North Marriott Hotel & Conference Center",
+        "address": "5701 Marinelli Road, North Bethesda, MD 20852"
+      },
+      {
+        "shortName": "Bethesdan",
+        "fullName": "The Bethesdan Hotel (Tapestry Collection by Hilton)",
+        "address": "8120 Wisconsin Ave, Bethesda, MD 20814"
+      },
+      {
+        "shortName": "Hyatt",
+        "fullName": "Hyatt Regency Bethesda",
+        "address": "7400 Wisconsin Avenue, Bethesda, MD 20814"
+      }
+    ]
+  },
+  {
+    "cityName": "National Harbor",
+    "state": "MD",
+    "regionLabel": "NATIONAL HARBOR",
+    "venues": [
+      {
+        "shortName": "Gaylord",
+        "fullName": "Gaylord National Resort & Convention Center",
+        "address": "201 Waterfront Street, National Harbor, MD 20745"
+      },
+      {
+        "shortName": "Harborside",
+        "fullName": "Harborside Hotel National Harbor",
+        "address": "6400 Oxon Hill Rd, National Harbor, MD 20745"
+      },
+      {
+        "shortName": "MGM",
+        "fullName": "MGM National Harbor",
+        "address": "101 MGM National Avenue, Oxon Hill, MD 20745"
+      }
+    ]
+  },
+  {
+    "cityName": "Atlantic City",
+    "state": "NJ",
+    "regionLabel": "New Jersey",
+    "venues": [
+      {
+        "shortName": "AC",
+        "fullName": "Atlantic City Convention Center",
+        "address": "1 Convention Blvd, Atlantic City, NJ 08401"
+      }
+    ]
+  },
+  {
+    "cityName": "Baltimore",
+    "state": "MD",
+    "regionLabel": "BALTIMORE",
+    "venues": [
+      {
+        "shortName": "Baltimore Convention Center",
+        "fullName": "Baltimore Convention Center",
+        "address": "1 West Pratt Street, Baltimore, MD 21201"
+      },
+      {
+        "shortName": "Hilton",
+        "fullName": "Hilton Baltimore Inner Harbor",
+        "address": "401 West Pratt Street, Baltimore, MD 21201"
+      },
+      {
+        "shortName": "Marriott IH",
+        "fullName": "Baltimore Marriott Inner Harbor at Camden Yards",
+        "address": "110 South Eutaw Street, Baltimore, MD 21201"
+      },
+      {
+        "shortName": "Four Seasons",
+        "fullName": "Four Seasons Hotel Baltimore",
+        "address": "200 International Drive, Baltimore, MD 21202"
+      },
+      {
+        "shortName": "Embassy Suites",
+        "fullName": "Embassy Suites by Hilton Baltimore Inner Harbor",
+        "address": "222 St. Paul Place, Baltimore, MD 21202"
+      },
+      {
+        "shortName": "Hyatt Regency IH",
+        "fullName": "Hyatt Regency Baltimore Inner Harbor",
+        "address": "300 Light Street, Baltimore, MD 21202"
+      },
+      {
+        "shortName": "Marriott Waterfront",
+        "fullName": "Baltimore Marriott Waterfront",
+        "address": "700 Aliceanna Street, Baltimore, MD 21202"
+      },
+      {
+        "shortName": "Renaissance BHH",
+        "fullName": "Renaissance Baltimore Harborplace Hotel",
+        "address": "202 E Pratt St, Baltimore, MD 21202"
+      },
+      {
+        "shortName": "Courtyard Marriott",
+        "fullName": "Courtyard by Marriott Baltimore Downtown/Inner Harbor",
+        "address": "1000 Aliceanna Street, Harbor East, Baltimore, MD 21202"
+      },
+      {
+        "shortName": "Hilton Garden Inn",
+        "fullName": "Hilton Garden Inn Baltimore Inner Harbor",
+        "address": "625 South President Street, Harbor East, Baltimore, MD 21202"
+      },
+      {
+        "shortName": "Hyatt Place IH",
+        "fullName": "Hyatt Place Baltimore Inner Harbor",
+        "address": "511 South Central Avenue, Little Italy, Baltimore, MD 21202"
+      },
+      {
+        "shortName": "Renaissance Harborplace",
+        "fullName": "Renaissance Baltimore Harborplace Hotel",
+        "address": "202 E Pratt St, Baltimore, MD 21202"
+      },
+      {
+        "shortName": "Hotel Indigo",
+        "fullName": "Hotel Indigo Baltimore",
+        "address": "24 West Franklin Street, Baltimore, MD 21201"
+      },
+      {
+        "shortName": "Lord Baltimore",
+        "fullName": "Lord Baltimore Hotel",
+        "address": "20 W Baltimore St, Baltimore, MD 21201"
+      },
+      {
+        "shortName": "Hampton Inn",
+        "fullName": "Hampton Inn Baltimore - Downtown Convention Center",
+        "address": "550 W Fayette St, Baltimore, MD 21201"
+      },
+      {
+        "shortName": "Rita",
+        "fullName": "The Rita Rossi Colwell Center",
+        "address": "701 E Pratt St, Baltimore, MD 21202"
+      },
+      {
+        "shortName": "Murphy Fine Arts Center",
+        "fullName": "Murphy Fine Arts Center",
+        "address": "2201 Argonne Dr Baltimore, MD 21251"
+      },
+      {
+        "shortName": "Chesapeake Arena",
+        "fullName": "Chesapeake Arena",
+        "address": "1000 Hilltop Circle, Baltimore, MD 21250"
+      },
+      {
+        "shortName": "Graffiti warehouse",
+        "fullName": "Graffiti warehouse",
+        "address": "128 W North Ave, Baltimore, MD 21201"
+      }
+    ]
+  },
+  {
+    "cityName": "Ellicott City",
+    "state": "MD",
+    "regionLabel": "BALTIMORE",
+    "venues": [
+      {
+        "shortName": "Turf Valley",
+        "fullName": "Turf Valley Resort",
+        "address": "2700 Turf Valley Rd, Ellicott City, MD 21042"
+      }
+    ]
+  },
+  {
+    "cityName": "West Friendship",
+    "state": "MD",
+    "regionLabel": "BALTIMORE",
+    "venues": [
+      {
+        "shortName": "H.C. Fairgrounds",
+        "fullName": "Howard County Fairgrounds",
+        "address": "2210 Fairgrounds Rd, West Friendship, MD 21794"
+      }
+    ]
+  },
+  {
+    "cityName": "Upper Marlboro",
+    "state": "MD",
+    "regionLabel": "Upper Marlboro, MD",
+    "venues": [
+      {
+        "shortName": "The Show Place Arena",
+        "fullName": "The Show Place Arena",
+        "address": "14900 Pennsylvania Avenue  Upper Marlboro, Maryland"
+      }
+    ]
+  },
+  {
+    "cityName": "Wilmington DE",
+    "state": "DE",
+    "regionLabel": "WILMINGTON DE",
+    "venues": [
+      {
+        "shortName": "Chase Center on the Riverfront",
+        "fullName": "Chase Center on the Riverfront",
+        "address": "815 Justison St., Wilmington, DE 19801"
+      },
+      {
+        "shortName": "Hotel DuPont",
+        "fullName": "Hotel DuPont",
+        "address": "42 West 11th St., Wilmington, DE 19801"
+      },
+      {
+        "shortName": "DoubleTree by Hilton",
+        "fullName": "DoubleTree by Hilton Wilmington",
+        "address": "4727 Concord Pike, Wilmington, DE 19803"
+      },
+      {
+        "shortName": "76ers Fieldhouse",
+        "fullName": "76ers Fieldhouse",
+        "address": "401 Garasches Ln, Wilmington, DE 19801"
+      }
+    ]
+  }
+]

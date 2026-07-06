@@ -7,13 +7,15 @@ export async function PATCH(
 ) {
   const { id } = await params
   const body = await request.json()
-  const { name, url, active, scrapeMode, urlPattern, notes } = body as {
+  const { name, url, active, scrapeMode, urlPattern, notes, sourceMode, manualCheckFrequencyDays } = body as {
     name?: string
     url?: string
     active?: boolean
     scrapeMode?: string
     urlPattern?: string
     notes?: string
+    sourceMode?: "automated" | "manual"
+    manualCheckFrequencyDays?: number
   }
 
   const updated = await prisma.sourceSite.update({
@@ -25,6 +27,8 @@ export async function PATCH(
       ...(scrapeMode !== undefined && { scrapeMode: scrapeMode as "auto" | "calendar" | "directory" | "search" | "skip" }),
       ...(urlPattern !== undefined && { urlPattern: urlPattern?.trim() || null }),
       ...(notes !== undefined && { notes: notes?.trim() || null }),
+      ...(sourceMode !== undefined && { sourceMode }),
+      ...(manualCheckFrequencyDays !== undefined && { manualCheckFrequencyDays }),
     },
   })
 
