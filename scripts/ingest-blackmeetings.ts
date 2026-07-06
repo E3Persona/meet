@@ -107,7 +107,7 @@ async function main() {
     const primaryContact = ev.contacts?.[0] ?? null
     const hasContact = primaryContact && (primaryContact.name || primaryContact.email)
 
-    await prisma.event.create({
+    const event = await prisma.event.create({
       data: {
         locationId: loc.id,
         eventName: ev.title,
@@ -123,6 +123,21 @@ async function main() {
       },
     })
     totalNew++
+
+    if (hasContact) {
+      await prisma.eventContact.create({
+        data: {
+          eventId: event.id,
+          name: primaryContact!.name ?? "",
+          email: primaryContact!.email,
+          phone: primaryContact!.phone,
+          isPrimary: true,
+          sourceUrl: ev.detailUrl ?? null,
+          confidence: "medium",
+        },
+      })
+      console.log(`[BlackMeetings/Ingest] Saved contact for "${ev.title}"`)
+    }
   }
 
   console.log(`[BlackMeetings/Ingest] Complete: ${totalNew} new from ${totalFound}`)
