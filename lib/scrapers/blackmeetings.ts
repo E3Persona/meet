@@ -10,6 +10,7 @@ export interface BMEventCard {
   detailUrl: string | null
   dateCategory: string | null
   section: "current-events" | "facilities-update"
+  previewText: string | null
 }
 
 export interface BMContact {
@@ -132,32 +133,98 @@ function parseEventDates(text: string): { start: Date | null; end: Date | null }
 
 function extractContacts(text: string): BMContact[] {
   const contacts: BMContact[] = []
-  const patterns = [
+  const seen = new Set<string>()
+
+  const textOnly = text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")
+
+  // Pattern 1: "Contact Name at (123) 456-7890" or "Name – (123) 456-7890"
+  const namePhonePatterns = [
     /contact\s+(?:info(?:rmation)?[:\s]+)?(?:(?:<b>)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)(?:<\/b>)?)?\s*(?:at\s+\(?(\d{3})\)?[-\s.]?\d{3}[-\s.]?\d{4})/gi,
     /(?:<b>)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)(?:<\/b>)?\s+(?:at|–|-)\s+\(?(\d{3})\)?[-\s.]?\d{3}[-\s.]?\d{4}/g,
   ]
 
-  const textOnly = text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")
-
-  for (const pattern of patterns) {
+  for (const pattern of namePhonePatterns) {
     let m: RegExpExecArray | null
     while ((m = pattern.exec(textOnly)) !== null) {
+      const key = `np:${m[1]?.trim()}:${m[2]}`
+      if (seen.has(key)) continue
+      seen.add(key)
       contacts.push({
         name: m[1]?.trim() || "",
-        phone: m[2] ? `(${m[2]}) ${textOnly.match(new RegExp(`${m[2]}[)-]\\s*(\\d{3})[-.]?(\\d{4})`))?.[0]?.replace(/^.*?\(/, "(") ?? ""}` : null,
+        phone: `(${m[2]}) ${textOnly.match(new RegExp(`${m[2]}[)-]\\s*(\\d{3})[-.]?(\\d{4})`))?.[0]?.replace(/^.*?\(/, "(") ?? ""}`,
         email: null,
       })
     }
   }
 
+  // Pattern 2: Standalone US phone numbers (no name required)
+  const phoneRegex = /(?:call|phone|tel|contact|info)[:\s]*\(?(\d{3})\)?[-\s.]?\d{3}[-\s.]?\d{4}/gi
+  let pm: RegExpExecArray | null
+  while ((pm = phoneRegex.exec(textOnly)) !== null) {
+    const fullMatch = pm[0]
+    const areaCode = pm[1]
+    const phoneMatch = fullMatch.match(/\(?(\d{3})\)?[-\s.]?(\d{3})[-.]?(\d{4})/)
+    if (!phoneMatch) continue
+    const phone = `(${phoneMatch[1]}) ${phoneMatch[2]}-${phoneMatch[3]}`
+    const key = `phone:${phone}`
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    // Look for a name before the phone indicator
+    const before = textOnly.substring(Math.max(0, pm.index - 80), pm.index)
+    const nameBefore = before.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)[\s,:]*$/)
+    contacts.push({
+      name: nameBefore?.[1]?.trim() || "",
+      phone,
+      email: null,
+    })
+  }
+
+  // Pattern 3: Generic US phone number (no keyword prefix)
+  const genericPhoneRegex = /\(?(\d{3})\)?[-\s.]?\d{3}[-.]?\d{4}/g
+  let gp: RegExpExecArray | null
+  while ((gp = genericPhoneRegex.exec(textOnly)) !== null) {
+    const phoneMatch = gp[0].match(/\(?(\d{3})\)?[-\s.]?(\d{3})[-.]?(\d{4})/)
+    if (!phoneMatch) continue
+    const phone = `(${phoneMatch[1]}) ${phoneMatch[2]}-${phoneMatch[3]}`
+    const key = `phone:${phone}`
+    if (seen.has(key)) continue
+
+    // Only capture if preceded by contact context within 100 chars
+    const before = textOnly.substring(Math.max(0, gp.index - 100), gp.index).toLowerCase()
+    if (!/(?:call|phone|tel|contact|info|tickets?|information|email|reach|at\s)/i.test(before)) continue
+    seen.add(key)
+
+    const nameMatch = before.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})[\s,:]*$/)
+    contacts.push({
+      name: nameMatch?.[1]?.trim() || "",
+      phone,
+      email: null,
+    })
+  }
+
+  // Pattern 4: Emails
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
   let em: RegExpExecArray | null
   while ((em = emailRegex.exec(textOnly)) !== null) {
     const email = em[0]
-    const before = textOnly.substring(Math.max(0, em.index - 60), em.index)
+    const key = `email:${email}`
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    const before = textOnly.substring(Math.max(0, em.index - 80), em.index)
+    let name = ""
     const nameMatch = before.match(/(?:contact|email|e-?mail)[:\s]*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i)
+    if (nameMatch) {
+      name = nameMatch[1].trim()
+    } else {
+      // Generic fallback: if there's a proper name before, use it
+      const genericName = before.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})[\s,:]{1,3}$/)
+      if (genericName) name = genericName[1].trim()
+    }
+
     contacts.push({
-      name: nameMatch?.[1]?.trim() || "",
+      name,
       phone: null,
       email,
     })
@@ -197,11 +264,13 @@ async function fetchListingCards(
       const detailUrl = resolveUrl(href)
       if (!detailUrl || seen.has(detailUrl)) return
       seen.add(detailUrl)
+      const previewText = $(el).closest(".dataBusiness").text().trim() || $(el).text().trim()
       cards.push({
         title,
         detailUrl,
         dateCategory: null,
         section,
+        previewText: previewText || null,
       })
     })
   } else {
@@ -225,6 +294,7 @@ async function fetchListingCards(
         detailUrl,
         dateCategory: yearMatch?.[1] ?? null,
         section,
+        previewText: parentText || null,
       })
     })
   }
@@ -237,9 +307,28 @@ async function scrapeDetailPage(url: string): Promise<{
 }> {
   const html = await fetchWithRetry(url)
   const $ = cheerio.load(html)
+
+  // Try multiple content selectors found on blackmeetingsandtourism.com detail pages
   const bodyText =
     $(".presscenter_data").text().trim() ||
     $("#ArticleDetail .presscenter_data").text().trim() ||
+    $(".Content").text().trim() ||
+    $(".article-content").text().trim() ||
+    $(".post-content").text().trim() ||
+    $(".entry-content").text().trim() ||
+    $(".item-detail").text().trim() ||
+    $(".detail-content").text().trim() ||
+    $(".main-content").text().trim() ||
+    $("#CenterContent").text().trim() ||
+    $("#box1").text().trim() ||
+    // Last resort: grab all visible text from the body, skipping nav/header/footer
+    $("body")
+      .clone()
+      .find("script, style, nav, header, footer, .nav, .menu, .sidebar, .footer, .header")
+      .remove()
+      .end()
+      .text()
+      .trim() ||
     null
   return { bodyText }
 }
@@ -281,8 +370,9 @@ export async function scrapeBMEvents(
       await delay(500 + Math.random() * 500)
     }
 
-    const dates = bodyText ? parseEventDates(bodyText) : { start: null, end: null }
-    const contacts = bodyText ? extractContacts(bodyText) : []
+    const contentForExtraction = bodyText || card.previewText || ""
+    const dates = contentForExtraction ? parseEventDates(contentForExtraction) : { start: null, end: null }
+    const contacts = contentForExtraction ? extractContacts(contentForExtraction) : []
     const externalLinks = bodyText ? extractExternalLinks(bodyText) : []
 
     let venueName: string | null = null

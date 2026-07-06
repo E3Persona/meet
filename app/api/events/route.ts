@@ -24,35 +24,40 @@ export async function GET(request: Request) {
 
   if (locationId) where.locationId = locationId
   if (status) where.status = status
-  const orConditions: Record<string, unknown>[] = []
+  const andConditions: Record<string, unknown>[] = []
 
-  if (hasContact === "false") {
-    where.NOT = {
+  if (search) {
+    andConditions.push({
+      OR: [
+        { eventName: { contains: search, mode: "insensitive" } },
+        { organizerName: { contains: search, mode: "insensitive" } },
+        { organizerEmail: { contains: search, mode: "insensitive" } },
+        { contacts: { some: { name: { contains: search, mode: "insensitive" } } } },
+        { contacts: { some: { email: { contains: search, mode: "insensitive" } } } },
+      ],
+    })
+  }
+  if (hasContact === "true") {
+    andConditions.push({
       OR: [
         { contacts: { some: {} } },
         { organizerName: { not: null } },
         { organizerEmail: { not: null } },
       ],
-    }
+    })
+  } else if (hasContact === "false") {
+    andConditions.push({
+      NOT: {
+        OR: [
+          { contacts: { some: {} } },
+          { organizerName: { not: null } },
+          { organizerEmail: { not: null } },
+        ],
+      },
+    })
   }
-  if (search) {
-    orConditions.push(
-      { eventName: { contains: search, mode: "insensitive" } },
-      { organizerName: { contains: search, mode: "insensitive" } },
-      { organizerEmail: { contains: search, mode: "insensitive" } },
-      { contacts: { some: { name: { contains: search, mode: "insensitive" } } } },
-      { contacts: { some: { email: { contains: search, mode: "insensitive" } } } },
-    )
-  }
-  if (hasContact === "true") {
-    orConditions.push(
-      { contacts: { some: {} } },
-      { organizerName: { not: null } },
-      { organizerEmail: { not: null } },
-    )
-  }
-  if (orConditions.length > 0) {
-    where.OR = orConditions
+  if (andConditions.length > 0) {
+    where.AND = andConditions
   }
 
   const [events, total] = await Promise.all([
