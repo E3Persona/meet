@@ -8,7 +8,13 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Trash2, Plus } from "lucide-react"
+import { Trash2, Plus, Play, MoreHorizontal } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import type { FormSection as FormSectionType } from "@/types/components"
 import { EVENT_TYPE_KEYWORDS } from "@/lib/constants/events"
 import { toast } from "sonner"
@@ -115,6 +121,8 @@ export function LocationsManager() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
+  const [runningLocationId, setRunningLocationId] = useState<string | null>(null)
+  const [runningAll, setRunningAll] = useState(false)
 
   const fetchLocations = useCallback(async () => {
     try {
@@ -209,6 +217,65 @@ export function LocationsManager() {
     }
   }
 
+  const runScraper = async (locationId: string, locationName: string) => {
+    setRunningLocationId(locationId)
+    toast.info(`Running scraper for ${locationName}...`)
+    try {
+      const res = await fetch("/api/ingest/run?trigger=manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locationIds: [locationId] }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "Scraper failed")
+        return
+      }
+      toast.success(`${locationName}: ${data.recordsNew} new events (${data.recordsFound} scanned)`)
+
+      if (data.warnings?.length > 0) {
+        const uniqueWarnings = [...new Set(data.warnings)]
+        toast.warning(`Provider issues: ${uniqueWarnings.slice(0, 3).join("; ")}${uniqueWarnings.length > 3 ? ` (+${uniqueWarnings.length - 3} more)` : ""}`)
+      }
+
+      fetchLocations()
+    } catch {
+      toast.error("Scraper request failed")
+    } finally {
+      setRunningLocationId(null)
+    }
+  }
+
+  const runAllScrapers = async () => {
+    setRunningAll(true)
+    toast.info("Running scraper for all active locations...")
+    try {
+      const activeIds = locations.filter((l) => l.active).map((l) => l.id)
+      const res = await fetch("/api/ingest/run?trigger=manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locationIds: activeIds }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "Scraper failed")
+        return
+      }
+      toast.success(`All locations: ${data.recordsNew} new events (${data.recordsFound} scanned)`)
+
+      if (data.warnings?.length > 0) {
+        const uniqueWarnings = [...new Set(data.warnings)]
+        toast.warning(`Provider issues: ${uniqueWarnings.slice(0, 3).join("; ")}${uniqueWarnings.length > 3 ? ` (+${uniqueWarnings.length - 3} more)` : ""}`)
+      }
+
+      fetchLocations()
+    } catch {
+      toast.error("Scraper request failed")
+    } finally {
+      setRunningAll(false)
+    }
+  }
+
   const cities = locations.filter((l) => l.type === "CITY")
   const venues = locations.filter((l) => l.type === "VENUE")
 
@@ -294,19 +361,29 @@ export function LocationsManager() {
   ]
 
   const rowActions = (location: Location) => (
-    <div className="flex items-center gap-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={(e) => {
-          e.stopPropagation()
-          deleteLocation(location)
-        }}
-        title="Delete location"
-      >
-        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-      </Button>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-40">
+        <DropdownMenuItem
+          onClick={() => runScraper(location.id, location.name)}
+          disabled={runningLocationId === location.id || runningAll}
+        >
+          <Play className="h-4 w-4 mr-2" />
+          {runningLocationId === location.id ? "Running..." : "Run Scraper"}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => deleteLocation(location)}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 
   return (
@@ -315,9 +392,20 @@ export function LocationsManager() {
         <p className="text-sm text-muted-foreground">
           {cities.length} cit{cities.length === 1 ? "y" : "ies"} · {venues.length} venues
         </p>
-        <Button onClick={() => setFormOpen(true)} leftIcon={Plus}>
-          Add Location
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={runAllScrapers}
+            disabled={runningAll || runningLocationId !== null}
+            leftIcon={runningAll ? undefined : Play}
+            loading={runningAll}
+          >
+            {runningAll ? "Running..." : "Run All"}
+          </Button>
+          <Button onClick={() => setFormOpen(true)} leftIcon={Plus}>
+            Add Location
+          </Button>
+        </div>
       </div>
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>

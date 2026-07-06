@@ -8,6 +8,8 @@ export async function GET(request: Request) {
   const status = searchParams.get("status")
   const search = searchParams.get("search")
   const hasContact = searchParams.get("hasContact") // "true", "false", or null
+  const dateFrom = searchParams.get("dateFrom")
+  const dateTo = searchParams.get("dateTo")
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
   const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") ?? "25", 10)))
 
@@ -55,6 +57,14 @@ export async function GET(request: Request) {
         ],
       },
     })
+  }
+  if (dateFrom) {
+    andConditions.push({ eventDateStart: { gte: new Date(dateFrom) } })
+  }
+  if (dateTo) {
+    const endDate = new Date(dateTo)
+    endDate.setHours(23, 59, 59, 999)
+    andConditions.push({ eventDateStart: { lte: endDate } })
   }
   if (andConditions.length > 0) {
     where.AND = andConditions

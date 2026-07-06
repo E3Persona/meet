@@ -6,10 +6,21 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const month = searchParams.get("month") // "1"-"12" or null for all
   const year = searchParams.get("year") // "2026" etc or null for all
+  const dateFrom = searchParams.get("dateFrom")
+  const dateTo = searchParams.get("dateTo")
 
   const where: Record<string, any> = {}
 
-  if (month && year) {
+  if (dateFrom || dateTo) {
+    const dateFilter: Record<string, Date> = {}
+    if (dateFrom) dateFilter.gte = new Date(dateFrom)
+    if (dateTo) {
+      const endDate = new Date(dateTo)
+      endDate.setHours(23, 59, 59, 999)
+      dateFilter.lte = endDate
+    }
+    where.eventDateStart = dateFilter
+  } else if (month && year) {
     const m = parseInt(month, 10)
     const y = parseInt(year, 10)
     const start = new Date(Date.UTC(y, m - 1, 1))
@@ -85,13 +96,15 @@ export async function GET(request: Request) {
     "", "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
   ]
-  const label = month && year
-    ? `${monthNames[parseInt(month)]}-${year}`
-    : year
-      ? `Year-${year}`
-      : month
-        ? `${monthNames[parseInt(month)]}-All`
-        : new Date().toISOString().slice(0, 10)
+  const label = dateFrom || dateTo
+    ? `events-${dateFrom ?? "start"}-to-${dateTo ?? "end"}`
+    : month && year
+      ? `${monthNames[parseInt(month)]}-${year}`
+      : year
+        ? `Year-${year}`
+        : month
+          ? `${monthNames[parseInt(month)]}-All`
+          : new Date().toISOString().slice(0, 10)
 
   return new NextResponse(buf, {
     headers: {

@@ -67,6 +67,11 @@ export function RunNowButton({ onComplete }: { onComplete?: () => void }) {
         parts.push(`${data.manualResults.checked} manual sources checked`)
       }
       toast.success(parts.join(" · "))
+
+      if (data.warnings?.length > 0) {
+        const uniqueWarnings = [...new Set(data.warnings)]
+        toast.warning(`Provider issues: ${uniqueWarnings.slice(0, 3).join("; ")}${uniqueWarnings.length > 3 ? ` (+${uniqueWarnings.length - 3} more)` : ""}`)
+      }
       setDialogOpen(false)
       onComplete?.()
     } catch {

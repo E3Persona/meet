@@ -88,11 +88,11 @@ async function main() {
     console.log(`[ACA/Ingest] Scraping city: ${cityName} (slug: ${slug})`)
 
     try {
-      // Scrape listing only (fast — city pages are small)
+      // Scrape listing + detail pages (detail pages have contact info)
       const acaEvents = await scrapeACA({
         mode: "city",
         citySlug: slug,
-        fetchDetails: false,
+        fetchDetails: true,
       })
 
       console.log(`[ACA/Ingest] ${cityName}: ${acaEvents.length} events from listing`)
@@ -133,8 +133,15 @@ async function main() {
                 // Simple extraction from markdown
                 const cpMatch = md.match(/Contact Person[:\s]*\n?\s*(.+)/i)
                 if (cpMatch) contactPerson = cpMatch[1].trim()
-                const emMatch = md.match(/(?:Email|Enquir)[:\s]*\n?\s*([^\s]+@[^\s]+)/i)
-                if (emMatch) inquiryEmail = emMatch[1].trim()
+                // Try multiple email patterns
+                const emMatch = md.match(/(?:Event Enquiries|Email|Enquir|Contact)[:\s]*\n?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i)
+                if (emMatch) {
+                  inquiryEmail = emMatch[1].trim()
+                } else {
+                  // Last resort: find any email address on the page
+                  const anyEmail = md.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
+                  if (anyEmail) inquiryEmail = anyEmail[0]
+                }
                 const obMatch = md.match(/Organized By[:\s]*\n?\s*(.+)/i)
                 if (obMatch) organizedBy = obMatch[1].trim()
               }

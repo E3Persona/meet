@@ -16,6 +16,7 @@ interface ScraperResult {
   recordsNew: number
   error?: string
   provider?: string
+  providerWarnings?: string[]
 }
 
 interface RunConfig {
@@ -371,6 +372,9 @@ export async function POST(request: Request) {
     })
 
     console.log(`\n[Ingest] Complete: ${totalNew} new from ${totalFound} total`)
+
+    const allWarnings = results.flatMap((r) => r.providerWarnings ?? [])
+
     return NextResponse.json({
       runId: run.id,
       recordsFound: totalFound,
@@ -378,6 +382,7 @@ export async function POST(request: Request) {
       results,
       providersUsed,
       skipped,
+      warnings: allWarnings,
       manualResults: { checked: checkedManual.length, skipped: skippedManual.length },
     })
   } catch (error) {

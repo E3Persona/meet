@@ -249,6 +249,8 @@ export function EventsTable() {
   const [pageSize, setPageSize] = useState(25)
   const [total, setTotal] = useState(0)
   const [filterHasContact, setFilterHasContact] = useState<string>("true")
+  const [filterDateFrom, setFilterDateFrom] = useState<string>("")
+  const [filterDateTo, setFilterDateTo] = useState<string>("")
   const [exportMonth, setExportMonth] = useState<string>("all")
   const [exportYear, setExportYear] = useState<string>(String(new Date().getFullYear()))
 
@@ -280,6 +282,8 @@ export function EventsTable() {
   const setStatusFilter = (val: string) => { setFilterStatus(val); setPage(1) }
   const setSearchFilter = (val: string) => { setSearch(val); setPage(1) }
   const setHasContactFilter = (val: string) => { setFilterHasContact(val); setPage(1) }
+  const setDateFromFilter = (val: string) => { setFilterDateFrom(val); setPage(1) }
+  const setDateToFilter = (val: string) => { setFilterDateTo(val); setPage(1) }
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -289,6 +293,8 @@ export function EventsTable() {
       if (filterStatus !== "all") params.set("status", filterStatus)
       if (filterHasContact !== "all") params.set("hasContact", filterHasContact)
       if (search) params.set("search", search)
+      if (filterDateFrom) params.set("dateFrom", filterDateFrom)
+      if (filterDateTo) params.set("dateTo", filterDateTo)
       params.set("page", String(page))
       params.set("pageSize", String(pageSize))
 
@@ -302,7 +308,7 @@ export function EventsTable() {
     } finally {
       setLoading(false)
     }
-  }, [filterCity, filterLocation, filterStatus, filterHasContact, search, page, pageSize])
+  }, [filterCity, filterLocation, filterStatus, filterHasContact, search, filterDateFrom, filterDateTo, page, pageSize])
 
   const fetchLocations = useCallback(async () => {
     const res = await fetch("/api/locations")
@@ -335,8 +341,12 @@ export function EventsTable() {
 
   const exportToExcel = () => {
     const params = new URLSearchParams()
-    if (exportMonth !== "all") params.set("month", exportMonth)
-    if (exportYear) params.set("year", exportYear)
+    if (filterDateFrom) params.set("dateFrom", filterDateFrom)
+    if (filterDateTo) params.set("dateTo", filterDateTo)
+    if (!filterDateFrom && !filterDateTo) {
+      if (exportMonth !== "all") params.set("month", exportMonth)
+      if (exportYear) params.set("year", exportYear)
+    }
     const qs = params.toString()
     window.open(`/api/events/export${qs ? `?${qs}` : ""}`, "_blank")
     toast.success("Exporting events...")
@@ -655,6 +665,23 @@ export function EventsTable() {
             <SelectItem value="contacted">Contacted</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-1.5">
+          <input
+            type="date"
+            value={filterDateFrom}
+            onChange={(e) => setDateFromFilter(e.target.value)}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 outline-none"
+            title="From date"
+          />
+          <span className="text-muted-foreground text-sm">to</span>
+          <input
+            type="date"
+            value={filterDateTo}
+            onChange={(e) => setDateToFilter(e.target.value)}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 outline-none"
+            title="To date"
+          />
+        </div>
         <Select value={exportMonth} onValueChange={setExportMonth}>
           <SelectTrigger className="w-32" size="sm">
             <SelectValue placeholder="All months" />

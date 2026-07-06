@@ -18,6 +18,7 @@ interface ScraperResult {
   recordsNew: number
   error?: string
   provider?: string
+  providerWarnings?: string[]
 }
 
 // ─── Provider registry builder ──────────────────────────────────────────────
@@ -530,5 +531,5 @@ export async function runSearchScraper(
     allHits, registry, runId, opts.scrapeConcurrency ?? 8, { dryRun: opts.dryRun }
   )
 
-  return { scraper: "search", recordsFound: totalFound, recordsNew: totalNew, provider: lastProvider }
+  return { scraper: "search", recordsFound: totalFound, recordsNew: totalNew, provider: lastProvider, providerWarnings: registry.getStatus().warnings }
 }
