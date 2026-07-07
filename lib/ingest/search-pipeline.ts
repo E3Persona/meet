@@ -8,6 +8,7 @@ import { createFirecrawlProvider } from "@/lib/providers/scrape/firecrawl"
 import { createWebPeelProvider } from "@/lib/providers/scrape/webpeel"
 import { createJinaProvider } from "@/lib/providers/scrape/jina"
 import { DEV_MODE } from "@/lib/providers/credit-tracker"
+import { checkCrawlCache, hashContent, updateCrawlCache, getCachedEvents, getStaleHours } from "./crawl-cache"
 
 // ─── Scraper types ─────────────────────────────────────────────────────────
 
@@ -303,12 +304,30 @@ async function scrapeAndExtractSafe(
   registry: ProviderRegistry,
   runId: string,
   counters: { totalFound: number; totalNew: number },
-  opts: { dryRun?: boolean } = {}
+  opts: { dryRun?: boolean; forceRefresh?: boolean } = {}
 ) {
+  // ── Change detection: skip if URL was crawled recently ──
+  const cacheCheck = await checkCrawlCache(hit.url, opts.forceRefresh ?? false)
+  if (!cacheCheck.shouldScrape) {
+    console.log(`[Cache] Skipping "${hit.url}" — crawled within ${getStaleHours()}h window`)
+    return
+  }
+
   counters.totalFound++
 
   const scraped = await scrapeUrl(hit.url, registry, runId)
   if (!scraped) return
+
+  // ── Change detection: hash compare — skip LLM if content unchanged ──
+  const contentHash = hashContent(scraped.markdown)
+  const existingCache = await prisma.crawledUrl.findUnique({ where: { url: hit.url } })
+  if (existingCache && existingCache.contentHash === contentHash) {
+    console.log(`[Cache] Content unchanged for "${hit.url}" — re-using cached events`)
+    updateCrawlCache(hit.url, contentHash, runId).catch(() => {})
+    const cachedEvents = await getCachedEvents(hit.url)
+    counters.totalNew += cachedEvents.length
+    return
+  }
 
   let extracted: Awaited<ReturnType<typeof extractEventsWithLLM>>["events"]
   try {
@@ -462,6 +481,9 @@ async function scrapeAndExtractSafe(
       console.error(`[Scrape] failed to save "${eventName}":`, err instanceof Error ? err.message : err)
     }
   }
+
+  // Record crawl cache entry after all events are saved
+  updateCrawlCache(hit.url, contentHash, runId).catch(() => {})
 }
 
 async function runScrapes(
@@ -469,7 +491,7 @@ async function runScrapes(
   registry: ProviderRegistry,
   runId: string,
   concurrency = 3,
-  opts: { dryRun?: boolean } = {}
+  opts: { dryRun?: boolean; forceRefresh?: boolean } = {}
 ): Promise<{ totalFound: number; totalNew: number }> {
   const limit = createLimiter(concurrency)
   const counters = { totalFound: 0, totalNew: 0 }
@@ -511,7 +533,7 @@ async function buildFallbackQueries(
 export async function runSearchScraper(
   queries: SearchQuery[],
   runId: string,
-  opts: { searchConcurrency?: number; scrapeConcurrency?: number; dryRun?: boolean } = {}
+  opts: { searchConcurrency?: number; scrapeConcurrency?: number; dryRun?: boolean; forceRefresh?: boolean } = {}
 ): Promise<ScraperResult> {
   const registry = buildRegistry()
   console.log(`[Search] ${queries.length} queries`)
@@ -544,7 +566,7 @@ export async function runSearchScraper(
   console.log(`[Search] ${allHits.length} total unique URLs to scrape, ${failedQueries.length} queries failed`)
 
   const { totalFound, totalNew } = await runScrapes(
-    allHits, registry, runId, opts.scrapeConcurrency ?? 8, { dryRun: opts.dryRun }
+    allHits, registry, runId, opts.scrapeConcurrency ?? 8, { dryRun: opts.dryRun, forceRefresh: opts.forceRefresh }
   )
 
   return { scraper: "search", recordsFound: totalFound, recordsNew: totalNew, provider: lastProvider, providerWarnings: registry.getStatus().warnings }

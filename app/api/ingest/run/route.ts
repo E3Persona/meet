@@ -26,6 +26,7 @@ interface RunConfig {
   dateFrom?: string
   dateTo?: string
   sourceSiteId?: string
+  forceRefresh?: boolean
 }
 
 // ─── Frequency tracking using IngestionSchedule ─────────────────────────────
@@ -176,6 +177,7 @@ export async function POST(request: Request) {
     if (raw.dateFrom) body.dateFrom = raw.dateFrom
     if (raw.dateTo) body.dateTo = raw.dateTo
     if (raw.sourceSiteId) body.sourceSiteId = raw.sourceSiteId
+    if (raw.forceRefresh) body.forceRefresh = true
   } catch {
     /* no body */
   }
@@ -234,6 +236,7 @@ export async function POST(request: Request) {
       const result = await runSearchScraper(queries, run.id, {
         searchConcurrency: DEV_MODE ? 10 : 5,
         scrapeConcurrency: DEV_MODE ? 8 : 3,
+        forceRefresh: body.forceRefresh,
       })
       await prisma.sourceSite.update({
         where: { id: body.sourceSiteId },
@@ -336,6 +339,7 @@ export async function POST(request: Request) {
           searchConcurrency: DEV_MODE ? 10 : (trigger === "scheduled" ? 5 : 10),
           scrapeConcurrency: DEV_MODE ? 8 : (trigger === "scheduled" ? 3 : 8),
           dryRun: false,
+          forceRefresh: body.forceRefresh,
         })
         results.push(r)
         totalFound += r.recordsFound

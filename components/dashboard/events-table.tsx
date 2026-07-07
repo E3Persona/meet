@@ -280,6 +280,7 @@ export function EventsTable() {
   } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [searchRunning, setSearchRunning] = useState(false)
+  const [forceRefresh, setForceRefresh] = useState(false)
 
   const setCityFilter = (val: string) => {
     setFilterCity(val)
@@ -447,7 +448,7 @@ export function EventsTable() {
     setSearchRunning(true)
     toast.info("Search pipeline started...")
     try {
-      const body: Record<string, any> = {}
+      const body: Record<string, any> = { forceRefresh }
       if (filterDateFrom) body.dateFrom = filterDateFrom
       if (filterDateTo) body.dateTo = filterDateTo
       if (filterLocation !== "all") body.locationIds = [filterLocation]
@@ -829,6 +830,15 @@ export function EventsTable() {
               )}
               Run Search
             </Button>
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={forceRefresh}
+                onChange={(e) => setForceRefresh(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-input accent-primary"
+              />
+              Force refresh
+            </label>
           <Button variant="outline" size="sm" onClick={exportToExcel}>
             <Download className="mr-1.5 h-4 w-4" />
             Export

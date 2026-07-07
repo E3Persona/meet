@@ -1,5 +1,6 @@
 import { spawn } from "child_process"
 import { prisma } from "@/lib/prisma"
+import { isSiteStale, getStaleHours } from "@/lib/ingest/crawl-cache"
 
 const SCRAPER_KEYS: Record<string, string> = {
   "ingest-ica.ts": "ica",
@@ -21,7 +22,20 @@ export async function startScraperRun(
   fast = false,
   dateFrom?: string,
   dateTo?: string,
-): Promise<{ runId: string }> {
+  forceRefresh = false,
+): Promise<{ runId: string; skipped?: boolean }> {
+  // ── Change detection: skip if site was scraped recently ──
+  if (!forceRefresh) {
+    const site = await prisma.sourceSite.findFirst({ where: { name: siteName } })
+    if (site) {
+      const stale = await isSiteStale(site.id)
+      if (!stale) {
+        console.log(`[Scraper] Skipping "${siteName}" — scraped within ${getStaleHours()}h window`)
+        return { runId: "", skipped: true }
+      }
+    }
+  }
+
   const run = await prisma.ingestionRun.create({
     data: { trigger, status: "running" },
   })
@@ -51,6 +65,7 @@ export async function startScraperRun(
     RUN_ID: run.id,
     ...(dateFrom ? { DATE_FROM: dateFrom } : {}),
     ...(dateTo ? { DATE_TO: dateTo } : {}),
+    ...(forceRefresh ? { FORCE_REFRESH: "1" } : {}),
   }
 
   const child = spawn("npx", ["tsx", scriptPath], {

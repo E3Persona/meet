@@ -261,6 +261,20 @@ model IngestConfig {
   @@map("ingest_configs")
 }
 
+// ─── Crawled URL (change detection cache) ────────────────────────────────────
+
+model CrawledUrl {
+  url           String    @id
+  contentHash   String?
+  scrapedAt     DateTime  @default(now())
+  runId         String?
+  sourceSiteId  String?
+
+  @@index([scrapedAt])
+  @@index([sourceSiteId])
+  @@map("crawled_urls")
+}
+
 // ─── Event Contact ───────────────────────────────────────────────────────────
 
 model EventContact {
