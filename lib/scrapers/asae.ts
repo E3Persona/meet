@@ -2,7 +2,6 @@
 import * as cheerio from "cheerio"
 import { createJinaProvider } from "../providers/scrape/jina"
 
-
 const ASAE_CALENDAR_URL = "https://www.asaecenter.org/programs/events"
 const PHEEDLOOP_EMBED_HOST = "site.pheedloop.com"
 
@@ -172,10 +171,40 @@ async function scrapeListing(page: any): Promise<ASAEEventCard[]> {
 // ---------- Phase 2: organizer contact via Jina against the detail page ----------
 
 function extractContactFromMarkdown(markdown: string): ASAEContact {
-  // Prefer the mailto: link — most reliable signal, matches your sample's
-  // <p class="eventcontact"><a href="mailto:...">
+  // Validates a captured string actually looks like an email before trusting it —
+  // guards against grabbing a truncated or artifact-laden mailto capture.
+  const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+
+  let email: string | null = null
+
+  // 1. Preferred: a real mailto: link, however it survived conversion —
+  //    markdown link syntax `(mailto:x@y.com)`, or a bare `mailto:x@y.com`
+  //    left in the text.
   const mailtoMatch = markdown.match(/mailto:([^\s)?]+)/i)
-  const email = mailtoMatch ? mailtoMatch[1].trim() : null
+  if (mailtoMatch) {
+    const candidate = mailtoMatch[1].trim()
+    if (EMAIL_PATTERN.test(candidate)) {
+      email = candidate.match(EMAIL_PATTERN)![0]
+    }
+  }
+
+  // 2. Fallback: some converters drop the href entirely and leave only the
+  //    visible link text (no "mailto:" anywhere). Scan near a "contact"
+  //    keyword first to avoid grabbing an unrelated footer/support email;
+  //    fall back to the first email found anywhere on the page if that
+  //    scoped search comes up empty.
+  if (!email) {
+    const contactIdx = markdown.search(/event\s*contact/i)
+    if (contactIdx !== -1) {
+      const nearby = markdown.slice(contactIdx, contactIdx + 300)
+      const nearbyMatch = nearby.match(EMAIL_PATTERN)
+      if (nearbyMatch) email = nearbyMatch[0]
+    }
+    if (!email) {
+      const anyMatch = markdown.match(EMAIL_PATTERN)
+      if (anyMatch) email = anyMatch[0]
+    }
+  }
 
   const phoneMatch = markdown.match(
     /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/
@@ -186,23 +215,105 @@ function extractContactFromMarkdown(markdown: string): ASAEContact {
 }
 
 export async function scrapeEventContact(
-  detailUrl: string
+  detailUrl: string,
+  browser?: any
 ): Promise<ASAEContact> {
-  const jina = createJinaProvider()
-  const result = await jina.scrape(detailUrl, { timeout: 20000 })
+  // Strategy 1: Puppeteer — ASAE loads contacts via JS, so DOM is the reliable source
+  const closeBrowser = !browser
+  const pupBrowser = browser ?? await import("puppeteer-core").then((m) =>
+    m.launch({
+      headless: true,
+      executablePath: "/usr/bin/google-chrome",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    })
+  )
 
-  if (!result.markdown) {
-    console.warn(
-      `[ASAE]   ✗ no markdown returned for ${detailUrl}: ${result.error}`
-    )
-    return { organizerEmail: null, organizerPhone: null }
+  try {
+    const page = await pupBrowser.newPage()
+    await page.goto(detailUrl, { waitUntil: "networkidle2", timeout: 30000 })
+
+    // Wait for the contact element to appear (up to 10s)
+    try {
+      await page.waitForSelector("p.eventcontact, .eventcontact, [class*='contact']", { timeout: 10000 })
+    } catch {
+      // No contact element — still try parsing what's there
+    }
+
+    const html = await page.content()
+    await page.close()
+
+    // Parse with cheerio
+    const $ = cheerio.load(html)
+
+    // Look for .eventcontact or similar patterns
+    const contactEl = $("p.eventcontact").first()
+    if (contactEl.length > 0) {
+      const contactHtml = contactEl.html() ?? ""
+      const contactText = contactEl.text().trim()
+
+      // Extract email
+      let email: string | null = null
+      const mailtoMatch = contactHtml.match(/mailto:([^\s"'>]+)/i)
+      if (mailtoMatch) {
+        email = mailtoMatch[1].trim()
+      } else {
+        const emailMatch = contactText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
+        if (emailMatch) email = emailMatch[0]
+      }
+
+      // Extract phone
+      let phone: string | null = null
+      const phoneMatch = contactText.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)
+      if (phoneMatch) phone = phoneMatch[0].trim()
+
+      console.log(`[ASAE/Puppeteer] Found contact: email="${email}" phone="${phone}"`)
+      return { organizerEmail: email, organizerPhone: phone }
+    }
+
+    // Broader search: any mailto link on the page, plus nearby phone
+    const anyMailto = $("a[href^='mailto:']").first()
+    if (anyMailto.length > 0) {
+      const email = (anyMailto.attr("href") ?? "").replace(/^mailto:/i, "").split("?")[0].trim()
+      // Try to find a phone number near the mailto link
+      let phone: string | null = null
+      const parent = anyMailto.closest("p, div, section, td")
+      if (parent.length > 0) {
+        const phoneMatch = parent.text().match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)
+        if (phoneMatch) phone = phoneMatch[0].trim()
+      }
+      if (!phone) {
+        // Search broader area around the mailto
+        const allText = $.text()
+        const phoneMatch = allText.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)
+        if (phoneMatch) phone = phoneMatch[0].trim()
+      }
+      console.log(`[ASAE/Puppeteer] Found contact: email="${email}" phone="${phone}"`)
+      return { organizerEmail: email, organizerPhone: phone }
+    }
+
+    console.log(`[ASAE/Puppeteer] No contact info found on ${detailUrl}`)
+  } catch (err) {
+    console.error(`[ASAE]   Puppeteer failed for ${detailUrl}:`, err instanceof Error ? err.message : err)
+  } finally {
+    if (closeBrowser) await pupBrowser.close()
   }
 
-  const contact = extractContactFromMarkdown(result.markdown)
-  if (!contact.organizerEmail && !contact.organizerPhone) {
-    console.warn(`[ASAE]   ✗ no contact found on detail page: ${detailUrl}`)
+  // Strategy 2: Jina fallback (may catch static content Puppeteer missed)
+  try {
+    const jina = createJinaProvider()
+    const result = await jina.scrape(detailUrl, { timeout: 20000 })
+    if (result.markdown) {
+      const contact = extractContactFromMarkdown(result.markdown)
+      if (contact.organizerEmail || contact.organizerPhone) {
+        console.log(`[ASAE/Jina] Found contact: email="${contact.organizerEmail}" phone="${contact.organizerPhone}"`)
+        return contact
+      }
+    }
+  } catch {
+    // ignore
   }
-  return contact
+
+  return { organizerEmail: null, organizerPhone: null }
 }
 
 // ---------- Orchestration ----------
@@ -236,9 +347,11 @@ export async function scrapeASAE(options?: {
   let cards: ASAEEventCard[] = []
   try {
     cards = await scrapeListing(page)
-  } finally {
-    await browser.close()
+  } catch (err) {
+    console.error(`[ASAE] Listing scrape failed:`, err)
   }
+
+  // Keep browser open for contact lookups, close in finally below
 
   const results: ASAEEvent[] = []
   let lookups = 0
@@ -248,7 +361,7 @@ export async function scrapeASAE(options?: {
 
     if (!skipContacts && lookups < maxContactLookups) {
       try {
-        contact = await scrapeEventContact(card.detailUrl)
+        contact = await scrapeEventContact(card.detailUrl, browser)
       } catch (err) {
         console.error(`[ASAE] Contact lookup error for ${card.detailUrl}:`, err)
       }
@@ -256,8 +369,14 @@ export async function scrapeASAE(options?: {
       await wait(jitter(1000))
     }
 
-    results.push({ ...card, contact, expectedAttendees: null, sourceSite: "asaecenter.org" })
+    results.push({
+      ...card,
+      contact,
+      expectedAttendees: null,
+      sourceSite: "asaecenter.org",
+    })
   }
 
+  await browser.close()
   return results
 }

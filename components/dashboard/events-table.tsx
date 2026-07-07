@@ -137,12 +137,12 @@ function InlineEditCell({
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="group flex items-center gap-1 text-sm hover:bg-muted/50 rounded px-1 py-0.5 -mx-1 cursor-pointer"
+        className="group -mx-1 flex cursor-pointer items-center gap-1 rounded px-1 py-0.5 text-sm hover:bg-muted/50"
       >
         <span className={value ? "" : "text-muted-foreground italic"}>
           {value || "Add..."}
         </span>
-        <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Pencil className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
       </button>
     )
   }
@@ -214,7 +214,8 @@ function StatusBadge({
   }
 
   const config =
-    STATUS_CONFIG[currentStatus as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.new
+    STATUS_CONFIG[currentStatus as keyof typeof STATUS_CONFIG] ??
+    STATUS_CONFIG.new
 
   return (
     <Select value={currentStatus} onValueChange={handleChange}>
@@ -252,7 +253,9 @@ export function EventsTable() {
   const [filterDateFrom, setFilterDateFrom] = useState<string>("")
   const [filterDateTo, setFilterDateTo] = useState<string>("")
   const [exportMonth, setExportMonth] = useState<string>("all")
-  const [exportYear, setExportYear] = useState<string>(String(new Date().getFullYear()))
+  const [exportYear, setExportYear] = useState<string>(
+    String(new Date().getFullYear())
+  )
 
   // Contact finder modal state
   const [contactModal, setContactModal] = useState<{
@@ -277,18 +280,41 @@ export function EventsTable() {
   } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const setCityFilter = (val: string) => { setFilterCity(val); setFilterLocation("all"); setPage(1) }
-  const setLocationFilter = (val: string) => { setFilterLocation(val); setPage(1) }
-  const setStatusFilter = (val: string) => { setFilterStatus(val); setPage(1) }
-  const setSearchFilter = (val: string) => { setSearch(val); setPage(1) }
-  const setHasContactFilter = (val: string) => { setFilterHasContact(val); setPage(1) }
-  const setDateFromFilter = (val: string) => { setFilterDateFrom(val); setPage(1) }
-  const setDateToFilter = (val: string) => { setFilterDateTo(val); setPage(1) }
+  const setCityFilter = (val: string) => {
+    setFilterCity(val)
+    setFilterLocation("all")
+    setPage(1)
+  }
+  const setLocationFilter = (val: string) => {
+    setFilterLocation(val)
+    setPage(1)
+  }
+  const setStatusFilter = (val: string) => {
+    setFilterStatus(val)
+    setPage(1)
+  }
+  const setSearchFilter = (val: string) => {
+    setSearch(val)
+    setPage(1)
+  }
+  const setHasContactFilter = (val: string) => {
+    setFilterHasContact(val)
+    setPage(1)
+  }
+  const setDateFromFilter = (val: string) => {
+    setFilterDateFrom(val)
+    setPage(1)
+  }
+  const setDateToFilter = (val: string) => {
+    setFilterDateTo(val)
+    setPage(1)
+  }
 
   const fetchEvents = useCallback(async () => {
     try {
       const params = new URLSearchParams()
-      if (filterCity !== "all" && filterLocation === "all") params.set("cityId", filterCity)
+      if (filterCity !== "all" && filterLocation === "all")
+        params.set("cityId", filterCity)
       if (filterLocation !== "all") params.set("locationId", filterLocation)
       if (filterStatus !== "all") params.set("status", filterStatus)
       if (filterHasContact !== "all") params.set("hasContact", filterHasContact)
@@ -308,7 +334,17 @@ export function EventsTable() {
     } finally {
       setLoading(false)
     }
-  }, [filterCity, filterLocation, filterStatus, filterHasContact, search, filterDateFrom, filterDateTo, page, pageSize])
+  }, [
+    filterCity,
+    filterLocation,
+    filterStatus,
+    filterHasContact,
+    search,
+    filterDateFrom,
+    filterDateTo,
+    page,
+    pageSize,
+  ])
 
   const fetchLocations = useCallback(async () => {
     const res = await fetch("/api/locations")
@@ -337,6 +373,7 @@ export function EventsTable() {
     fetchEvents()
   }, [fetchEvents])
 
+  console.log("Events",events)
   // ── Excel Export ──────────────────────────────────────────────────────────
 
   const exportToExcel = () => {
@@ -358,8 +395,10 @@ export function EventsTable() {
     fetch("/api/stats")
       .then((r) => r.json())
       .then((data) => {
-        if (data.eventsMissingContacts !== undefined) setEventsMissingContacts(data.eventsMissingContacts)
-        if (data.eventsWithContacts !== undefined) setEventsWithContacts(data.eventsWithContacts)
+        if (data.eventsMissingContacts !== undefined)
+          setEventsMissingContacts(data.eventsMissingContacts)
+        if (data.eventsWithContacts !== undefined)
+          setEventsWithContacts(data.eventsWithContacts)
       })
       .catch(() => {})
   }
@@ -369,9 +408,13 @@ export function EventsTable() {
     toast.info("Finding contacts for all events missing contact info...")
 
     try {
-      const res = await fetch("/api/events/find-all-contacts", { method: "POST" })
+      const res = await fetch("/api/events/find-all-contacts", {
+        method: "POST",
+      })
       const data = await res.json()
-      toast.success(`Done: ${data.found} contacts found out of ${data.processed} events`)
+      toast.success(
+        `Done: ${data.found} contacts found out of ${data.processed} events`
+      )
       fetchEvents()
       refreshStats()
     } catch {
@@ -416,13 +459,15 @@ export function EventsTable() {
         header: "Event Name",
         cell: ({ row }) => (
           <div className="max-w-[300px]">
-            <p className="text-sm font-medium truncate">{row.original.eventName}</p>
+            <p className="truncate text-sm font-medium">
+              {row.original.eventName}
+            </p>
             {row.original.sourceUrl && (
               <a
                 href={row.original.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:underline truncate block"
+                className="block truncate text-xs text-muted-foreground hover:underline"
               >
                 {row.original.sourceUrl}
               </a>
@@ -454,29 +499,35 @@ export function EventsTable() {
           const primary = contacts.find((c) => c.isPrimary)
           if (contacts.length === 0) {
             return (
-              <span className="text-xs text-muted-foreground italic">No contacts</span>
+              <span className="text-xs text-muted-foreground italic">
+                No contacts
+              </span>
             )
           }
           return (
             <div className="max-w-[280px]">
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-medium truncate">{primary?.name ?? contacts[0].name}</span>
+                <span className="truncate text-sm font-medium">
+                  {primary?.name ?? contacts[0].name}
+                </span>
                 {contacts.length > 1 && (
-                  <Badge variant="neutral" size="sm">+{contacts.length - 1}</Badge>
+                  <Badge variant="neutral" size="sm">
+                    +{contacts.length - 1}
+                  </Badge>
                 )}
               </div>
-              {(primary?.title ?? contacts[0].title) && (
+              {/* {(primary?.title ?? contacts[0].title) && (
                 <p className="text-xs text-muted-foreground truncate">
                   {primary?.title ?? contacts[0].title}
                 </p>
-              )}
+              )} */}
               {(primary?.email ?? contacts[0].email) && (
-                <p className="text-xs truncate">
+                <p className="truncate text-xs">
                   {primary?.email ?? contacts[0].email}
                 </p>
               )}
               {(primary?.phone ?? contacts[0].phone) && (
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="truncate text-xs text-muted-foreground">
                   {primary?.phone ?? contacts[0].phone}
                 </p>
               )}
@@ -500,7 +551,8 @@ export function EventsTable() {
         sortingFn: "datetime",
         cell: ({ row }) => {
           const d = row.original.eventDateStart
-          if (!d) return <span className="text-muted-foreground text-sm">—</span>
+          if (!d)
+            return <span className="text-sm text-muted-foreground">—</span>
           const start = new Date(d)
           const end = row.original.eventDateEnd
             ? new Date(row.original.eventDateEnd)
@@ -565,7 +617,7 @@ export function EventsTable() {
                     })
                   }
                 >
-                  <Search className="h-4 w-4 mr-2" />
+                  <Search className="mr-2 h-4 w-4" />
                   {contactCount > 0 ? "View Contacts" : "Find Contact"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -596,16 +648,20 @@ export function EventsTable() {
         <div className="flex items-center gap-1">
           {[
             { value: "true", label: "With Contact", count: eventsWithContacts },
-            { value: "false", label: "No Contact", count: eventsMissingContacts },
+            {
+              value: "false",
+              label: "No Contact",
+              count: eventsMissingContacts,
+            },
             { value: "all", label: "All Events", count: total },
           ].map((tab) => (
             <button
               key={tab.value}
               type="button"
               onClick={() => setHasContactFilter(tab.value)}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                 filterHasContact === tab.value
-                  ? "bg-primary text-primary-foreground font-medium"
+                  ? "bg-primary font-medium text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
@@ -615,234 +671,265 @@ export function EventsTable() {
         </div>
 
         {/* Filters row */}
-        <div className="flex items-center gap-3 flex-wrap">
-        <Input
-          placeholder="Search events..."
-          value={search}
-          onChange={(e) => setSearchFilter(e.target.value)}
-          className="w-64"
-        />
-        <Select value={filterCity} onValueChange={setCityFilter}>
-          <SelectTrigger className="w-44" size="sm">
-            <SelectValue placeholder="All cities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All cities</SelectItem>
-            {locations
-              .filter((loc) => loc.type === "CITY")
-              .map((loc) => (
-                <SelectItem key={loc.id} value={loc.id}>
-                  {loc.name}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterLocation} onValueChange={setLocationFilter}>
-          <SelectTrigger className="w-56" size="sm">
-            <SelectValue placeholder="All venues" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All venues</SelectItem>
-            {locations
-              .filter((loc) => loc.type === "VENUE")
-              .filter((loc) => filterCity === "all" || loc.parentId === filterCity)
-              .map((loc) => (
-                <SelectItem key={loc.id} value={loc.id}>
-                  {loc.name}
-                  {loc.city ? ` (${loc.city}${loc.state ? `, ${loc.state}` : ""})` : ""}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36" size="sm">
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="new">New</SelectItem>
-            <SelectItem value="reviewed">Reviewed</SelectItem>
-            <SelectItem value="contacted">Contacted</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="flex items-center gap-1.5">
-          <input
-            type="date"
-            value={filterDateFrom}
-            onChange={(e) => setDateFromFilter(e.target.value)}
-            className="h-9 rounded-lg border border-input bg-background px-3 text-sm transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 outline-none"
-            title="From date"
+        <div className="flex flex-wrap items-center gap-3">
+          <Input
+            placeholder="Search events..."
+            value={search}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="w-64"
           />
-          <span className="text-muted-foreground text-sm">to</span>
-          <input
-            type="date"
-            value={filterDateTo}
-            onChange={(e) => setDateToFilter(e.target.value)}
-            className="h-9 rounded-lg border border-input bg-background px-3 text-sm transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 outline-none"
-            title="To date"
-          />
-        </div>
-        <Select value={exportMonth} onValueChange={setExportMonth}>
-          <SelectTrigger className="w-32" size="sm">
-            <SelectValue placeholder="All months" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All months</SelectItem>
-            <SelectItem value="1">January</SelectItem>
-            <SelectItem value="2">February</SelectItem>
-            <SelectItem value="3">March</SelectItem>
-            <SelectItem value="4">April</SelectItem>
-            <SelectItem value="5">May</SelectItem>
-            <SelectItem value="6">June</SelectItem>
-            <SelectItem value="7">July</SelectItem>
-            <SelectItem value="8">August</SelectItem>
-            <SelectItem value="9">September</SelectItem>
-            <SelectItem value="10">October</SelectItem>
-            <SelectItem value="11">November</SelectItem>
-            <SelectItem value="12">December</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={exportYear} onValueChange={setExportYear}>
-          <SelectTrigger className="w-24" size="sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="2025">2025</SelectItem>
-            <SelectItem value="2026">2026</SelectItem>
-            <SelectItem value="2027">2027</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="sm" onClick={exportToExcel}>
-          <Download className="h-4 w-4 mr-1.5" />
-          Export
-        </Button>
-        <Dialog open={importOpen} onOpenChange={(open) => { setImportOpen(open); if (!open) { setImportFile(null); setImportResult(null) } }}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-1.5" />
-              Import
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Import Events from Excel</DialogTitle>
-              <DialogDescription>
-                Upload an .xlsx file to batch-create events. Download the sample template first to see the expected format.
-              </DialogDescription>
-            </DialogHeader>
+          <Select value={filterCity} onValueChange={setCityFilter}>
+            <SelectTrigger className="w-44" size="sm">
+              <SelectValue placeholder="All cities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All cities</SelectItem>
+              {locations
+                .filter((loc) => loc.type === "CITY")
+                .map((loc) => (
+                  <SelectItem key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterLocation} onValueChange={setLocationFilter}>
+            <SelectTrigger className="w-56" size="sm">
+              <SelectValue placeholder="All venues" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All venues</SelectItem>
+              {locations
+                .filter((loc) => loc.type === "VENUE")
+                .filter(
+                  (loc) => filterCity === "all" || loc.parentId === filterCity
+                )
+                .map((loc) => (
+                  <SelectItem key={loc.id} value={loc.id}>
+                    {loc.name}
+                    {loc.city
+                      ? ` (${loc.city}${loc.state ? `, ${loc.state}` : ""})`
+                      : ""}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-36" size="sm">
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="new">New</SelectItem>
+              <SelectItem value="reviewed">Reviewed</SelectItem>
+              <SelectItem value="contacted">Contacted</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-1.5">
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => setDateFromFilter(e.target.value)}
+              className="h-9 rounded-lg border border-input bg-background px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              title="From date"
+            />
+            <span className="text-sm text-muted-foreground">to</span>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setDateToFilter(e.target.value)}
+              className="h-9 rounded-lg border border-input bg-background px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              title="To date"
+            />
+          </div>
+          <Select value={exportMonth} onValueChange={setExportMonth}>
+            <SelectTrigger className="w-32" size="sm">
+              <SelectValue placeholder="All months" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All months</SelectItem>
+              <SelectItem value="1">January</SelectItem>
+              <SelectItem value="2">February</SelectItem>
+              <SelectItem value="3">March</SelectItem>
+              <SelectItem value="4">April</SelectItem>
+              <SelectItem value="5">May</SelectItem>
+              <SelectItem value="6">June</SelectItem>
+              <SelectItem value="7">July</SelectItem>
+              <SelectItem value="8">August</SelectItem>
+              <SelectItem value="9">September</SelectItem>
+              <SelectItem value="10">October</SelectItem>
+              <SelectItem value="11">November</SelectItem>
+              <SelectItem value="12">December</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={exportYear} onValueChange={setExportYear}>
+            <SelectTrigger className="w-24" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2025">2025</SelectItem>
+              <SelectItem value="2026">2026</SelectItem>
+              <SelectItem value="2027">2027</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={exportToExcel}>
+            <Download className="mr-1.5 h-4 w-4" />
+            Export
+          </Button>
+          <Dialog
+            open={importOpen}
+            onOpenChange={(open) => {
+              setImportOpen(open)
+              if (!open) {
+                setImportFile(null)
+                setImportResult(null)
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Upload className="mr-1.5 h-4 w-4" />
+                Import
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Import Events from Excel</DialogTitle>
+                <DialogDescription>
+                  Upload an .xlsx file to batch-create events. Download the
+                  sample template first to see the expected format.
+                </DialogDescription>
+              </DialogHeader>
 
-            {importResult ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-emerald-600 font-medium">✓ {importResult.created} created</span>
-                  {importResult.skipped > 0 && <span className="text-muted-foreground">↷ {importResult.skipped} skipped</span>}
-                  {importResult.errors > 0 && <span className="text-destructive font-medium">✗ {importResult.errors} errors</span>}
-                </div>
-                {importResult.details.length > 0 && (
-                  <div className="max-h-40 overflow-y-auto rounded border p-2 text-xs text-muted-foreground space-y-1">
-                    {importResult.details.map((d, i) => (
-                      <p key={i}>{d}</p>
-                    ))}
+              {importResult ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="font-medium text-emerald-600">
+                      ✓ {importResult.created} created
+                    </span>
+                    {importResult.skipped > 0 && (
+                      <span className="text-muted-foreground">
+                        ↷ {importResult.skipped} skipped
+                      </span>
+                    )}
+                    {importResult.errors > 0 && (
+                      <span className="font-medium text-destructive">
+                        ✗ {importResult.errors} errors
+                      </span>
+                    )}
                   </div>
-                )}
-                <DialogFooter showCloseButton />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <a
-                  href="/api/events/import/sample"
-                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                >
-                  <FileText className="h-4 w-4" />
-                  Download sample template
-                </a>
-                <div
-                  className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-8 text-center cursor-pointer hover:bg-muted/30 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm font-medium">
-                    {importFile ? importFile.name : "Click to select an .xlsx file"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    .xlsx files only
-                  </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".xlsx"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0]
-                      if (f) setImportFile(f)
-                    }}
-                  />
+                  {importResult.details.length > 0 && (
+                    <div className="max-h-40 space-y-1 overflow-y-auto rounded border p-2 text-xs text-muted-foreground">
+                      {importResult.details.map((d, i) => (
+                        <p key={i}>{d}</p>
+                      ))}
+                    </div>
+                  )}
+                  <DialogFooter showCloseButton />
                 </div>
-                <DialogFooter>
-                  <Button
-                    disabled={!importFile || importLoading}
-                    onClick={async () => {
-                      if (!importFile) return
-                      setImportLoading(true)
-                      setImportResult(null)
-                      try {
-                        const fd = new FormData()
-                        fd.set("file", importFile)
-                        const res = await fetch("/api/events/import", { method: "POST", body: fd })
-                        const data = await res.json()
-                        if (!res.ok) throw new Error(data.error)
-                        setImportResult(data)
-                        fetchEvents()
-                        refreshStats()
-                      } catch (err) {
-                        toast.error(err instanceof Error ? err.message : "Import failed")
-                      } finally {
-                        setImportLoading(false)
-                      }
-                    }}
+              ) : (
+                <div className="space-y-4">
+                  <a
+                    href="/api/events/import/sample"
+                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                   >
-                    {importLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-                    ) : null}
-                    Upload & Import
-                  </Button>
-                </DialogFooter>
-              </div>
+                    <FileText className="h-4 w-4" />
+                    Download sample template
+                  </a>
+                  <div
+                    className="flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 border-dashed p-8 text-center transition-colors hover:bg-muted/30"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm font-medium">
+                      {importFile
+                        ? importFile.name
+                        : "Click to select an .xlsx file"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      .xlsx files only
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".xlsx"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) setImportFile(f)
+                      }}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      disabled={!importFile || importLoading}
+                      onClick={async () => {
+                        if (!importFile) return
+                        setImportLoading(true)
+                        setImportResult(null)
+                        try {
+                          const fd = new FormData()
+                          fd.set("file", importFile)
+                          const res = await fetch("/api/events/import", {
+                            method: "POST",
+                            body: fd,
+                          })
+                          const data = await res.json()
+                          if (!res.ok) throw new Error(data.error)
+                          setImportResult(data)
+                          fetchEvents()
+                          refreshStats()
+                        } catch (err) {
+                          toast.error(
+                            err instanceof Error ? err.message : "Import failed"
+                          )
+                        } finally {
+                          setImportLoading(false)
+                        }
+                      }}
+                    >
+                      {importLoading ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : null}
+                      Upload & Import
+                    </Button>
+                  </DialogFooter>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleFindAllContacts}
+            disabled={findAllLoading || eventsMissingContacts === 0}
+          >
+            {findAllLoading ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="mr-1.5 h-4 w-4" />
             )}
-          </DialogContent>
-        </Dialog>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleFindAllContacts}
-          disabled={findAllLoading || eventsMissingContacts === 0}
-        >
-          {findAllLoading ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <Search className="h-4 w-4 mr-1.5" />
-          )}
-          Find All Contacts ({eventsMissingContacts})
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-destructive hover:bg-destructive/10"
-          onClick={handleDeleteAll}
-          disabled={deleteAllLoading || total === 0}
-        >
-          {deleteAllLoading ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-4 w-4 mr-1.5" />
-          )}
-          Delete All ({total})
-        </Button>
-        <span className="text-xs text-muted-foreground ml-auto">
-          {events.length > 0
-            ? `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`
-            : `${total} events`}
-        </span>
+            Find All Contacts ({eventsMissingContacts})
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:bg-destructive/10"
+            onClick={handleDeleteAll}
+            disabled={deleteAllLoading || total === 0}
+          >
+            {deleteAllLoading ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="mr-1.5 h-4 w-4" />
+            )}
+            Delete All ({total})
+          </Button>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {events.length > 0
+              ? `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`
+              : `${total} events`}
+          </span>
         </div>
       </div>
 
@@ -875,7 +962,7 @@ export function EventsTable() {
                   <TableRow key={i}>
                     {columns.map((_, j) => (
                       <TableCell key={j} className="h-12">
-                        <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
+                        <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
                       </TableCell>
                     ))}
                   </TableRow>
@@ -894,7 +981,11 @@ export function EventsTable() {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() ? "selected" : undefined}
-                    className={isPast(row.original) ? "opacity-50 [&_td]:text-muted-foreground" : ""}
+                    className={
+                      isPast(row.original)
+                        ? "opacity-50 [&_td]:text-muted-foreground"
+                        : ""
+                    }
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="py-2">
@@ -917,7 +1008,13 @@ export function EventsTable() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Show</span>
-            <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v))
+                setPage(1)
+              }}
+            >
               <SelectTrigger className="h-8 w-16" size="sm">
                 <SelectValue />
               </SelectTrigger>
@@ -939,13 +1036,15 @@ export function EventsTable() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm px-3">
+            <span className="px-3 text-sm">
               Page {page} of {Math.max(1, Math.ceil(total / pageSize))}
             </span>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => Math.min(Math.ceil(total / pageSize), p + 1))}
+              onClick={() =>
+                setPage((p) => Math.min(Math.ceil(total / pageSize), p + 1))
+              }
               disabled={page >= Math.ceil(total / pageSize)}
             >
               <ChevronRight className="h-4 w-4" />
@@ -959,7 +1058,9 @@ export function EventsTable() {
         eventId={contactModal.eventId}
         eventName={contactModal.eventName}
         open={contactModal.open}
-        onClose={() => setContactModal({ open: false, eventId: "", eventName: "" })}
+        onClose={() =>
+          setContactModal({ open: false, eventId: "", eventName: "" })
+        }
         onSaved={fetchEvents}
       />
     </div>

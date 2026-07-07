@@ -1,24 +1,10 @@
 import puppeteer from "puppeteer-core"
+import * as cheerio from "cheerio"
 
 const BASE_URL = "https://allconferencealert.net"
 
-const CITY_SLUG_OVERRIDES: Record<string, string> = {
-  "washington dc": "washington",
-  washington: "washington",
-}
-
-function slugifyCity(cityName: string): string {
-  const normalized = cityName.trim().toLowerCase()
-  if (CITY_SLUG_OVERRIDES[normalized]) return CITY_SLUG_OVERRIDES[normalized]
-  return normalized.replace(/[^a-z0-9]+/g, "")
-}
-
 function buildCountryListingUrl(): string {
   return `${BASE_URL}/usa.php`
-}
-
-function buildCityListingUrl(citySlug: string): string {
-  return `${BASE_URL}/cities/${citySlug}.php`
 }
 
 export interface ACAContact {
@@ -50,35 +36,36 @@ async function getBrowser() {
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-// Hard ceiling so a single stuck page (hung network, bad server, etc.)
-// can never freeze the whole run, no matter what waitUntil/goto does internally.
-function withHardTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+function withHardTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string
+): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`Hard timeout (${ms}ms): ${label}`)), ms)
+      setTimeout(
+        () => reject(new Error(`Hard timeout (${ms}ms): ${label}`)),
+        ms
+      )
     ),
   ])
 }
 
-// Navigates and returns the HTTP status so callers can distinguish
-// "page loaded fine but selectors are wrong" from "server errored (500/404/etc)".
 async function gotoAndGetStatus(
   page: any,
   url: string,
   timeoutMs = 20000
 ): Promise<{ ok: boolean; status: number | null; error: string | null }> {
   try {
-    const response = await withHardTimeout(
+    const response = (await withHardTimeout(
       page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs }),
       timeoutMs + 5000,
       `goto ${url}`
-    ) as { status(): number } | null
+    )) as { status(): number } | null
     const status = response ? response.status() : null
     const ok = status !== null && status >= 200 && status < 400
-    if (!ok) {
-      console.warn(`[ACA] Non-OK status ${status} for ${url}`)
-    }
+    if (!ok) console.warn(`[ACA] Non-OK status ${status} for ${url}`)
     return { ok, status, error: null }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -88,8 +75,18 @@ async function gotoAndGetStatus(
 }
 
 const MONTHS: Record<string, number> = {
-  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
 }
 
 interface RawRow {
@@ -101,24 +98,25 @@ interface RawRow {
   venueCountry: string
 }
 
-// Clicks "Load More" repeatedly until the row count stops growing or the
-// button disappears. Bounded by a max wall-clock budget, not just click count,
-// so a stuck AJAX endpoint can't hang this indefinitely.
+// Loads ALL rows for the country-wide listing (60,000+ per the page's own
+// hidden #all field), clicking "Load More" until it stops growing or the
+// wall-clock budget runs out. Since this is the full USA feed (not a
+// per-city page), give it a much larger click ceiling and time budget
+// than the old per-city version needed.
 async function loadAllRowsAndScrape(
   page: any,
   url: string,
-  maxClicks = 200,
-  maxWallClockMs = 90000
+  maxClicks = 2000,
+  maxWallClockMs = 20 * 60 * 1000 // 20 minutes — this is a big feed
 ): Promise<RawRow[]> {
   const nav = await gotoAndGetStatus(page, url)
   if (!nav.ok) {
-    console.warn(`[ACA] Skipping listing (status=${nav.status}, error=${nav.error}): ${url}`)
+    console.warn(
+      `[ACA] Skipping listing (status=${nav.status}, error=${nav.error}): ${url}`
+    )
     return []
   }
 
-  // Confirm the expected table actually exists before trying to paginate it.
-  // If this selector never appears, the site's markup has likely changed
-  // (or the real data genuinely never rendered — e.g. its AJAX call failed).
   try {
     await withHardTimeout(
       page.waitForSelector("#event-container tr.aevent", { timeout: 15000 }),
@@ -126,7 +124,7 @@ async function loadAllRowsAndScrape(
       `waitForSelector #event-container ${url}`
     )
   } catch {
-    console.warn(`[ACA] No event rows appeared on ${url} within 15s — page markup may not match expected structure, or the site's own data failed to load.`)
+    console.warn(`[ACA] No event rows appeared on ${url} within 15s`)
     return []
   }
 
@@ -141,6 +139,12 @@ async function loadAllRowsAndScrape(
 
     if (currentCount === previousCount) break
     previousCount = currentCount
+
+    if (clicks % 20 === 0) {
+      console.log(
+        `[ACA] Progress: ${currentCount} rows loaded after ${clicks} clicks`
+      )
+    }
 
     const clicked = await page.evaluate(() => {
       const btn = document.querySelector<HTMLButtonElement>("#loadMoreBtn")
@@ -158,7 +162,8 @@ async function loadAllRowsAndScrape(
       await withHardTimeout(
         page.waitForFunction(
           (prevCount: number) =>
-            document.querySelectorAll("#event-container tr.aevent").length > prevCount,
+            document.querySelectorAll("#event-container tr.aevent").length >
+            prevCount,
           { timeout: 8000 },
           previousCount
         ),
@@ -169,22 +174,31 @@ async function loadAllRowsAndScrape(
       break
     }
 
-    await wait(800)
+    await wait(600)
   }
 
   if (Date.now() - startTime >= maxWallClockMs) {
-    console.warn(`[ACA] Hit ${maxWallClockMs}ms wall-clock budget while loading rows on ${url} — stopping with what we have.`)
+    console.warn(
+      `[ACA] Hit ${maxWallClockMs}ms wall-clock budget on ${url} — stopping with what we have (${previousCount} rows)`
+    )
   }
 
-  console.log(`[ACA] Loaded ${previousCount} rows after ${clicks} "Load More" clicks`)
+  console.log(
+    `[ACA] Loaded ${previousCount} total rows after ${clicks} "Load More" clicks`
+  )
 
   return await page.evaluate((baseUrl: string) => {
     const rows: RawRow[] = []
-    const trs = Array.from(document.querySelectorAll("#event-container tr.aevent")) as HTMLElement[]
+    const trs = Array.from(
+      document.querySelectorAll("#event-container tr.aevent")
+    ) as HTMLElement[]
 
     for (const tr of trs) {
-      const dayText = tr.querySelector(".event-calender-holder h3")?.textContent?.trim() || ""
-      const monthText = tr.querySelector(".event-calender-holder span")?.textContent?.trim() || ""
+      const dayText =
+        tr.querySelector(".event-calender-holder h3")?.textContent?.trim() || ""
+      const monthText =
+        tr.querySelector(".event-calender-holder span")?.textContent?.trim() ||
+        ""
       const dayMatch = dayText.match(/(\d+)/)
       const day = dayMatch ? parseInt(dayMatch[1], 10) : NaN
 
@@ -193,14 +207,28 @@ async function loadAllRowsAndScrape(
       const href = nameLink?.getAttribute("href") || ""
       const eventUrl = href.startsWith("http") ? href : baseUrl + href
 
-      const venueText = tr.querySelector("td.venue b")?.textContent?.trim().replace(/\s+/g, " ") || ""
-      const venueParts = venueText.split(",").map((s) => s.trim()).filter(Boolean)
+      const venueText =
+        tr
+          .querySelector("td.venue b")
+          ?.textContent?.trim()
+          .replace(/\s+/g, " ") || ""
+      const venueParts = venueText
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
       const venueCity = venueParts[0] || ""
       const venueCountry = venueParts[1] || "USA"
 
       if (!eventName || !href || isNaN(day) || !monthText) continue
 
-      rows.push({ day, month: monthText, eventName, eventUrl, venueCity, venueCountry })
+      rows.push({
+        day,
+        month: monthText,
+        eventName,
+        eventUrl,
+        venueCity,
+        venueCountry,
+      })
     }
 
     return rows
@@ -244,28 +272,122 @@ async function scrapeDetailPage(
 
   const nav = await gotoAndGetStatus(page, url)
   if (!nav.ok) {
-    console.warn(`[ACA] Skipping detail (status=${nav.status}, error=${nav.error}): ${url}`)
+    console.warn(
+      `[ACA] Skipping detail (status=${nav.status}, error=${nav.error}): ${url}`
+    )
     return empty
   }
 
   try {
+    await withHardTimeout(
+      page.waitForSelector("table.table-bordered", { timeout: 10000 }),
+      15000,
+      `waitForSelector detail table ${url}`
+    )
+  } catch {
+    const title = await page.title().catch(() => "unknown")
+    const bodyLen = await page
+      .evaluate(() => document.body?.innerText?.length ?? 0)
+      .catch(() => 0)
+    console.warn(
+      `[ACA] Organizer table missing on ${url} — title="${title}" bodyLen=${bodyLen} (small bodyLen + odd title usually means a Cloudflare challenge)`
+    )
+    return empty
+  }
+
+  // Small delay to let the page's own JS (TypeScript __name helper etc.) settle
+  // before Puppeteer's page.evaluate() runs — avoids ReferenceError conflicts.
+  await wait(500)
+
+  try {
     return await withHardTimeout(
       page.evaluate(() => {
+        // Decodes Cloudflare's email obfuscation. CF replaces a real mailto
+        // link with a placeholder (visible text like "[email protected]")
+        // and stores the actual address XOR-encoded in a data-cfemail hex
+        // string. If CF's own decode script hasn't run (or the challenge
+        // blocked full page load), the placeholder is all that's in the DOM
+        // — regex-matching the visible text will never find an "@" because
+        // there isn't one. This decodes it directly instead of trusting text.
+        function decodeCFEmail(encoded: string): string | null {
+          try {
+            const r = parseInt(encoded.substr(0, 2), 16)
+            let email = ""
+            for (let n = 2; n < encoded.length; n += 2) {
+              const charCode = parseInt(encoded.substr(n, 2), 16) ^ r
+              email += String.fromCharCode(charCode)
+            }
+            return email.includes("@") ? email : null
+          } catch {
+            return null
+          }
+        }
+
+        function extractEmailFromCell(cell: HTMLElement): string | null {
+          // 1. Cloudflare-obfuscated element takes priority — this is the
+          //    actual bug fix. Look for data-cfemail on any descendant,
+          //    including the cell itself.
+          const cfEl =
+            cell.querySelector<HTMLElement>("[data-cfemail]") ??
+            (cell.hasAttribute("data-cfemail") ? cell : null)
+          if (cfEl) {
+            const encoded = cfEl.getAttribute("data-cfemail")
+            if (encoded) {
+              const decoded = decodeCFEmail(encoded)
+              if (decoded) return decoded
+            }
+          }
+
+          // 2. Real mailto link (non-obfuscated case)
+          const mailtoLink = cell.querySelector(
+            "a[href^='mailto:']"
+          ) as HTMLAnchorElement | null
+          if (mailtoLink) {
+            return mailtoLink.href
+              .replace(/^mailto:/i, "")
+              .split("?")[0]
+              .trim()
+          }
+
+          // 3. Any other link whose href happens to be a mailto
+          const anyLink = cell.querySelector("a") as HTMLAnchorElement | null
+          if (anyLink?.href?.startsWith("mailto:")) {
+            return anyLink.href
+              .replace(/^mailto:/i, "")
+              .split("?")[0]
+              .trim()
+          }
+
+          // 4. Plain visible text as last resort — only works when CF's
+          //    decode script already ran client-side and replaced the
+          //    placeholder with the real address.
+          const text = cell.textContent?.trim().replace(/\s+/g, " ") || ""
+          const emailMatch = text.match(
+            /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+          )
+          return emailMatch ? emailMatch[0] : null
+        }
+
         let officialWebsite: string | null = null
         let objective: string | null = null
         let contactPerson: string | null = null
         let organizedBy: string | null = null
         let inquiryEmail: string | null = null
 
-        const rows = Array.from(document.querySelectorAll("table.table-bordered tr")) as HTMLElement[]
+        const rows = Array.from(
+          document.querySelectorAll("table.table-bordered tr")
+        ) as HTMLElement[]
 
         for (const tr of rows) {
           const cells = Array.from(tr.querySelectorAll("td")) as HTMLElement[]
           if (cells.length === 0) continue
 
           if (cells.length === 1 && cells[0].querySelector(".obj")) {
-            const fullText = cells[0].textContent?.trim().replace(/\s+/g, " ") || ""
-            objective = fullText.replace(/^Objective of the Conference\s*/i, "").trim() || null
+            const fullText =
+              cells[0].textContent?.trim().replace(/\s+/g, " ") || ""
+            objective =
+              fullText.replace(/^Objective of the Conference\s*/i, "").trim() ||
+              null
             continue
           }
 
@@ -280,41 +402,125 @@ async function scrapeDetailPage(
           } else if (label.startsWith("Organized By")) {
             organizedBy = value || null
           } else if (label.startsWith("Event Enquiries")) {
-            const mailtoLink = valueCell.querySelector("a[href^='mailto:']") as HTMLAnchorElement | null
-            inquiryEmail = mailtoLink
-              ? mailtoLink.href.replace(/^mailto:/i, "").trim()
-              : value || null
+            inquiryEmail = extractEmailFromCell(valueCell)
+            console.log(
+              `[ACA] Event Enquiries cell html: ${valueCell.innerHTML.slice(0, 200)} -> decoded=${inquiryEmail}`
+            )
           } else if (label.startsWith("Visit Website")) {
-            const link = valueCell.querySelector("a") as HTMLAnchorElement | null
+            const link = valueCell.querySelector(
+              "a"
+            ) as HTMLAnchorElement | null
             officialWebsite = link?.href || null
           }
         }
 
-        return { officialWebsite, objective, contactPerson, organizedBy, inquiryEmail }
+        return {
+          officialWebsite,
+          objective,
+          contactPerson,
+          organizedBy,
+          inquiryEmail,
+        }
       }),
       15000,
       `evaluate detail ${url}`
     )
   } catch (err) {
-    console.error(`[ACA] Failed extracting detail fields for ${url}:`, err)
-    return empty
+    console.warn(`[ACA] page.evaluate failed for ${url}, falling back to cheerio: ${err instanceof Error ? err.message : err}`)
+    // Fallback: parse raw HTML with cheerio to avoid Puppeteer scope conflicts
+    try {
+      const html = await page.content()
+      const $ = cheerio.load(html)
+      let officialWebsite: string | null = null
+      let objective: string | null = null
+      let contactPerson: string | null = null
+      let organizedBy: string | null = null
+      let inquiryEmail: string | null = null
+
+      $("table.table-bordered tr").each((_, tr) => {
+        const cells = $(tr).find("td")
+        if (cells.length === 0) return
+
+        if (cells.length === 1 && $(cells[0]).find(".obj").length > 0) {
+          const fullText = $(cells[0]).text().trim().replace(/\s+/g, " ")
+          objective = fullText.replace(/^Objective of the Conference\s*/i, "").trim() || null
+          return
+        }
+
+        if (cells.length < 2) return
+
+        const label = $(cells[0]).text().trim()
+        const valueCell = $(cells[1])
+        const value = valueCell.text().trim().replace(/\s+/g, " ")
+
+        if (label.startsWith("Contact Person")) {
+          contactPerson = value || null
+        } else if (label.startsWith("Organized By")) {
+          organizedBy = value || null
+        } else if (label.startsWith("Event Enquiries")) {
+          // Check for CF-obfuscated email
+          const cfEl = valueCell.find("[data-cfemail]").first()
+          if (cfEl.length > 0) {
+            const encoded = cfEl.attr("data-cfemail")
+            if (encoded) {
+              try {
+                const r = parseInt(encoded.substr(0, 2), 16)
+                let email = ""
+                for (let n = 2; n < encoded.length; n += 2) {
+                  email += String.fromCharCode(parseInt(encoded.substr(n, 2), 16) ^ r)
+                }
+                if (email.includes("@")) inquiryEmail = email
+              } catch { /* ignore */ }
+            }
+          }
+          if (!inquiryEmail) {
+            const mailtoLink = valueCell.find("a[href^='mailto:']").first()
+            if (mailtoLink.length > 0) {
+              inquiryEmail = (mailtoLink.attr("href") ?? "").replace(/^mailto:/i, "").split("?")[0].trim() || null
+            }
+          }
+          if (!inquiryEmail) {
+            const plainText = valueCell.text().trim()
+            const emailMatch = plainText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
+            if (emailMatch) inquiryEmail = emailMatch[0]
+          }
+          console.log(`[ACA/Cheerio] Event Enquiries: email=${inquiryEmail}`)
+        } else if (label.startsWith("Visit Website")) {
+          const link = valueCell.find("a").first()
+          officialWebsite = link.attr("href") || null
+        }
+      })
+
+      return { officialWebsite, objective, contactPerson, organizedBy, inquiryEmail }
+    } catch (cheerioErr) {
+      console.error(`[ACA] Cheerio fallback also failed for ${url}:`, cheerioErr)
+      return empty
+    }
   }
 }
 
+// Normalizes a venueCity string for matching against your target city list,
+// e.g. "Las vegas" -> "las vegas", "Washington DC" -> "washington dc".
+function normalizeCity(city: string): string {
+  return city.trim().toLowerCase().replace(/\s+/g, " ")
+}
+
 export async function scrapeACA(options?: {
-  mode?: "country" | "city"
-  citySlug?: string
   fetchDetails?: boolean
   yearHint?: number
+  // Only rows whose venueCity matches one of these (case-insensitive,
+  // whitespace-normalized) get their detail page fetched. Everything else
+  // is still returned in the result set but with contact fields left null,
+  // so you get the full country listing plus targeted enrichment.
+  targetCities?: string[]
 }): Promise<ACAEvent[]> {
-  const mode = options?.mode ?? "country"
   const fetchDetails = options?.fetchDetails ?? true
   const yearHint = options?.yearHint ?? new Date().getFullYear()
+  const targetCitySet = options?.targetCities
+    ? new Set(options.targetCities.map(normalizeCity))
+    : null
 
-  const listingUrl =
-    mode === "city"
-      ? buildCityListingUrl(options?.citySlug ?? "washington")
-      : buildCountryListingUrl()
+  const listingUrl = buildCountryListingUrl()
 
   const browser = await getBrowser()
   const results: ACAEvent[] = []
@@ -334,10 +540,15 @@ export async function scrapeACA(options?: {
     }
 
     if (rawRows.length === 0) {
-      console.warn(`[ACA] No rows found for ${listingUrl} — returning empty result instead of hanging or crashing.`)
+      console.warn(
+        `[ACA] No rows found for ${listingUrl} — returning empty result instead of hanging or crashing.`
+      )
     }
 
     const dates = inferDates(rawRows, yearHint)
+
+    let detailFetchCount = 0
+    let skippedCount = 0
 
     for (let i = 0; i < rawRows.length; i++) {
       const row = rawRows[i]
@@ -349,8 +560,13 @@ export async function scrapeACA(options?: {
       let organizedBy: string | null = null
       let inquiryEmail: string | null = null
 
-      if (detailPage) {
-        console.log(`[ACA] Detail: ${row.eventUrl}`)
+      const cityMatches =
+        !targetCitySet || targetCitySet.has(normalizeCity(row.venueCity))
+
+      if (detailPage && cityMatches) {
+        console.log(
+          `[ACA] Detail (in-region): ${row.venueCity} — ${row.eventUrl}`
+        )
         try {
           const detail = await scrapeDetailPage(detailPage, row.eventUrl)
           officialWebsite = detail.officialWebsite
@@ -361,7 +577,10 @@ export async function scrapeACA(options?: {
         } catch (err) {
           console.error(`[ACA] Detail error for ${row.eventUrl}:`, err)
         }
+        detailFetchCount++
         await wait(2000)
+      } else if (targetCitySet) {
+        skippedCount++
       }
 
       results.push({
@@ -376,6 +595,12 @@ export async function scrapeACA(options?: {
         expectedAttendees: null,
         sourceSite: "allconferencealert.net",
       })
+    }
+
+    if (targetCitySet) {
+      console.log(
+        `[ACA] Detail pages fetched for ${detailFetchCount} in-region events, skipped ${skippedCount} out-of-region events`
+      )
     }
 
     await listingPage.close()
@@ -393,16 +618,15 @@ export async function scrapeACA(options?: {
   return results
 }
 
-// Quick standalone health check — run this first against your city list to see,
-// per URL, whether you're dealing with a 500, a timeout, or genuinely-missing rows,
-// before running a full scrape batch.
 export async function checkACAHealth(urls: string[]): Promise<void> {
   const browser = await getBrowser()
   try {
     const page = await browser.newPage()
     for (const url of urls) {
       const nav = await gotoAndGetStatus(page, url)
-      console.log(`[ACA/Health] ${url} -> status=${nav.status} ok=${nav.ok} error=${nav.error ?? "none"}`)
+      console.log(
+        `[ACA/Health] ${url} -> status=${nav.status} ok=${nav.ok} error=${nav.error ?? "none"}`
+      )
     }
   } finally {
     await browser.close()

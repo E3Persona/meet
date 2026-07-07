@@ -10,8 +10,18 @@ const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
 const MONTH_NAMES: Record<string, number> = {
-  january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
-  july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+  january: 0,
+  february: 1,
+  march: 2,
+  april: 3,
+  may: 4,
+  june: 5,
+  july: 6,
+  august: 7,
+  september: 8,
+  october: 9,
+  november: 10,
+  december: 11,
 }
 
 async function getConfig() {
@@ -37,36 +47,83 @@ function parseEventDate(month: string, day: string): Date | null {
   return new Date(year, m, d)
 }
 
-function extractCitiesAndStates(locationText: string | null): { city: string; state: string }[] {
-  if (!locationText) return []
+function extractCitiesAndStates(
+  locationText: string | null
+): { city: string; state: string }[] {
+  if (!locationText || locationText === "null" || locationText.toLowerCase() === "online" || locationText.toLowerCase() === "virtual") return []
   const results: { city: string; state: string }[] = []
   const parts = locationText.split("/").map((s) => s.trim())
   for (const part of parts) {
+    // Try "City, ST" pattern
     const m = part.match(/([A-Za-z\s.]+),\s*([A-Z]{2})\b/)
-    if (m) results.push({ city: m[1].trim(), state: m[2] })
+    if (m) {
+      results.push({ city: m[1].trim(), state: m[2] })
+      continue
+    }
+    // Try just "City" (no state)
+    const cityOnly = part.match(/^([A-Za-z\s.]+)$/)
+    if (cityOnly && cityOnly[1].trim().length > 2) {
+      results.push({ city: cityOnly[1].trim(), state: "" })
+    }
   }
   return results
 }
 
 function matchLocation(
-  locations: { id: string; name: string; city: string | null; state: string | null }[],
+  locations: {
+    id: string
+    name: string
+    city: string | null
+    state: string | null
+  }[],
   citiesStates: { city: string; state: string }[]
 ): { id: string } | null {
+  // 1. Exact city + state match
   for (const cs of citiesStates) {
     const c = cs.city.toLowerCase().trim()
     const s = cs.state.toLowerCase().trim()
+    if (!s) continue
     for (const loc of locations) {
       const lc = loc.city?.toLowerCase().trim()
       const ls = loc.state?.toLowerCase().trim()
       if (lc === c && ls === s) return loc
     }
   }
+
+  // 2. City name matches location.city (handles "Washington" matching "Washington DC" etc.)
   for (const cs of citiesStates) {
     const c = cs.city.toLowerCase().trim()
     for (const loc of locations) {
-      if (loc.name.toLowerCase().includes(c)) return loc
+      const lc = loc.city?.toLowerCase().trim() ?? ""
+      if (lc && (lc.includes(c) || c.includes(lc))) {
+        console.warn(`[ASAE/Ingest] City-substring match: "${cs.city}" → location.city="${loc.city}" (${loc.name})`)
+        return loc
+      }
     }
   }
+
+  // 3. City name matches location.name substring
+  for (const cs of citiesStates) {
+    const c = cs.city.toLowerCase().trim()
+    for (const loc of locations) {
+      if (loc.name.toLowerCase().includes(c)) {
+        console.warn(`[ASAE/Ingest] Name-substring match: "${cs.city}" → location="${loc.name}"`)
+        return loc
+      }
+    }
+  }
+
+  // 4. State-only match (if only one location in that state, use it)
+  for (const cs of citiesStates) {
+    const s = cs.state.toLowerCase().trim()
+    if (!s) continue
+    const stateLocs = locations.filter((l) => l.state?.toLowerCase().trim() === s)
+    if (stateLocs.length === 1) {
+      console.warn(`[ASAE/Ingest] State-only match: "${cs.state}" → single location "${stateLocs[0].name}"`)
+      return stateLocs[0]
+    }
+  }
+
   return null
 }
 
@@ -99,7 +156,10 @@ async function main() {
 
   const sourceSiteId = sourceSite?.id ?? null
 
-  const allEvents = await scrapeASAE({ skipContacts: false, maxContactLookups: 50 })
+  const allEvents = await scrapeASAE({
+    skipContacts: false,
+    maxContactLookups: 50,
+  })
   console.log(`[ASAE/Ingest] ${allEvents.length} events scraped`)
 
   let totalFound = 0
@@ -108,26 +168,59 @@ async function main() {
   for (const ev of allEvents) {
     totalFound++
 
+    let loc: { id: string } | null = null
+
     const citiesStates = extractCitiesAndStates(ev.locationText)
-    if (citiesStates.length === 0) continue
+    if (citiesStates.length > 0) {
+      loc = matchLocation(locations, citiesStates)
+    }
 
-    const loc = matchLocation(locations, citiesStates)
-    if (!loc) continue
+    // Fallback: try to match based on event name (e.g. "Washington DC" in the name)
+    if (!loc) {
+      const nameLower = ev.eventName.toLowerCase()
+      for (const l of locations) {
+        const cityName = l.city?.toLowerCase() ?? ""
+        const stateName = l.state?.toLowerCase() ?? ""
+        if (cityName && nameLower.includes(cityName)) {
+          console.warn(`[ASAE/Ingest] Name-match: "${ev.eventName}" → location="${l.name}" (city in event name)`)
+          loc = l
+          break
+        }
+        if (stateName && nameLower.includes(`${l.city?.toLowerCase()}, ${stateName}`)) {
+          console.warn(`[ASAE/Ingest] Name-match: "${ev.eventName}" → location="${l.name}"`)
+          loc = l
+          break
+        }
+      }
+    }
 
-    const existing = await prisma.event.findFirst({
-      where: {
-        eventName: { equals: ev.eventName, mode: "insensitive" },
-        locationId: loc.id,
-      },
-    })
-    if (existing) continue
+    if (!loc) {
+      console.log(
+        `[ASAE/Ingest] Skipping "${ev.eventName}" — no matching location (locationText="${ev.locationText}")`
+      )
+      continue
+    }
 
     const eventDateStart = parseEventDate(ev.eventMonth, ev.eventDay)
 
     if (dateFrom && eventDateStart && eventDateStart < dateFrom) continue
     if (dateTo && eventDateStart && eventDateStart > dateTo) continue
+
+    // Dedup includes eventDateStart so a recurring annual event (same name,
+    // same venue, different year) is treated as a new record rather than
+    // silently skipped forever after its first sync.
+    const existing = await prisma.event.findFirst({
+      where: {
+        eventName: { equals: ev.eventName, mode: "insensitive" },
+        locationId: loc.id,
+        eventDateStart: eventDateStart ?? undefined,
+      },
+    })
+    if (existing) continue
+
     const contact = ev.contact ?? null
-    const hasContact = contact && (contact.organizerEmail || contact.organizerPhone)
+    const hasContact =
+      contact && (contact.organizerEmail || contact.organizerPhone)
 
     const event = await prisma.event.create({
       data: {

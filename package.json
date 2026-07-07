@@ -13,7 +13,10 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
-    "db:seed": "pnpm exec tsx prisma/seed.ts"
+    "db:seed": "pnpm exec tsx prisma/seed.ts",
+    "ingest:aca": "pnpm exec tsx scripts/ingest-aca.ts",
+    "ingest:asae": "pnpm exec tsx scripts/ingest-asae.ts",
+    "ingest:bm": "pnpm exec tsx scripts/ingest-blackmeetings.ts"
   },
   "prisma": {
     "seed": "node --experimental-strip-types prisma/seed.ts"

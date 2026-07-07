@@ -9,22 +9,10 @@ const prisma = new PrismaClient({ adapter })
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
+const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true"
 
-// Map location city names to ACA city slugs
-const CITY_TO_SLUG: Record<string, string> = {
-  "washington dc": "washington",
-  "new york": "newyork",
-  "san francisco": "sanfrancisco",
-  "los angeles": "losangeles",
-  "las vegas": "lasvegas",
-  "san diego": "sandiego",
-  "san antonio": "sanantonio",
-}
-
-function cityToSlug(city: string): string {
-  const lower = city.toLowerCase().trim()
-  if (CITY_TO_SLUG[lower]) return CITY_TO_SLUG[lower]
-  return lower.replace(/[^a-z0-9]+/g, "")
+function debug(...args: unknown[]) {
+  if (DEBUG) console.log("[ACA/Debug]", ...args)
 }
 
 async function getConfig() {
@@ -37,11 +25,21 @@ async function getConfig() {
   }
 }
 
+function pickCityLocation(locs: { id: string; name: string | null }[]) {
+  const catchAll = locs.find((l) => l.name?.toLowerCase().startsWith("other"))
+  return catchAll ?? locs[0]
+}
+
+function normalizeCity(city: string): string {
+  return city.trim().toLowerCase().replace(/\s+/g, " ")
+}
+
 async function main() {
   console.log(`[ACA/Ingest] Starting at ${new Date().toISOString()}`)
-  if (runId) console.log(`[ACA/Ingest] Run ID: ${runId}`)
+  console.log(`[ACA/Ingest] Config: runId=${runId ?? "none"} dateFrom=${dateFrom?.toISOString()?.slice(0, 10) ?? "any"} dateTo=${dateTo?.toISOString()?.slice(0, 10) ?? "any"} DEBUG=${DEBUG}`)
 
   const config = await getConfig()
+  console.log(`[ACA/Ingest] IngestConfig: active=${config.active} maxLocations=${config.maxLocations}`)
   if (!config.active) {
     console.log("[ACA/Ingest] Scraping disabled via IngestConfig")
     return { recordsFound: 0, recordsNew: 0 }
@@ -59,137 +57,211 @@ async function main() {
     }),
   ])
 
+  console.log(`[ACA/Ingest] Loaded ${locations.length} active locations, sourceSite=${sourceSite?.id ?? "NOT FOUND"}`)
+
   if (locations.length === 0) {
-    console.log("[ACA/Ingest] No active locations")
+    console.log("[ACA/Ingest] No active locations — nothing to do")
     return { recordsFound: 0, recordsNew: 0 }
   }
 
+  debug("Raw locations:", locations.map((l) => `${l.id} | ${l.name} | city=${l.city}`))
+
   const sourceSiteId = sourceSite?.id ?? null
 
-  // Group locations by city slug to avoid scraping same city twice
   const cityGroups = new Map<string, typeof locations>()
+  const skippedNoCity: typeof locations = []
   for (const loc of locations) {
-    const city = loc.city?.toLowerCase().trim()
-    if (!city) continue
-    const slug = cityToSlug(city)
-    if (!cityGroups.has(slug)) cityGroups.set(slug, [])
-    cityGroups.get(slug)!.push(loc)
+    const city = loc.city?.trim()
+    if (!city) {
+      skippedNoCity.push(loc)
+      continue
+    }
+    const key = normalizeCity(city)
+    if (!cityGroups.has(key)) cityGroups.set(key, [])
+    cityGroups.get(key)!.push(loc)
   }
 
-  const slugList = [...cityGroups.keys()]
-  console.log(`[ACA/Ingest] ${slugList.length} unique cities to scrape (from ${locations.length} locations)`)
+  if (skippedNoCity.length > 0) {
+    console.log(`[ACA/Ingest] ${skippedNoCity.length} location(s) have no city — skipping: ${skippedNoCity.map((l) => l.name).join(", ")}`)
+  }
+
+  const targetCities = [...cityGroups.keys()]
+  console.log(`[ACA/Ingest] ${targetCities.length} target cities (from ${locations.length} locations):`)
+  for (const [city, locs] of cityGroups) {
+    console.log(`  - "${city}" → ${locs.map((l) => l.name).join(", ")}`)
+  }
 
   let totalFound = 0
   let totalNew = 0
+  let skippedOutOfRegion = 0
+  let skippedDuplicate = 0
+  let skippedDateRange = 0
+  let withContact = 0
+  let withoutContact = 0
 
-  for (const slug of slugList) {
-    const locs = cityGroups.get(slug)!
-    const cityName = locs[0].city!
-    console.log(`[ACA/Ingest] Scraping city: ${cityName} (slug: ${slug})`)
+  try {
+    console.log(`[ACA/Ingest] Starting ACA scrape (fetchDetails=true, country-wide)...`)
+    const scrapeStart = Date.now()
 
-    try {
-      // Scrape listing + detail pages (detail pages have contact info)
-      const acaEvents = await scrapeACA({
-        mode: "city",
-        citySlug: slug,
-        fetchDetails: true,
+    const acaEvents = await scrapeACA({
+      fetchDetails: true,
+      targetCities,
+    })
+
+    const scrapeDuration = ((Date.now() - scrapeStart) / 1000).toFixed(1)
+    console.log(`[ACA/Ingest] Scrape complete in ${scrapeDuration}s — ${acaEvents.length} total events from usa.php`)
+
+    if (acaEvents.length === 0) {
+      console.warn("[ACA/Ingest] WARNING: 0 events scraped — ACA site may be down or markup changed")
+    }
+
+    // Show first few raw events for debugging
+    if (acaEvents.length > 0) {
+      debug("First 5 raw ACA events:")
+      for (const ev of acaEvents.slice(0, 5)) {
+        debug(`  "${ev.eventName}" | city="${ev.venueCity}" date=${ev.eventDate ?? "null"}`)
+        debug(`    contactPerson="${ev.contact.contactPerson}" organizedBy="${ev.contact.organizedBy}" email="${ev.contact.inquiryEmail}"`)
+        debug(`    url=${ev.eventUrl}`)
+      }
+    }
+
+    for (const ev of acaEvents) {
+      const cityKey = normalizeCity(ev.venueCity)
+      const locs = cityGroups.get(cityKey)
+      if (!locs) {
+        skippedOutOfRegion++
+        debug(`Skip (out of region): "${ev.eventName}" city="${ev.venueCity}"`)
+        continue
+      }
+
+      totalFound++
+
+      let eventDate: Date | null = null
+      if (ev.eventDate) {
+        const d = new Date(ev.eventDate)
+        if (!isNaN(d.getTime())) eventDate = d
+      }
+
+      if (dateFrom && eventDate && eventDate < dateFrom) {
+        skippedDateRange++
+        debug(`Skip (before dateFrom): "${ev.eventName}" date=${eventDate.toISOString().slice(0, 10)}`)
+        continue
+      }
+      if (dateTo && eventDate && eventDate > dateTo) {
+        skippedDateRange++
+        debug(`Skip (after dateTo): "${ev.eventName}" date=${eventDate.toISOString().slice(0, 10)}`)
+        continue
+      }
+
+      const existing = await prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.eventName, mode: "insensitive" },
+          locationId: { in: locs.map((l) => l.id) },
+          eventDateStart: eventDate ?? undefined,
+        },
       })
+      if (existing) {
+        skippedDuplicate++
+        debug(`Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
+        continue
+      }
 
-      console.log(`[ACA/Ingest] ${cityName}: ${acaEvents.length} events from listing`)
+      const loc = pickCityLocation(locs)
 
-      // Filter to new events and save
-      for (const ev of acaEvents) {
-        totalFound++
+      let contactPerson = ev.contact.contactPerson
+      let organizedBy = ev.contact.organizedBy
+      let inquiryEmail = ev.contact.inquiryEmail
 
-        let eventDate: Date | null = null
-        if (ev.eventDate) {
-          const d = new Date(ev.eventDate)
-          if (!isNaN(d.getTime())) eventDate = d
-        }
+      debug(`Processing: "${ev.eventName}" | city="${ev.venueCity}" → location="${loc.name}" (${loc.id})`)
+      debug(`  Raw contact from ACA: person="${contactPerson}" org="${organizedBy}" email="${inquiryEmail}"`)
 
-        if (dateFrom && eventDate && eventDate < dateFrom) continue
-        if (dateTo && eventDate && eventDate > dateTo) continue
-
-        // Check each location in this city
-        for (const loc of locs) {
-          const existing = await prisma.event.findFirst({
-            where: {
-              eventName: { equals: ev.eventName, mode: "insensitive" },
-              locationId: loc.id,
-              eventDateStart: eventDate ?? undefined,
-            },
-          })
-          if (existing) continue
-
-          // Fetch contact from detail page via Jina AI
-          let contactPerson = ev.contact.contactPerson
-          let organizedBy = ev.contact.organizedBy
-          let inquiryEmail = ev.contact.inquiryEmail
-
-          if (!contactPerson && !inquiryEmail && ev.eventUrl) {
-            try {
-              const md = await fetchPageMarkdown(ev.eventUrl)
-              if (md) {
-                // Simple extraction from markdown
-                const cpMatch = md.match(/Contact Person[:\s]*\n?\s*(.+)/i)
-                if (cpMatch) contactPerson = cpMatch[1].trim()
-                // Try multiple email patterns
-                const emMatch = md.match(/(?:Event Enquiries|Email|Enquir|Contact)[:\s]*\n?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i)
-                if (emMatch) {
-                  inquiryEmail = emMatch[1].trim()
-                } else {
-                  // Last resort: find any email address on the page
-                  const anyEmail = md.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)
-                  if (anyEmail) inquiryEmail = anyEmail[0]
-                }
-                const obMatch = md.match(/Organized By[:\s]*\n?\s*(.+)/i)
-                if (obMatch) organizedBy = obMatch[1].trim()
-              }
-            } catch {
-              // Detail page failed — save without contact
+      if (!contactPerson && !inquiryEmail && ev.eventUrl) {
+        debug(`  No contact from ACA detail page — trying Jina fallback for ${ev.eventUrl}`)
+        try {
+          const md = await fetchPageMarkdown(ev.eventUrl)
+          if (md) {
+            debug(`  Jina returned ${md.length} chars`)
+            const cpMatch = md.match(/Contact Person[:\s]*\n?\s*(.+)/i)
+            if (cpMatch) contactPerson = cpMatch[1].trim()
+            const emMatch = md.match(
+              /(?:Event Enquiries|Email|Enquir|Contact)[:\s]*\n?\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i
+            )
+            if (emMatch) {
+              inquiryEmail = emMatch[1].trim()
+            } else {
+              const anyEmail = md.match(
+                /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
+              )
+              if (anyEmail) inquiryEmail = anyEmail[0]
             }
+            const obMatch = md.match(/Organized By[:\s]*\n?\s*(.+)/i)
+            if (obMatch) organizedBy = obMatch[1].trim()
+            debug(`  Jina fallback result: person="${contactPerson}" org="${organizedBy}" email="${inquiryEmail}"`)
+          } else {
+            debug(`  Jina returned empty/null`)
           }
-
-          const event = await prisma.event.create({
-            data: {
-              locationId: loc.id,
-              eventName: ev.eventName,
-              eventDateStart: eventDate,
-              sourceUrl: ev.eventUrl,
-              sourceSiteId,
-              runId: runId ?? undefined,
-              expectedAttendees: null,
-              organizerName: contactPerson ?? null,
-              organizerTitle: organizedBy ?? null,
-              organizerEmail: inquiryEmail ?? null,
-            },
-          })
-          totalNew++
-
-          const hasContact = contactPerson || organizedBy || inquiryEmail
-          if (hasContact) {
-            await prisma.eventContact.create({
-              data: {
-                eventId: event.id,
-                name: contactPerson ?? "",
-                title: organizedBy,
-                email: inquiryEmail,
-                phone: null,
-                isPrimary: true,
-                sourceUrl: ev.eventUrl,
-                confidence: "high",
-              },
-            })
-            console.log(`[ACA/Ingest] Saved contact for "${ev.eventName}"`)
-          }
+        } catch (err) {
+          debug(`  Jina fallback failed: ${err instanceof Error ? err.message : err}`)
         }
       }
-    } catch (err) {
-      console.error(`[ACA/Ingest] Error scraping ${cityName}:`, err)
+
+      const event = await prisma.event.create({
+        data: {
+          locationId: loc.id,
+          eventName: ev.eventName,
+          eventDateStart: eventDate,
+          sourceUrl: ev.eventUrl,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          expectedAttendees: null,
+          organizerName: contactPerson ?? null,
+          organizerTitle: organizedBy ?? null,
+          organizerEmail: inquiryEmail ?? null,
+        },
+      })
+      totalNew++
+
+      const hasContact = contactPerson || organizedBy || inquiryEmail
+      if (hasContact) {
+        withContact++
+        await prisma.eventContact.create({
+          data: {
+            eventId: event.id,
+            name: contactPerson ?? "",
+            title: organizedBy,
+            email: inquiryEmail,
+            phone: null,
+            isPrimary: true,
+            sourceUrl: ev.eventUrl,
+            confidence: "high",
+          },
+        })
+        console.log(
+          `[ACA/Ingest] ✓ Saved "${ev.eventName}" (${ev.venueCity}) — name="${contactPerson}" org="${organizedBy}" email="${inquiryEmail}"`
+        )
+      } else {
+        withoutContact++
+        console.log(
+          `[ACA/Ingest] ✗ No contact for "${ev.eventName}" (${ev.venueCity}, ${ev.eventUrl})`
+        )
+      }
     }
+  } catch (err) {
+    console.error(`[ACA/Ingest] Error during scrape/ingest:`, err)
   }
 
-  console.log(`[ACA/Ingest] Complete: ${totalNew} new from ${totalFound}`)
+  console.log(`\n[ACA/Ingest] ═══════════════════════════════════════`)
+  console.log(`[ACA/Ingest] SUMMARY`)
+  console.log(`[ACA/Ingest]   Total scraped:    ${totalFound + skippedOutOfRegion}`)
+  console.log(`[ACA/Ingest]   In-region:        ${totalFound}`)
+  console.log(`[ACA/Ingest]   Out-of-region:    ${skippedOutOfRegion}`)
+  console.log(`[ACA/Ingest]   Date filtered:    ${skippedDateRange}`)
+  console.log(`[ACA/Ingest]   Duplicates:       ${skippedDuplicate}`)
+  console.log(`[ACA/Ingest]   New saved:        ${totalNew}`)
+  console.log(`[ACA/Ingest]     with contact:   ${withContact}`)
+  console.log(`[ACA/Ingest]     without contact: ${withoutContact}`)
+  console.log(`[ACA/Ingest] ═══════════════════════════════════════\n`)
+
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 
