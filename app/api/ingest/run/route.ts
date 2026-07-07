@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { clearUsage, getUsageSummary } from "@/lib/providers/cost-tracker"
 import { runSearchScraper, SearchQuery } from "@/lib/ingest/search-pipeline"
 import { buildSearchQueries } from "@/lib/ingest/build-queries"
 import { runManualSourceChecks } from "@/lib/ingest/manual-scraper"
 import { Prisma } from "@/lib/generated/prisma/client"
+import { getAllProviderStatus, DEV_MODE } from "@/lib/providers/credit-tracker"
 
 // ─── Scraper types ───────────────────────────────────────────────────────────
 
@@ -192,7 +192,6 @@ export async function POST(request: Request) {
   }
 
   const run = await prisma.ingestionRun.create({ data: { trigger, status: "running" } })
-  clearUsage(run.id)
 
   try {
     // ── Single source site run ──────────────────────────────────────────
@@ -215,7 +214,7 @@ export async function POST(request: Request) {
             finishedAt: new Date(),
             recordsFound: 0,
             recordsNew: 0,
-            providersUsed: getUsageSummary(run.id),
+            providersUsed: getAllProviderStatus(),
           },
         })
         return NextResponse.json({
@@ -233,8 +232,8 @@ export async function POST(request: Request) {
         query: site.url ? `site:${new URL(site.url).hostname} events` : site.name,
       }]
       const result = await runSearchScraper(queries, run.id, {
-        searchConcurrency: 5,
-        scrapeConcurrency: 3,
+        searchConcurrency: DEV_MODE ? 10 : 5,
+        scrapeConcurrency: DEV_MODE ? 8 : 3,
       })
       await prisma.sourceSite.update({
         where: { id: body.sourceSiteId },
@@ -247,7 +246,7 @@ export async function POST(request: Request) {
           finishedAt: new Date(),
           recordsFound: result.recordsFound,
           recordsNew: result.recordsNew,
-          providersUsed: getUsageSummary(run.id),
+          providersUsed: getAllProviderStatus(),
         },
       })
       return NextResponse.json({
@@ -293,8 +292,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ runId: run.id, recordsFound: 0, recordsNew: 0, manualResults })
     }
 
-    // ── Apply frequency filtering for scheduled runs ────────────────────
-    const { filteredLocationIds, skipped } = await filterByFrequency(locationIds, trigger)
+    // ── Apply frequency filtering (skip in DEV_MODE) ────────────────────
+    let filteredLocationIds = locationIds
+    let skipped: string[] = []
+    if (!DEV_MODE && trigger === "scheduled") {
+      const freq = await filterByFrequency(locationIds, trigger)
+      filteredLocationIds = freq.filteredLocationIds
+      skipped = freq.skipped
+    }
 
     if (filteredLocationIds.length === 0) {
       await prisma.ingestionRun.update({
@@ -310,31 +315,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ runId: run.id, recordsFound: 0, recordsNew: 0, skipped, manualResults })
     }
 
-    // ── Apply batching based on trigger type ────────────────────────────
-    let batchedIds = filteredLocationIds
-    let maxQueries = body.maxQueries
-
-    if (trigger === "scheduled") {
-      const maxLocations = 5
-      if (filteredLocationIds.length > maxLocations) {
-        const startIndex = parseInt(run.id.slice(-2), 16) % filteredLocationIds.length
-        const rotated = [
-          ...filteredLocationIds.slice(startIndex),
-          ...filteredLocationIds.slice(0, startIndex),
-        ]
-        batchedIds = rotated.slice(0, maxLocations)
-      }
-      maxQueries = maxQueries ?? 50
-    } else {
-      maxQueries = maxQueries ?? 200
-    }
-
-    // ── Build queries using scope-aware builder ─────────────────────────
+    // ── Build queries (no batching — run all locations) ──────────────────
     const queries = await buildSearchQueries({
-      locationIds: batchedIds,
+      locationIds: filteredLocationIds,
       dateFrom: body.dateFrom,
       dateTo: body.dateTo,
-      maxQueries,
+      maxQueries: DEV_MODE ? undefined : (body.maxQueries ?? undefined),
     })
 
     // ── Run scraper types ───────────────────────────────────────────────
@@ -347,8 +333,8 @@ export async function POST(request: Request) {
 
       if (scraperType === "search") {
         const r = await runSearchScraper(queries, run.id, {
-          searchConcurrency: trigger === "scheduled" ? 5 : 10,
-          scrapeConcurrency: trigger === "scheduled" ? 3 : 8,
+          searchConcurrency: DEV_MODE ? 10 : (trigger === "scheduled" ? 5 : 10),
+          scrapeConcurrency: DEV_MODE ? 8 : (trigger === "scheduled" ? 3 : 8),
           dryRun: false,
         })
         results.push(r)
@@ -359,7 +345,7 @@ export async function POST(request: Request) {
     }
 
     // ── Finalize ────────────────────────────────────────────────────────
-    const providersUsed = getUsageSummary(run.id)
+    const providersUsed = getAllProviderStatus()
     await prisma.ingestionRun.update({
       where: { id: run.id },
       data: {

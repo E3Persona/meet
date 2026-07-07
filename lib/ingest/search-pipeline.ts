@@ -7,6 +7,7 @@ import { createDuckDuckGoProvider } from "@/lib/providers/search/duckduckgo"
 import { createFirecrawlProvider } from "@/lib/providers/scrape/firecrawl"
 import { createWebPeelProvider } from "@/lib/providers/scrape/webpeel"
 import { createJinaProvider } from "@/lib/providers/scrape/jina"
+import { DEV_MODE } from "@/lib/providers/credit-tracker"
 
 // ─── Scraper types ─────────────────────────────────────────────────────────
 
@@ -79,14 +80,29 @@ function matchLocation(
 // ─── Dedupe check ──────────────────────────────────────────────────────────
 
 async function isDuplicate(eventName: string, locationId: string, eventDateStart: Date | null): Promise<boolean> {
-  const existing = await prisma.event.findFirst({
+  // Check exact match (same name, same location, same date)
+  const exact = await prisma.event.findFirst({
     where: {
       eventName: { equals: eventName, mode: "insensitive" },
       locationId,
       eventDateStart: eventDateStart ?? undefined,
     },
   })
-  return !!existing
+  if (exact) return true
+
+  // Also check across ALL locations — if "Event X" on July 15 exists at any
+  // venue or city, don't create a duplicate at a different location
+  if (eventDateStart) {
+    const anyLocation = await prisma.event.findFirst({
+      where: {
+        eventName: { equals: eventName, mode: "insensitive" },
+        eventDateStart,
+      },
+    })
+    if (anyLocation) return true
+  }
+
+  return false
 }
 
 // ─── Concurrency limiter ──────────────────────────────────────────────────

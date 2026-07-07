@@ -279,6 +279,7 @@ export function EventsTable() {
     details: string[]
   } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [searchRunning, setSearchRunning] = useState(false)
 
   const setCityFilter = (val: string) => {
     setFilterCity(val)
@@ -439,6 +440,48 @@ export function EventsTable() {
       toast.error("Failed to delete events")
     } finally {
       setDeleteAllLoading(false)
+    }
+  }
+
+  const handleRunSearch = async () => {
+    setSearchRunning(true)
+    toast.info("Search pipeline started...")
+    try {
+      const body: Record<string, any> = {}
+      if (filterDateFrom) body.dateFrom = filterDateFrom
+      if (filterDateTo) body.dateTo = filterDateTo
+      if (filterLocation !== "all") body.locationIds = [filterLocation]
+      else if (filterCity !== "all") {
+        const cityLocs = locations.filter((l) => l.parentId === filterCity || l.id === filterCity)
+        if (cityLocs.length > 0) body.locationIds = cityLocs.map((l) => l.id)
+      }
+
+      const res = await fetch("/api/ingest/run?trigger=manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error(data.error ?? "Search failed")
+        return
+      }
+
+      const parts = [`${data.recordsNew} new events found (${data.recordsFound} total scanned)`]
+      toast.success(parts.join(" · "))
+
+      if (data.warnings?.length > 0) {
+        const uniqueWarnings = [...new Set(data.warnings)]
+        toast.warning(`Provider issues: ${uniqueWarnings.slice(0, 3).join("; ")}${uniqueWarnings.length > 3 ? ` (+${uniqueWarnings.length - 3} more)` : ""}`)
+      }
+
+      fetchEvents()
+      refreshStats()
+    } catch {
+      toast.error("Search request failed")
+    } finally {
+      setSearchRunning(false)
     }
   }
 
@@ -741,6 +784,7 @@ export function EventsTable() {
               className="h-9 rounded-lg border border-input bg-background px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
               title="To date"
             />
+         
           </div>
           <Select value={exportMonth} onValueChange={setExportMonth}>
             <SelectTrigger className="w-32" size="sm">
@@ -772,6 +816,19 @@ export function EventsTable() {
               <SelectItem value="2027">2027</SelectItem>
             </SelectContent>
           </Select>
+          <Button
+              variant="primary"
+              size="sm"
+              onClick={handleRunSearch}
+              disabled={searchRunning}
+            >
+              {searchRunning ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="mr-1.5 h-4 w-4" />
+              )}
+              Run Search
+            </Button>
           <Button variant="outline" size="sm" onClick={exportToExcel}>
             <Download className="mr-1.5 h-4 w-4" />
             Export

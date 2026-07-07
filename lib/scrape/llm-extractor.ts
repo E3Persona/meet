@@ -1,3 +1,5 @@
+import { canUseProvider, trackUsage, DEV_MODE } from "@/lib/providers/credit-tracker"
+
 export interface LlmContact {
   name: string
   title: string | null
@@ -20,52 +22,26 @@ export interface LlmExtractionResult {
   events: LlmExtractedEvent[]
 }
 
-// Groq rate limiter
+// Groq rate limiter (minute-level — prevents 429 from API throughput, not credit budget)
 const GROQ_LIMITS = {
   requestsPerMinute: 30,
-  requestsPerDay: 1000,
   tokensPerMinute: 12000,
-  tokensPerDay: 100000,
 }
 
 class GroqRateLimiter {
   private requestTimestamps: number[] = []
-  private dailyRequestCount = 0
-  private dailyTokensUsed = 0
   private minuteTokensUsed = 0
   private lastMinuteReset = Date.now()
-  private lastDayReset = Date.now()
 
   async waitIfNeeded(): Promise<void> {
     const now = Date.now()
 
-    // Reset counters
-    if (now - this.lastDayReset > 24 * 60 * 60 * 1000) {
-      this.dailyRequestCount = 0
-      this.dailyTokensUsed = 0
-      this.lastDayReset = now
-    }
     if (now - this.lastMinuteReset > 60 * 1000) {
       this.requestTimestamps = this.requestTimestamps.filter(t => now - t < 60 * 1000)
       this.minuteTokensUsed = 0
       this.lastMinuteReset = now
     }
 
-    // Check daily limits
-    if (this.dailyRequestCount >= GROQ_LIMITS.requestsPerDay) {
-      const waitMs = this.lastDayReset + 24 * 60 * 60 * 1000 - now
-      console.log(`[Groq Rate Limiter] Daily request limit reached, waiting ${waitMs}ms`)
-      await new Promise(resolve => setTimeout(resolve, waitMs))
-      return this.waitIfNeeded()
-    }
-    if (this.dailyTokensUsed >= GROQ_LIMITS.tokensPerDay) {
-      const waitMs = this.lastDayReset + 24 * 60 * 60 * 1000 - now
-      console.log(`[Groq Rate Limiter] Daily token limit reached, waiting ${waitMs}ms`)
-      await new Promise(resolve => setTimeout(resolve, waitMs))
-      return this.waitIfNeeded()
-    }
-
-    // Check minute limits
     if (this.requestTimestamps.length >= GROQ_LIMITS.requestsPerMinute) {
       const oldestTimestamp = this.requestTimestamps[0]
       const waitMs = oldestTimestamp + 60 * 1000 - now
@@ -84,46 +60,21 @@ class GroqRateLimiter {
   recordRequest(tokensUsed: number): void {
     const now = Date.now()
     this.requestTimestamps.push(now)
-    this.dailyRequestCount++
     this.minuteTokensUsed += tokensUsed
-    this.dailyTokensUsed += tokensUsed
-    console.log(`[Groq Rate Limiter] Request: ${this.dailyRequestCount}/${GROQ_LIMITS.requestsPerDay} today, ${this.minuteTokensUsed}/${GROQ_LIMITS.tokensPerMinute} tokens/min`)
   }
 }
 
 const groqRateLimiter = new GroqRateLimiter()
 
-// OpenRouter rate limiter (free tier limits)
-const OPENROUTER_LIMITS = {
-  requestsPerMinute: 20,
-  requestsPerDay: 50,
-}
-
+// OpenRouter rate limiter (minute-level only)
 class OpenRouterRateLimiter {
   private requestTimestamps: number[] = []
-  private dailyRequestCount = 0
-  private lastDayReset = Date.now()
 
   async waitIfNeeded(): Promise<void> {
     const now = Date.now()
-
-    // Reset counters
-    if (now - this.lastDayReset > 24 * 60 * 60 * 1000) {
-      this.dailyRequestCount = 0
-      this.lastDayReset = now
-    }
     this.requestTimestamps = this.requestTimestamps.filter(t => now - t < 60 * 1000)
 
-    // Check daily limit
-    if (this.dailyRequestCount >= OPENROUTER_LIMITS.requestsPerDay) {
-      const waitMs = this.lastDayReset + 24 * 60 * 60 * 1000 - now
-      console.log(`[OpenRouter Rate Limiter] Daily request limit reached, waiting ${waitMs}ms`)
-      await new Promise(resolve => setTimeout(resolve, waitMs))
-      return this.waitIfNeeded()
-    }
-
-    // Check minute limit
-    if (this.requestTimestamps.length >= OPENROUTER_LIMITS.requestsPerMinute) {
+    if (this.requestTimestamps.length >= 20) {
       const oldestTimestamp = this.requestTimestamps[0]
       const waitMs = oldestTimestamp + 60 * 1000 - now
       console.log(`[OpenRouter Rate Limiter] Minute request limit reached, waiting ${waitMs}ms`)
@@ -133,10 +84,7 @@ class OpenRouterRateLimiter {
   }
 
   recordRequest(): void {
-    const now = Date.now()
-    this.requestTimestamps.push(now)
-    this.dailyRequestCount++
-    console.log(`[OpenRouter Rate Limiter] Request: ${this.dailyRequestCount}/${OPENROUTER_LIMITS.requestsPerDay} today`)
+    this.requestTimestamps.push(Date.now())
   }
 
   async handleRateLimit(res: Response): Promise<boolean> {
@@ -154,51 +102,78 @@ class OpenRouterRateLimiter {
 
 const openRouterRateLimiter = new OpenRouterRateLimiter()
 
-async function callLlm(prompt: string): Promise<LlmExtractionResult> {
+async function callLlm(prompt: string, _attempt = 0): Promise<LlmExtractionResult> {
   // Groq (primary)
   const apiKey = process.env.GROQ_API_KEY
   if (apiKey) {
-    try {
-      await groqRateLimiter.waitIfNeeded()
-      console.log(`[LLM] Calling Groq with llama-3.3-70b-versatile...`)
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: "You are a precise event data extraction engine. Always respond with valid JSON only." },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.1,
-          max_tokens: 600,
-        }),
-        signal: AbortSignal.timeout(120000),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const content = data.choices?.[0]?.message?.content
-        const tokensUsed = data.usage?.total_tokens ?? 0
-        groqRateLimiter.recordRequest(tokensUsed)
-        if (content) {
-          const cleaned = content.replace(/```(?:json)?\s*/g, "").trim()
-          const parsed = JSON.parse(cleaned)
-          console.log(`[LLM] Groq returned ${parsed.events?.length ?? 0} events (${tokensUsed} tokens)`)
-          return { events: parsed.events ?? [] }
+    const groqCheck = canUseProvider("groq")
+    if (!groqCheck.allowed) {
+      console.log(`[LLM] ${groqCheck.reason}`)
+    } else {
+      try {
+        await groqRateLimiter.waitIfNeeded()
+        console.log(`[LLM] Calling Groq with llama-3.3-70b-versatile...`)
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              { role: "system", content: "You are a precise event data extraction engine. Always respond with valid JSON only." },
+              { role: "user", content: prompt },
+            ],
+            temperature: 0.1,
+            max_tokens: 1500,
+          }),
+          signal: AbortSignal.timeout(120000),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          const content = data.choices?.[0]?.message?.content
+          const finishReason = data.choices?.[0]?.finish_reason
+          const tokensUsed = data.usage?.total_tokens ?? 0
+          groqRateLimiter.recordRequest(tokensUsed)
+          trackUsage("groq", "llm", tokensUsed)
+          if (content) {
+            if (finishReason === "length") {
+              console.log(`[LLM] Groq response truncated (finish_reason=length), attempting salvage...`)
+              return salvageTruncatedJson(content)
+            }
+            const cleaned = content.replace(/```(?:json)?\s*/g, "").trim()
+            try {
+              const parsed = JSON.parse(cleaned)
+              console.log(`[LLM] Groq returned ${parsed.events?.length ?? 0} events (${tokensUsed} tokens)`)
+              return { events: parsed.events ?? [] }
+            } catch {
+              console.log(`[LLM] Groq JSON parse failed, attempting salvage...`)
+              return salvageTruncatedJson(content)
+            }
+          }
         }
+        console.log(`[LLM] Groq ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`)
+      } catch (err) {
+        console.log(`[LLM] Groq error:`, err instanceof Error ? err.message : err)
       }
-      console.log(`[LLM] Groq ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`)
-    } catch (err) {
-      console.log(`[LLM] Groq error:`, err instanceof Error ? err.message : err)
     }
   }
 
-  // Fallback: OpenRouter
+  // Fallback: OpenRouter (only retry once)
+  if (_attempt > 0) {
+    console.log(`[LLM] OpenRouter already attempted, giving up`)
+    return { events: [] }
+  }
+
   const openRouterKey = process.env.OPENROUTER_API_KEY
   if (!openRouterKey) return { events: [] }
+
+  const orCheck = canUseProvider("openrouter")
+  if (!orCheck.allowed) {
+    console.log(`[LLM] ${orCheck.reason}`)
+    return { events: [] }
+  }
 
   try {
     await openRouterRateLimiter.waitIfNeeded()
@@ -216,14 +191,13 @@ async function callLlm(prompt: string): Promise<LlmExtractionResult> {
           { role: "user", content: prompt },
         ],
         temperature: 0.1,
-        max_tokens: 300,
+        max_tokens: 800,
       }),
     })
 
-    // Handle rate limit responses with Retry-After
     if (await openRouterRateLimiter.handleRateLimit(res)) {
-      // Retry the request after waiting
-      return callLlm(prompt)
+      console.log(`[LLM] OpenRouter rate limited, skipping`)
+      return { events: [] }
     }
 
     if (!res.ok) {
@@ -235,15 +209,65 @@ async function callLlm(prompt: string): Promise<LlmExtractionResult> {
     openRouterRateLimiter.recordRequest()
     const data = await res.json()
     const content = data.choices?.[0]?.message?.content
+    const tokensUsed = data.usage?.total_tokens ?? 0
+    trackUsage("openrouter", "llm", tokensUsed)
     if (!content) return { events: [] }
     const cleaned = content.replace(/```(?:json)?\s*/g, "").trim()
     const parsed = JSON.parse(cleaned)
-    console.log(`[LLM] OpenRouter returned ${parsed.events?.length ?? 0} events`)
+    console.log(`[LLM] OpenRouter returned ${parsed.events?.length ?? 0} events (${tokensUsed} tokens)`)
     return { events: parsed.events ?? [] }
   } catch (err) {
     console.error(`[LLM] OpenRouter error:`, err instanceof Error ? err.message : err)
     return { events: [] }
   }
+}
+
+function salvageTruncatedJson(content: string): LlmExtractionResult {
+  // Try to extract events array from truncated JSON
+  // Find the last complete event object by looking for the last closing brace
+  const cleaned = content.replace(/```(?:json)?\s*/g, "").trim()
+
+  // Try progressively smaller slices to find valid JSON
+  for (let i = cleaned.length; i > 0; i--) {
+    const slice = cleaned.slice(0, i)
+    // Try closing the JSON structure
+    const attempts = [
+      slice + ']}',
+      slice + '"}]}',
+      slice + '""}]}',
+      slice + ',"reason":""}]}',
+    ]
+    for (const attempt of attempts) {
+      try {
+        const parsed = JSON.parse(attempt)
+        if (parsed.events && Array.isArray(parsed.events)) {
+          console.log(`[LLM] Salvaged ${parsed.events.length} events from truncated response`)
+          return { events: parsed.events }
+        }
+      } catch {
+        // continue
+      }
+    }
+  }
+
+  // Last resort: regex extract event names and dates
+  const nameMatches = [...cleaned.matchAll(/"eventName"\s*:\s*"([^"]+)"/g)]
+  const dateMatches = [...cleaned.matchAll(/"eventDateStart"\s*:\s*"([^"]+)"/g)]
+  if (nameMatches.length > 0) {
+    const events: LlmExtractedEvent[] = nameMatches.map((m, i) => ({
+      eventName: m[1],
+      eventDateStart: dateMatches[i]?.[1] ?? null,
+      eventDateEnd: null,
+      sourceUrl: null,
+      confidence: "medium" as const,
+      reason: "extracted from truncated response",
+    }))
+    console.log(`[LLM] Regex salvage: ${events.length} events from truncated response`)
+    return { events }
+  }
+
+  console.log(`[LLM] Could not salvage any events from truncated response`)
+  return { events: [] }
 }
 
 export async function extractEventsWithLLM(

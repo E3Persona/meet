@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { NavItem } from "@/components/ui/nav-item"
 import {
@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Bot,
+  BarChart3,
 } from "lucide-react"
 
 export type SidebarSection =
@@ -41,6 +42,46 @@ interface SidebarProps {
   active: SidebarSection
   onSelect: (section: SidebarSection) => void
   collapsed?: boolean
+}
+
+function ProviderCredits() {
+  const [credits, setCredits] = useState<Record<string, any> | null>(null)
+
+  useEffect(() => {
+    fetch("/api/providers/status")
+      .then((r) => r.json())
+      .then((data) => setCredits(data))
+      .catch(() => {})
+  }, [])
+
+  if (!credits) return null
+  if (credits._devMode) {
+    return <p className="text-xs text-emerald-500 font-medium">DEV MODE — unlimited</p>
+  }
+
+  const limited = Object.entries(credits).filter(
+    ([k, v]: [string, any]) => k !== "_devMode" && v.dailyLimitRequests > 0
+  )
+
+  if (limited.length === 0) return null
+
+  const low = limited.filter(([, v]: [string, any]) => v.remainingRequests <= 5 || (v.dailyLimitTokens > 0 && v.remainingTokens <= 1000))
+
+  return (
+    <div className="space-y-1">
+      {low.length > 0 ? (
+        <p className="text-xs text-amber-500 font-medium">{low.length} provider{low.length > 1 ? "s" : ""} low on credits</p>
+      ) : null}
+      {limited.slice(0, 3).map(([name, v]: [string, any]) => (
+        <div key={name} className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground truncate">{name}</span>
+          <span className={v.remainingRequests <= 5 ? "text-amber-500 font-medium" : "text-muted-foreground"}>
+            {v.remainingRequests}/{v.dailyLimitRequests}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export function Sidebar({ active, onSelect, collapsed = false }: SidebarProps) {
@@ -74,10 +115,11 @@ export function Sidebar({ active, onSelect, collapsed = false }: SidebarProps) {
         )}
       >
         {/* Logo / brand */}
-        <div className={cn("flex h-14 items-center border-b px-4", collapsed && "justify-center")}>
+        <div className={cn("flex h-14 items-center gap-2.5 border-b px-4", collapsed && "justify-center")}>
+          <img src="/logo.png" alt="e3 Personnel" className="h-8 w-auto shrink-0" />
           {!collapsed && (
             <span className="text-sm font-semibold tracking-tight truncate">
-              Event Pipeline
+              e3 Event Intelligence
             </span>
           )}
           {collapsed && <FileText className="h-5 w-5 text-muted-foreground" />}
@@ -106,7 +148,8 @@ export function Sidebar({ active, onSelect, collapsed = false }: SidebarProps) {
 
         {/* Footer */}
         {!collapsed && (
-          <div className="border-t p-3">
+          <div className="border-t p-3 space-y-1.5">
+            <ProviderCredits />
             <p className="text-xs text-muted-foreground truncate">
               v0.1.0
             </p>

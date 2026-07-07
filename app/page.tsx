@@ -18,8 +18,8 @@ const SECTION_TITLES: Record<
   { title: string; description: string }
 > = {
   events: {
-    title: "Event Pipeline Dashboard",
-    description: "Track meetings, conventions, and tradeshows across venues.",
+    title: "e3 Event Intelligence Dashboard",
+    description: "Sales pipeline for tracking meetings, conventions, and tradeshows across venues.",
   },
   locations: {
     title: "Locations",
