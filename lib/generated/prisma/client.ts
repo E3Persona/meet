@@ -87,6 +87,11 @@ export type IngestionSchedule = Prisma.IngestionScheduleModel
  */
 export type IngestConfig = Prisma.IngestConfigModel
 /**
+ * Model CrawledUrl
+ * 
+ */
+export type CrawledUrl = Prisma.CrawledUrlModel
+/**
  * Model EventContact
  * 
  */

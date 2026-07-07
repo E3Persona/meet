@@ -60,6 +60,7 @@ export const ModelName = {
   SourceSiteConfig: 'SourceSiteConfig',
   IngestionSchedule: 'IngestionSchedule',
   IngestConfig: 'IngestConfig',
+  CrawledUrl: 'CrawledUrl',
   EventContact: 'EventContact'
 } as const
 
@@ -237,6 +238,17 @@ export const IngestConfigScalarFieldEnum = {
 } as const
 
 export type IngestConfigScalarFieldEnum = (typeof IngestConfigScalarFieldEnum)[keyof typeof IngestConfigScalarFieldEnum]
+
+
+export const CrawledUrlScalarFieldEnum = {
+  url: 'url',
+  contentHash: 'contentHash',
+  scrapedAt: 'scrapedAt',
+  runId: 'runId',
+  sourceSiteId: 'sourceSiteId'
+} as const
+
+export type CrawledUrlScalarFieldEnum = (typeof CrawledUrlScalarFieldEnum)[keyof typeof CrawledUrlScalarFieldEnum]
 
 
 export const EventContactScalarFieldEnum = {

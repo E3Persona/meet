@@ -393,6 +393,7 @@ export const ModelName = {
   SourceSiteConfig: 'SourceSiteConfig',
   IngestionSchedule: 'IngestionSchedule',
   IngestConfig: 'IngestConfig',
+  CrawledUrl: 'CrawledUrl',
   EventContact: 'EventContact'
 } as const
 
@@ -409,7 +410,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "location" | "searchTerm" | "searchTemplate" | "event" | "ingestionRun" | "sourceSite" | "sourceSiteConfig" | "ingestionSchedule" | "ingestConfig" | "eventContact"
+    modelProps: "location" | "searchTerm" | "searchTemplate" | "event" | "ingestionRun" | "sourceSite" | "sourceSiteConfig" | "ingestionSchedule" | "ingestConfig" | "crawledUrl" | "eventContact"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1079,6 +1080,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CrawledUrl: {
+      payload: Prisma.$CrawledUrlPayload<ExtArgs>
+      fields: Prisma.CrawledUrlFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CrawledUrlFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CrawledUrlFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload>
+        }
+        findFirst: {
+          args: Prisma.CrawledUrlFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CrawledUrlFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload>
+        }
+        findMany: {
+          args: Prisma.CrawledUrlFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload>[]
+        }
+        create: {
+          args: Prisma.CrawledUrlCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload>
+        }
+        createMany: {
+          args: Prisma.CrawledUrlCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CrawledUrlCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload>[]
+        }
+        delete: {
+          args: Prisma.CrawledUrlDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload>
+        }
+        update: {
+          args: Prisma.CrawledUrlUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload>
+        }
+        deleteMany: {
+          args: Prisma.CrawledUrlDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CrawledUrlUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CrawledUrlUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload>[]
+        }
+        upsert: {
+          args: Prisma.CrawledUrlUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CrawledUrlPayload>
+        }
+        aggregate: {
+          args: Prisma.CrawledUrlAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCrawledUrl>
+        }
+        groupBy: {
+          args: Prisma.CrawledUrlGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CrawledUrlGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CrawledUrlCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CrawledUrlCountAggregateOutputType> | number
+        }
+      }
+    }
     EventContact: {
       payload: Prisma.$EventContactPayload<ExtArgs>
       fields: Prisma.EventContactFieldRefs
@@ -1350,6 +1425,17 @@ export const IngestConfigScalarFieldEnum = {
 } as const
 
 export type IngestConfigScalarFieldEnum = (typeof IngestConfigScalarFieldEnum)[keyof typeof IngestConfigScalarFieldEnum]
+
+
+export const CrawledUrlScalarFieldEnum = {
+  url: 'url',
+  contentHash: 'contentHash',
+  scrapedAt: 'scrapedAt',
+  runId: 'runId',
+  sourceSiteId: 'sourceSiteId'
+} as const
+
+export type CrawledUrlScalarFieldEnum = (typeof CrawledUrlScalarFieldEnum)[keyof typeof CrawledUrlScalarFieldEnum]
 
 
 export const EventContactScalarFieldEnum = {
@@ -1723,6 +1809,7 @@ export type GlobalOmitConfig = {
   sourceSiteConfig?: Prisma.SourceSiteConfigOmit
   ingestionSchedule?: Prisma.IngestionScheduleOmit
   ingestConfig?: Prisma.IngestConfigOmit
+  crawledUrl?: Prisma.CrawledUrlOmit
   eventContact?: Prisma.EventContactOmit
 }
 
