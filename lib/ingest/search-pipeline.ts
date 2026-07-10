@@ -12,7 +12,7 @@ import { checkCrawlCache, hashContent, updateCrawlCache, getCachedEvents, getSta
 
 // ─── Scraper types ─────────────────────────────────────────────────────────
 
-type ScraperType = "ica" | "cn" | "tf" | "showsbee" | "eventseye" | "aca" | "search"
+type ScraperType = "ica" | "cn" | "tf" | "showsbee" | "eventseye" | "aca" | "search" | "cp"
 
 interface ScraperResult {
   scraper: ScraperType

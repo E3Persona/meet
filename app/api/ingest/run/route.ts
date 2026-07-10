@@ -6,10 +6,11 @@ import { runManualSourceChecks } from "@/lib/ingest/manual-scraper"
 import { Prisma } from "@/lib/generated/prisma/client"
 import { getAllProviderStatus, DEV_MODE } from "@/lib/providers/credit-tracker"
 import { createProgressCallback, clearRunProgress } from "@/lib/ingest/progress-store"
+import { scrapeConventionPlanit } from "@/lib/scrapers/conventionplanit"
 
 // ─── Scraper types ───────────────────────────────────────────────────────────
 
-type ScraperType = "ica" | "cn" | "tf" | "showsbee" | "eventseye" | "aca" | "search"
+type ScraperType = "ica" | "cn" | "tf" | "showsbee" | "eventseye" | "aca" | "search" | "cp"
 
 interface ScraperResult {
   scraper: ScraperType
@@ -365,6 +366,58 @@ export async function POST(request: Request) {
         totalFound += r.recordsFound
         totalNew += r.recordsNew
         console.log(`[Ingest] ${scraperType}: ${r.recordsNew} new from ${r.recordsFound}`)
+      }
+
+      if (scraperType === "cp") {
+        progress("Scraping ConventionPlanit venue directory...")
+        const activeCities = await prisma.location.findMany({
+          where: { active: true, type: "CITY" },
+          select: { city: true, state: true },
+        })
+        const cpResults = await scrapeConventionPlanit(activeCities)
+        progress(`ConventionPlanit: ${cpResults.length} venue(s) matched`)
+
+        let venuesCreated = 0
+        for (const r of cpResults) {
+          const cityLoc = activeCities.find(
+            (c) => (c.city ?? "").toLowerCase() === r.venue.city.toLowerCase()
+          )
+          const city = cityLoc?.city ?? r.venue.city
+          const state = cityLoc?.state ?? r.venue.state
+
+          const existing = await prisma.location.findFirst({
+            where: { name: r.venue.name, type: "VENUE" },
+          })
+          if (existing) {
+            await prisma.location.update({
+              where: { id: existing.id },
+              data: {
+                address: r.detail.address ?? existing.address,
+                city: r.detail.city ?? existing.city ?? city,
+                state: r.detail.state ?? existing.state ?? state,
+                sourceUrl: r.venue.detailUrl,
+                lastIngestedAt: new Date(),
+              },
+            })
+          } else {
+            await prisma.location.create({
+              data: {
+                type: "VENUE",
+                name: r.venue.name,
+                address: r.detail.address,
+                city: r.detail.city ?? city,
+                state: r.detail.state ?? state,
+                sourceUrl: r.venue.detailUrl,
+                active: true,
+              },
+            })
+            venuesCreated++
+          }
+        }
+        totalFound += cpResults.length
+        totalNew += venuesCreated
+        progress(`ConventionPlanit: ${venuesCreated} new venue(s) created, ${cpResults.length} total matched`)
+        results.push({ scraper: "cp", recordsFound: cpResults.length, recordsNew: venuesCreated })
       }
     }
 
