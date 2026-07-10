@@ -5,6 +5,7 @@ import { buildSearchQueries } from "@/lib/ingest/build-queries"
 import { runManualSourceChecks } from "@/lib/ingest/manual-scraper"
 import { Prisma } from "@/lib/generated/prisma/client"
 import { getAllProviderStatus, DEV_MODE } from "@/lib/providers/credit-tracker"
+import { createProgressCallback, clearRunProgress } from "@/lib/ingest/progress-store"
 
 // ─── Scraper types ───────────────────────────────────────────────────────────
 
@@ -166,7 +167,8 @@ export async function POST(request: Request) {
   const { searchParams } = new URL(request.url)
   const trigger = searchParams.get("trigger") === "scheduled" ? "scheduled" : "manual"
 
-  let body: RunConfig = { scraperTypes: ["search"] }
+  let body: RunConfig & { clientRunId?: string } = { scraperTypes: ["search"] }
+  let clientRunId: string | undefined
   try {
     const raw = await request.json()
     if (raw.scraperTypes && Array.isArray(raw.scraperTypes)) {
@@ -178,6 +180,7 @@ export async function POST(request: Request) {
     if (raw.dateTo) body.dateTo = raw.dateTo
     if (raw.sourceSiteId) body.sourceSiteId = raw.sourceSiteId
     if (raw.forceRefresh) body.forceRefresh = true
+    if (raw.clientRunId) clientRunId = raw.clientRunId
   } catch {
     /* no body */
   }
@@ -193,7 +196,16 @@ export async function POST(request: Request) {
     console.log(`[Ingest] Targeting single source site: ${body.sourceSiteId}`)
   }
 
-  const run = await prisma.ingestionRun.create({ data: { trigger, status: "running" } })
+  const run = await prisma.ingestionRun.create({
+    data: {
+      id: clientRunId ?? undefined,
+      trigger,
+      status: "running",
+    },
+  })
+  const progress = createProgressCallback(run.id)
+
+  progress(`Run started (${trigger})`)
 
   try {
     // ── Single source site run ──────────────────────────────────────────
@@ -206,6 +218,7 @@ export async function POST(request: Request) {
       }
 
       if (site.sourceMode === "manual") {
+        progress(`Manual source: ${site.name} — recorded check`)
         const manualResults = await runManualSourceChecks(run.id, {
           sourceSiteId: body.sourceSiteId,
         })
@@ -219,6 +232,7 @@ export async function POST(request: Request) {
             providersUsed: getAllProviderStatus(),
           },
         })
+        clearRunProgress(run.id)
         return NextResponse.json({
           runId: run.id,
           manualResults,
@@ -227,6 +241,7 @@ export async function POST(request: Request) {
       }
 
       // For automated sources, run the search pipeline scoped to this site
+      progress(`Targeting source site: ${site.name}`)
       const queries: SearchQuery[] = [{
         locationId: null,
         locationName: site.name,
@@ -237,6 +252,7 @@ export async function POST(request: Request) {
         searchConcurrency: DEV_MODE ? 10 : 5,
         scrapeConcurrency: DEV_MODE ? 8 : 3,
         forceRefresh: body.forceRefresh,
+        progress,
       })
       await prisma.sourceSite.update({
         where: { id: body.sourceSiteId },
@@ -261,6 +277,7 @@ export async function POST(request: Request) {
     }
 
     // ── Run manual source checks (always, for awareness) ─────────────────
+    progress("Checking manual source sites...")
     const manualResults = await runManualSourceChecks(run.id)
     const checkedManual = manualResults.filter((r) => r.status === "checked")
     const skippedManual = manualResults.filter((r) => r.status === "skipped_fresh")
@@ -282,6 +299,7 @@ export async function POST(request: Request) {
     }
 
     if (locationIds.length === 0) {
+      clearRunProgress(run.id)
       await prisma.ingestionRun.update({
         where: { id: run.id },
         data: {
@@ -319,6 +337,7 @@ export async function POST(request: Request) {
     }
 
     // ── Build queries (no batching — run all locations) ──────────────────
+    progress("Building search queries...")
     const queries = await buildSearchQueries({
       locationIds: filteredLocationIds,
       dateFrom: body.dateFrom,
@@ -340,12 +359,27 @@ export async function POST(request: Request) {
           scrapeConcurrency: DEV_MODE ? 8 : (trigger === "scheduled" ? 3 : 8),
           dryRun: false,
           forceRefresh: body.forceRefresh,
+          progress,
         })
         results.push(r)
         totalFound += r.recordsFound
         totalNew += r.recordsNew
         console.log(`[Ingest] ${scraperType}: ${r.recordsNew} new from ${r.recordsFound}`)
       }
+    }
+
+    progress(`Complete: ${totalNew} new events found, ${totalFound} scanned`)
+
+    // ── Stamp lastIngestedAt for processed locations ──────────────────
+    const processedIds = [...new Set([
+      ...(filteredLocationIds ?? []),
+      ...queries.map(q => q.locationId).filter(Boolean),
+    ])] as string[]
+    if (processedIds.length > 0) {
+      await prisma.location.updateMany({
+        where: { id: { in: processedIds } },
+        data: { lastIngestedAt: new Date() },
+      })
     }
 
     // ── Finalize ────────────────────────────────────────────────────────
@@ -362,6 +396,7 @@ export async function POST(request: Request) {
     })
 
     console.log(`\n[Ingest] Complete: ${totalNew} new from ${totalFound} total`)
+    clearRunProgress(run.id)
 
     const allWarnings = results.flatMap((r) => r.providerWarnings ?? [])
 

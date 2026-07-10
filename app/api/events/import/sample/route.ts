@@ -5,13 +5,8 @@ export async function GET() {
   const headers = [
     "Event Name",
     "Location",
-    "Contact Name",
-    "Contact Title",
-    "Phone",
-    "Email",
+    "Expected Attendees",
     "Date of Event",
-    "Status",
-    "Notes",
     "Source URL",
   ]
 
@@ -19,25 +14,15 @@ export async function GET() {
     {
       "Event Name": "Example Annual Conference 2026",
       Location: "Philadelphia Convention Center",
-      "Contact Name": "Jane Smith",
-      "Contact Title": "Event Coordinator",
-      Phone: "(215) 555-0123",
-      Email: "jane@example.com",
+      "Expected Attendees": 5000,
       "Date of Event": "2026-09-15",
-      Status: "new",
-      Notes: "Prefers email contact",
       "Source URL": "https://example.com/event",
     },
     {
       "Event Name": "Tech Summit 2026",
       Location: "Walter E. Washington Convention Center",
-      "Contact Name": "",
-      "Contact Title": "",
-      Phone: "",
-      Email: "",
+      "Expected Attendees": 1200,
       "Date of Event": "2026-10-01",
-      Status: "new",
-      Notes: "",
       "Source URL": "",
     },
   ]
@@ -47,13 +32,8 @@ export async function GET() {
   ws["!cols"] = [
     { wch: 40 },
     { wch: 35 },
-    { wch: 25 },
-    { wch: 25 },
     { wch: 18 },
-    { wch: 30 },
     { wch: 15 },
-    { wch: 12 },
-    { wch: 30 },
     { wch: 50 },
   ]
 

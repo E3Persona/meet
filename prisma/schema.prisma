@@ -27,9 +27,10 @@ model Location {
   state     String?
   parentId  String?      // Venue -> its City. Null for CITY rows.
   sourceUrl String?
-  active    Boolean      @default(true)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  active         Boolean    @default(true)
+  lastIngestedAt DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
   parent      Location?    @relation("CityVenues", fields: [parentId], references: [id], onDelete: Cascade)
   venues      Location[]   @relation("CityVenues")

@@ -53,7 +53,7 @@ export async function buildSearchQueries(
     const missingCityIds = parentIds.filter((pid) => !allCities.some((c) => c.id === pid))
     if (missingCityIds.length > 0) {
       const missingCities = await prisma.location.findMany({
-        where: { id: { in: missingCityIds as string[] } },
+        where: { id: { in: missingCityIds as string[] }, active: true },
       })
       allCities = [...allCities, ...missingCities]
     }

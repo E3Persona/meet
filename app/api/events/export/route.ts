@@ -55,6 +55,7 @@ export async function GET(request: Request) {
     return {
       "Event Name": e.eventName,
       Location: e.location.name,
+      "Expected Attendees": e.expectedAttendees ?? "",
       "Contact Name": primary?.name ?? e.organizerName ?? "",
       "Contact Title": primary?.title ?? e.organizerTitle ?? "",
       Phone: primary?.phone ?? e.organizerPhone ?? "",

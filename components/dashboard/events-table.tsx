@@ -63,6 +63,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { ContactFinderModal } from "./contact-finder-modal"
+import { ProgressDialog } from "@/components/ui/progress-dialog"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,6 +81,7 @@ interface EventRow {
   eventName: string
   eventDateStart: string | null
   eventDateEnd: string | null
+  expectedAttendees: number | null
   sourceUrl: string | null
   organizerName: string | null
   organizerTitle: string | null
@@ -281,6 +283,8 @@ export function EventsTable() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [searchRunning, setSearchRunning] = useState(false)
   const [forceRefresh, setForceRefresh] = useState(false)
+  const [progressRunId, setProgressRunId] = useState<string | null>(null)
+  const [progressTitle, setProgressTitle] = useState("")
 
   const setCityFilter = (val: string) => {
     setFilterCity(val)
@@ -446,9 +450,11 @@ export function EventsTable() {
 
   const handleRunSearch = async () => {
     setSearchRunning(true)
-    toast.info("Search pipeline started...")
+    const clientRunId = crypto.randomUUID()
+    setProgressTitle("Running Search Pipeline")
+    setProgressRunId(clientRunId)
     try {
-      const body: Record<string, any> = { forceRefresh }
+      const body: Record<string, any> = { forceRefresh, clientRunId }
       if (filterDateFrom) body.dateFrom = filterDateFrom
       if (filterDateTo) body.dateTo = filterDateTo
       if (filterLocation !== "all") body.locationIds = [filterLocation]
@@ -468,6 +474,8 @@ export function EventsTable() {
         toast.error(data.error ?? "Search failed")
         return
       }
+
+      setProgressTitle("Search Complete")
 
       const parts = [`${data.recordsNew} new events found (${data.recordsFound} total scanned)`]
       toast.success(parts.join(" · "))
@@ -610,6 +618,18 @@ export function EventsTable() {
           return (
             <span className="text-sm whitespace-nowrap">
               {end ? `${fmt(start)} – ${fmt(end)}` : fmt(start)}
+            </span>
+          )
+        },
+      },
+      {
+        accessorKey: "expectedAttendees",
+        header: "Attendees",
+        cell: ({ row }) => {
+          const val = row.original.expectedAttendees
+          return (
+            <span className="text-sm">
+              {val != null ? val.toLocaleString() : <span className="text-muted-foreground italic">—</span>}
             </span>
           )
         },
@@ -1119,6 +1139,14 @@ export function EventsTable() {
           </div>
         </div>
       )}
+
+      {/* Progress Dialog */}
+      <ProgressDialog
+        open={progressRunId !== null}
+        title={progressTitle}
+        runId={progressRunId}
+        onComplete={() => {}}
+      />
 
       {/* Contact Finder Modal */}
       <ContactFinderModal

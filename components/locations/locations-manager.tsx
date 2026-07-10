@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Trash2, Plus, Play, MoreHorizontal } from "lucide-react"
+import { ProgressDialog } from "@/components/ui/progress-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +44,7 @@ interface Location {
   active: boolean
   type: "CITY" | "VENUE"
   parentId: string | null
+  lastIngestedAt: string | null
   parent: { id: string; name: string } | null
   venues: NestedLocation[]
   searchTerms: SearchTerm[]
@@ -123,6 +125,8 @@ export function LocationsManager() {
   const [formOpen, setFormOpen] = useState(false)
   const [runningLocationId, setRunningLocationId] = useState<string | null>(null)
   const [runningAll, setRunningAll] = useState(false)
+  const [progressRunId, setProgressRunId] = useState<string | null>(null)
+  const [progressTitle, setProgressTitle] = useState("")
 
   const fetchLocations = useCallback(async () => {
     try {
@@ -219,18 +223,21 @@ export function LocationsManager() {
 
   const runScraper = async (locationId: string, locationName: string) => {
     setRunningLocationId(locationId)
-    toast.info(`Running scraper for ${locationName}...`)
+    const clientRunId = crypto.randomUUID()
+    setProgressTitle(`Running: ${locationName}`)
+    setProgressRunId(clientRunId)
     try {
       const res = await fetch("/api/ingest/run?trigger=manual", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locationIds: [locationId] }),
+        body: JSON.stringify({ locationIds: [locationId], clientRunId }),
       })
       const data = await res.json()
       if (!res.ok) {
         toast.error(data.error ?? "Scraper failed")
         return
       }
+      setProgressTitle(`Complete: ${locationName}`)
       toast.success(`${locationName}: ${data.recordsNew} new events (${data.recordsFound} scanned)`)
 
       if (data.warnings?.length > 0) {
@@ -248,19 +255,22 @@ export function LocationsManager() {
 
   const runAllScrapers = async () => {
     setRunningAll(true)
-    toast.info("Running scraper for all active locations...")
+    const clientRunId = crypto.randomUUID()
+    setProgressTitle("Running: All Locations")
+    setProgressRunId(clientRunId)
     try {
       const activeIds = locations.filter((l) => l.active).map((l) => l.id)
       const res = await fetch("/api/ingest/run?trigger=manual", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locationIds: activeIds }),
+        body: JSON.stringify({ locationIds: activeIds, clientRunId }),
       })
       const data = await res.json()
       if (!res.ok) {
         toast.error(data.error ?? "Scraper failed")
         return
       }
+      setProgressTitle(`Complete: All Locations`)
       toast.success(`All locations: ${data.recordsNew} new events (${data.recordsFound} scanned)`)
 
       if (data.warnings?.length > 0) {
@@ -338,6 +348,28 @@ export function LocationsManager() {
               / {loc.searchTerms.length} total
             </span>
           </div>
+        )
+      },
+    },
+    {
+      id: "lastRun",
+      header: "Last Run",
+      cell: ({ row }) => {
+        const val = row.original.lastIngestedAt
+        if (!val) return <span className="text-xs text-muted-foreground italic">Never</span>
+        const d = new Date(val)
+        const now = new Date()
+        const diff = now.getTime() - d.getTime()
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+        const label = days === 0
+          ? "Today"
+          : days === 1
+            ? "Yesterday"
+            : `${days} days ago`
+        return (
+          <span className="text-xs" title={d.toLocaleString()}>
+            {label}
+          </span>
         )
       },
     },
@@ -445,6 +477,13 @@ export function LocationsManager() {
         ariaLabel="Locations"
         rowActions={rowActions}
         searchPlaceholder="Search locations..."
+      />
+
+      <ProgressDialog
+        open={progressRunId !== null}
+        title={progressTitle}
+        runId={progressRunId}
+        onComplete={() => {}}
       />
 
       {locations.map((loc) => (

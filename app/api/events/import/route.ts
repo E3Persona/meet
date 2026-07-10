@@ -81,19 +81,17 @@ export async function POST(request: Request) {
           continue
         }
 
+        const expectedAttendeesRaw = row["Expected Attendees"]?.toString().trim()
+        const expectedAttendees = expectedAttendeesRaw ? parseInt(expectedAttendeesRaw, 10) : null
+
         await prisma.event.create({
           data: {
             eventName,
             locationId,
             eventDateStart: eventDateStart ?? null,
             eventDateEnd: eventDateEnd ?? null,
+            expectedAttendees,
             sourceUrl: row["Source URL"]?.trim() || null,
-            organizerName: row["Contact Name"]?.trim() || null,
-            organizerTitle: row["Contact Title"]?.trim() || null,
-            organizerEmail: row["Email"]?.trim() || null,
-            organizerPhone: row["Phone"]?.trim() || null,
-            contactNote: row["Notes"]?.trim() || null,
-            status: matchStatus(row["Status"]?.trim()),
           },
         })
 
@@ -113,10 +111,4 @@ export async function POST(request: Request) {
   }
 }
 
-function matchStatus(val?: string): "new" | "reviewed" | "contacted" {
-  if (!val) return "new"
-  const lower = val.toLowerCase()
-  if (lower === "reviewed") return "reviewed"
-  if (lower === "contacted") return "contacted"
-  return "new"
-}
+

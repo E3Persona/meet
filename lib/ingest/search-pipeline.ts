@@ -218,11 +218,14 @@ export interface SearchQuery {
   monthLabel: string
 }
 
+export type ProgressCallback = (message: string) => void
+
 async function runSearches(
   queries: SearchQuery[],
   registry: ProviderRegistry,
   runId: string,
-  concurrency = 5
+  concurrency = 5,
+  progress?: ProgressCallback
 ): Promise<{ hits: SearchHit[]; lastProvider: string; failedQueries: string[] }> {
   const limit = createLimiter(concurrency)
   const seenUrls = new Set<string>()
@@ -244,9 +247,11 @@ async function runSearches(
 
           if (results.length === 0) {
             console.log(`[Search] ${done}/${queries.length}: "${q.query}" → 0 results`)
+            progress?.(`Search ${done}/${queries.length}: no results for "${q.locationName}"`)
             return
           }
           console.log(`[Search] ${done}/${queries.length}: "${q.query}" → ${results.length} results (${provider})`)
+          progress?.(`Search ${done}/${queries.length}: ${results.length} results for "${q.locationName}" (${provider})`)
 
           for (const sr of results) {
             if (seenUrls.has(sr.url)) continue
@@ -303,8 +308,9 @@ async function scrapeAndExtractSafe(
   hit: SearchHit,
   registry: ProviderRegistry,
   runId: string,
-  counters: { totalFound: number; totalNew: number },
-  opts: { dryRun?: boolean; forceRefresh?: boolean } = {}
+  counters: { totalFound: number; totalNew: number; done: number; total: number },
+  opts: { dryRun?: boolean; forceRefresh?: boolean } = {},
+  progress?: ProgressCallback
 ) {
   // ── Change detection: skip if URL was crawled recently ──
   const cacheCheck = await checkCrawlCache(hit.url, opts.forceRefresh ?? false)
@@ -315,8 +321,13 @@ async function scrapeAndExtractSafe(
 
   counters.totalFound++
 
+  progress?.(`Scraping ${hit.url}...`)
   const scraped = await scrapeUrl(hit.url, registry, runId)
-  if (!scraped) return
+  if (!scraped) {
+    counters.done++
+    progress?.(`Scrape ${counters.done}/${counters.total}: no content — ${hit.url}`)
+    return
+  }
 
   // ── Change detection: hash compare — skip LLM if content unchanged ──
   const contentHash = hashContent(scraped.markdown)
@@ -342,11 +353,14 @@ async function scrapeAndExtractSafe(
 
   if (extracted.length === 0) {
     console.log(`[Extract] ${hit.url} → LLM returned 0 events (${scraped.markdown.length} chars scraped)`)
+    counters.done++
+    progress?.(`Scrape ${counters.done}/${counters.total}: 0 events from ${hit.url}`)
     return
   }
 
   const nonLow = extracted.filter(e => e.confidence !== "low")
   console.log(`[Extract] ${hit.url} → ${extracted.length} events found (${nonLow.length} non-low confidence, ${extracted.filter(e => e.confidence === "low").length} low)`)
+  progress?.(`Extracted ${nonLow.length} event(s) from ${hit.url}`)
 
   for (const ext of nonLow) {
     const eventName = ext.eventName.trim()
@@ -444,6 +458,8 @@ async function scrapeAndExtractSafe(
         },
       })
       counters.totalNew++
+      const shortName = eventName.length > 50 ? eventName.slice(0, 50) + "…" : eventName
+      progress?.(`Saved: "${shortName}"`)
       console.log(`[Scrape] Saved event: "${eventName}" (${counters.totalNew} new so far)`)
 
       if (finalContacts.length > 0) {
@@ -482,6 +498,9 @@ async function scrapeAndExtractSafe(
     }
   }
 
+  counters.done++
+  progress?.(`Scrape ${counters.done}/${counters.total} complete`)
+
   // Record crawl cache entry after all events are saved
   updateCrawlCache(hit.url, contentHash, runId).catch(() => {})
 }
@@ -491,13 +510,15 @@ async function runScrapes(
   registry: ProviderRegistry,
   runId: string,
   concurrency = 3,
-  opts: { dryRun?: boolean; forceRefresh?: boolean } = {}
+  opts: { dryRun?: boolean; forceRefresh?: boolean } = {},
+  progress?: ProgressCallback
 ): Promise<{ totalFound: number; totalNew: number }> {
   const limit = createLimiter(concurrency)
-  const counters = { totalFound: 0, totalNew: 0 }
+  const counters = { totalFound: 0, totalNew: 0, done: 0, total: hits.length }
 
+  progress?.(`Scraping ${hits.length} URL(s) for events...`)
   await Promise.all(
-    hits.map((hit) => limit(() => scrapeAndExtractSafe(hit, registry, runId, counters, opts)))
+    hits.map((hit) => limit(() => scrapeAndExtractSafe(hit, registry, runId, counters, opts, progress)))
   )
 
   return counters
@@ -533,13 +554,15 @@ async function buildFallbackQueries(
 export async function runSearchScraper(
   queries: SearchQuery[],
   runId: string,
-  opts: { searchConcurrency?: number; scrapeConcurrency?: number; dryRun?: boolean; forceRefresh?: boolean } = {}
+  opts: { searchConcurrency?: number; scrapeConcurrency?: number; dryRun?: boolean; forceRefresh?: boolean; progress?: ProgressCallback } = {}
 ): Promise<ScraperResult> {
+  const progress = opts.progress
   const registry = buildRegistry()
   console.log(`[Search] ${queries.length} queries`)
 
+  progress?.(`Searching ${queries.length} location(s)...`)
   const { hits, lastProvider, failedQueries } = await runSearches(
-    queries, registry, runId, opts.searchConcurrency ?? 10
+    queries, registry, runId, opts.searchConcurrency ?? 10, progress
   )
 
   // ── Which locations got zero hits? ──
@@ -557,16 +580,18 @@ export async function runSearchScraper(
   let allHits = hits
   if (missedLocations.length > 0) {
     console.log(`[Fallback] ${missedLocations.length} location(s) had 0 hits, checking known source sites`)
+    progress?.(`${missedLocations.length} location(s) had 0 search hits — checking known source sites...`)
     const fallbackQueries = await buildFallbackQueries(missedLocations)
     const { hits: fallbackHits } = await runSearches(fallbackQueries, registry, runId, opts.searchConcurrency ?? 5)
     console.log(`[Fallback] +${fallbackHits.length} hits from known sources`)
+    if (fallbackHits.length > 0) progress?.(`${fallbackHits.length} hit(s) from fallback sources`)
     allHits = [...hits, ...fallbackHits]
   }
 
   console.log(`[Search] ${allHits.length} total unique URLs to scrape, ${failedQueries.length} queries failed`)
 
   const { totalFound, totalNew } = await runScrapes(
-    allHits, registry, runId, opts.scrapeConcurrency ?? 8, { dryRun: opts.dryRun, forceRefresh: opts.forceRefresh }
+    allHits, registry, runId, opts.scrapeConcurrency ?? 8, { dryRun: opts.dryRun, forceRefresh: opts.forceRefresh }, progress
   )
 
   return { scraper: "search", recordsFound: totalFound, recordsNew: totalNew, provider: lastProvider, providerWarnings: registry.getStatus().warnings }
