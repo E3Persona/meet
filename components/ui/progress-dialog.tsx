@@ -34,8 +34,17 @@ export function ProgressDialog({ open, title, runId, onComplete }: ProgressDialo
         const res = await fetch(`/api/ingest/progress/${runId}`)
         const data = await res.json()
         setLogs(data.logs ?? [])
+        if (data.finished) {
+          setFinished(true)
+          clearInterval(interval)
+          clearTimeout(timeout)
+          onComplete()
+          return
+        }
         if (!res.ok) {
           setFinished(true)
+          clearInterval(interval)
+          clearTimeout(timeout)
           onComplete()
           return
         }
@@ -65,7 +74,7 @@ export function ProgressDialog({ open, title, runId, onComplete }: ProgressDialo
   }, [logs])
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onComplete() }}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

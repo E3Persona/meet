@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 import { getRunProgress } from "@/lib/ingest/progress-store"
 
 export async function GET(
@@ -7,5 +8,13 @@ export async function GET(
 ) {
   const { runId } = await params
   const logs = getRunProgress(runId)
-  return NextResponse.json({ logs })
+  const run = await prisma.ingestionRun.findUnique({
+    where: { id: runId },
+    select: { status: true },
+  })
+  return NextResponse.json({
+    logs,
+    finished: !run || run.status !== "running",
+    status: run?.status ?? "unknown",
+  })
 }

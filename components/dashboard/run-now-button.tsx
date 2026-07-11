@@ -14,6 +14,7 @@ interface LocationOption {
   type: "CITY" | "VENUE"
   city: string | null
   state: string | null
+  active: boolean
 }
 
 export function RunNowButton({ onComplete }: { onComplete?: () => void }) {
@@ -87,8 +88,9 @@ export function RunNowButton({ onComplete }: { onComplete?: () => void }) {
     )
   }
 
-  const cities = locations.filter((l) => l.type === "CITY")
-  const venues = locations.filter((l) => l.type === "VENUE")
+  const activeCities = locations.filter((l) => l.type === "CITY" && l.active)
+  const activeVenues = locations.filter((l) => l.type === "VENUE" && l.active)
+  const inactiveLocations = locations.filter((l) => !l.active)
 
   return (
     <>
@@ -136,10 +138,10 @@ export function RunNowButton({ onComplete }: { onComplete?: () => void }) {
             <div className="space-y-1.5">
               <Label>Locations ({selectedLocationIds.length} selected)</Label>
               <div className="max-h-48 overflow-y-auto border border-border rounded-md p-2 space-y-1 text-sm">
-                {cities.length === 0 && venues.length === 0 && (
+                {activeCities.length === 0 && activeVenues.length === 0 && (
                   <p className="text-muted-foreground text-xs p-2">Loading locations...</p>
                 )}
-                {cities.map((c) => (
+                {activeCities.map((c) => (
                   <label key={c.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/30 rounded px-2 py-1">
                     <input
                       type="checkbox"
@@ -151,7 +153,7 @@ export function RunNowButton({ onComplete }: { onComplete?: () => void }) {
                     <span className="text-xs text-muted-foreground">({c.state})</span>
                   </label>
                 ))}
-                {venues.map((v) => (
+                {activeVenues.map((v) => (
                   <label key={v.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/30 rounded px-2 py-1 pl-6">
                     <input
                       type="checkbox"
@@ -163,6 +165,11 @@ export function RunNowButton({ onComplete }: { onComplete?: () => void }) {
                     {v.city && <span className="text-xs text-muted-foreground">({v.city}, {v.state})</span>}
                   </label>
                 ))}
+                {inactiveLocations.length > 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 pt-2 border-t border-border mt-1">
+                    {inactiveLocations.length} inactive location{inactiveLocations.length > 1 ? "s" : ""} hidden
+                  </p>
+                )}
               </div>
               {selectedLocationIds.length > 0 && (
                 <button

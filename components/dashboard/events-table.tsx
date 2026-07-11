@@ -1145,7 +1145,10 @@ export function EventsTable() {
         open={progressRunId !== null}
         title={progressTitle}
         runId={progressRunId}
-        onComplete={() => {}}
+        onComplete={() => {
+          setProgressRunId(null)
+          setProgressTitle("")
+        }}
       />
 
       {/* Contact Finder Modal */}

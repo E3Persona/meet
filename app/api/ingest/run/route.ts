@@ -432,7 +432,6 @@ export async function POST(request: Request) {
     })
 
     console.log(`\n[Ingest] Complete: ${totalNew} new from ${totalFound} total`)
-    clearRunProgress(run.id)
 
     const allWarnings = results.flatMap((r) => r.providerWarnings ?? [])
 

@@ -483,7 +483,10 @@ export function LocationsManager() {
         open={progressRunId !== null}
         title={progressTitle}
         runId={progressRunId}
-        onComplete={() => {}}
+        onComplete={() => {
+          setProgressRunId(null)
+          setProgressTitle("")
+        }}
       />
 
       {locations.map((loc) => (
