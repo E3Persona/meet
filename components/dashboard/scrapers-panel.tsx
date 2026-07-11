@@ -13,6 +13,7 @@ interface ScraperDef {
   site: string
   apiPath: string
   description: string
+  tech: "puppeteer" | "fetch"
 }
 
 const SCRAPERS: ScraperDef[] = [
@@ -22,6 +23,7 @@ const SCRAPERS: ScraperDef[] = [
     site: "internationalconferencealerts.com",
     apiPath: "/api/ingest/ica",
     description: "Conference listings from International Conference Alerts",
+    tech: "puppeteer",
   },
   {
     id: "cn",
@@ -29,6 +31,7 @@ const SCRAPERS: ScraperDef[] = [
     site: "conferencenext.com",
     apiPath: "/api/ingest/cn",
     description: "Conference listings from ConferenceNext",
+    tech: "puppeteer",
   },
   {
     id: "aca",
@@ -36,6 +39,7 @@ const SCRAPERS: ScraperDef[] = [
     site: "allconferencealert.net",
     apiPath: "/api/ingest/aca",
     description: "Conference listings from All Conference Alert",
+    tech: "puppeteer",
   },
   {
     id: "tf",
@@ -43,6 +47,7 @@ const SCRAPERS: ScraperDef[] = [
     site: "tradefest.io",
     apiPath: "/api/ingest/tf",
     description: "Ranked trade show listings from Tradefest",
+    tech: "puppeteer",
   },
   {
     id: "showsbee",
@@ -50,6 +55,7 @@ const SCRAPERS: ScraperDef[] = [
     site: "showsbee.com",
     apiPath: "/api/ingest/showsbee",
     description: "Trade show listings from Showsbee",
+    tech: "puppeteer",
   },
   {
     id: "eventseye",
@@ -57,6 +63,7 @@ const SCRAPERS: ScraperDef[] = [
     site: "eventseye.com",
     apiPath: "/api/ingest/eventseye",
     description: "Trade fair listings from Eventseye",
+    tech: "puppeteer",
   },
   {
     id: "asae",
@@ -64,6 +71,7 @@ const SCRAPERS: ScraperDef[] = [
     site: "asaecenter.org",
     apiPath: "/api/ingest/asae",
     description: "Association events from ASAE (PheedLoop embed, Puppeteer)",
+    tech: "puppeteer",
   },
   {
     id: "blackmeetings",
@@ -71,6 +79,7 @@ const SCRAPERS: ScraperDef[] = [
     site: "blackmeetingsandtourism.com",
     apiPath: "/api/ingest/blackmeetings",
     description: "Events and venues from Black Meetings & Tourism magazine",
+    tech: "fetch",
   },
   {
     id: "thetradeshowcalendar",
@@ -78,6 +87,7 @@ const SCRAPERS: ScraperDef[] = [
     site: "thetradeshowcalendar.com",
     apiPath: "/api/ingest/thetradeshowcalendar",
     description: "Trade show listings via Exhibit City News (DC/PHL/BAL regions)",
+    tech: "puppeteer",
   },
   {
     id: "sgmp",
@@ -85,6 +95,15 @@ const SCRAPERS: ScraperDef[] = [
     site: "sgmp.org",
     apiPath: "/api/ingest/sgmp",
     description: "Government meeting events from SGMP calendar",
+    tech: "puppeteer",
+  },
+  {
+    id: "infosec",
+    name: "InfoSec Conferences",
+    site: "infosec-conferences.com",
+    apiPath: "/api/ingest/infosec",
+    description: "Cybersecurity conferences from infosec-conferences.com",
+    tech: "fetch",
   },
 ]
 
@@ -126,7 +145,7 @@ export function ScrapersPanel() {
               <div className="flex items-center justify-between">
                 <CardTitle>{scraper.name}</CardTitle>
                 <Badge variant="info" dot>
-                  Puppeteer
+                  {scraper.tech === "puppeteer" ? "Puppeteer" : "HTTP"}
                 </Badge>
               </div>
               <CardDescription>{scraper.description}</CardDescription>

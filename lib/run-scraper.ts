@@ -13,6 +13,7 @@ const SCRAPER_KEYS: Record<string, string> = {
   "ingest-blackmeetings.ts": "blackmeetings",
   "ingest-sgmp.ts": "sgmp",
   "ingest-thetradeshowcalendar.ts": "thetradeshowcalendar",
+  "ingest-infosec.ts": "infosec",
 }
 
 export async function startScraperRun(
