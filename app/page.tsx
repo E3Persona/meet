@@ -55,15 +55,26 @@ const SECTION_TITLES: Record<
 }
 
 export default function DashboardPage() {
-  const [active, setActive] = useState<SidebarSection>("events")
+  const [active, setActive] = useState<SidebarSection>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("dashboard-active-section")
+      if (saved && saved in SECTION_TITLES) return saved as SidebarSection
+    }
+    return "events"
+  })
   const [refreshKey, setRefreshKey] = useState(0)
+
+  const handleSetActive = (section: SidebarSection) => {
+    setActive(section)
+    localStorage.setItem("dashboard-active-section", section)
+  }
 
   const refresh = () => setRefreshKey((k) => k + 1)
   const section = SECTION_TITLES[active]
 
   return (
     <>
-      <Sidebar active={active} onSelect={setActive} />
+      <Sidebar active={active} onSelect={handleSetActive} />
 
       <main className="flex-1 md:ml-60">
         <div className="p-6">
