@@ -125,8 +125,6 @@ function extractHref(el: cheerio.Cheerio<any>, selector: string | null): string 
   return href?.trim() || null
 }
 
-import { isExcludedDomain } from "../scrapers/dedicated-domains"
-
 // Permanent errors that should not be retried
 const PERMANENT_ERROR_PATTERNS = [
   /404|not found/i,
