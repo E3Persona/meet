@@ -81,7 +81,7 @@ export async function GET(request: Request) {
             orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
           },
         },
-        orderBy: { eventDateStart: "desc" },
+        orderBy: { eventDateStart: "asc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

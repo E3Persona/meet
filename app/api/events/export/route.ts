@@ -42,7 +42,7 @@ export async function GET(request: Request) {
   const events = await prisma.event.findMany({
     where,
     include: { location: true, sourceSite: true, contacts: true },
-    orderBy: { dateAdded: "desc" },
+    orderBy: { eventDateStart: "asc" },
   })
 
   const rows = events.map((e) => {

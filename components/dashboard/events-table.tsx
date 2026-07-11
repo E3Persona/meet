@@ -246,7 +246,7 @@ export function EventsTable() {
   const [filterLocation, setFilterLocation] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [sorting, setSorting] = useState<SortingState>([
-    { id: "eventDateStart", desc: true },
+    { id: "eventDateStart", desc: false },
   ])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
