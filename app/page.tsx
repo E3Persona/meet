@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { StatsRow } from "@/components/dashboard/stats-row"
 import { EventsTable } from "@/components/dashboard/events-table"
 import { RunNowButton } from "@/components/dashboard/run-now-button"
@@ -55,14 +55,13 @@ const SECTION_TITLES: Record<
 }
 
 export default function DashboardPage() {
-  const [active, setActive] = useState<SidebarSection>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("dashboard-active-section")
-      if (saved && saved in SECTION_TITLES) return saved as SidebarSection
-    }
-    return "events"
-  })
+  const [active, setActive] = useState<SidebarSection>("events")
   const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    const saved = localStorage.getItem("dashboard-active-section")
+    if (saved && saved in SECTION_TITLES) setActive(saved as SidebarSection)
+  }, [])
 
   const handleSetActive = (section: SidebarSection) => {
     setActive(section)
