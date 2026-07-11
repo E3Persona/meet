@@ -401,8 +401,14 @@ export function LocationsManager() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40">
         <DropdownMenuItem
-          onClick={() => runScraper(location.id, location.name)}
-          disabled={runningLocationId === location.id || runningAll}
+          onClick={() => {
+            if (!location.active) {
+              toast.warning(`${location.name} is inactive. Activate it first to run the scraper.`)
+              return
+            }
+            runScraper(location.id, location.name)
+          }}
+          disabled={runningLocationId === location.id || runningAll || !location.active}
         >
           <Play className="h-4 w-4 mr-2" />
           {runningLocationId === location.id ? "Running..." : "Run Scraper"}
