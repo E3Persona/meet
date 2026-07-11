@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
+export async function GET() {
+  const terms = await prisma.searchTerm.findMany({
+    include: { location: { select: { name: true, city: true, state: true } } },
+    orderBy: { keyword: "asc" },
+  })
+  return NextResponse.json(terms)
+}
+
 export async function POST(request: Request) {
   const body = await request.json()
   const { keyword, locationId, active } = body as {

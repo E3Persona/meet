@@ -21,6 +21,25 @@ interface SearchTemplate {
   updatedAt: string
 }
 
+interface SearchTermRecord {
+  id: string
+  keyword: string
+  locationId: string | null
+  active: boolean
+  createdAt: string
+  updatedAt: string
+  location: { name: string; city: string; state: string } | null
+}
+
+interface UnifiedPhrase {
+  id: string
+  type: "template" | "literal"
+  phrase: string
+  scopeLabel: string
+  scopeVariant: "info" | "success" | "neutral" | "warning"
+  active: boolean
+}
+
 const SCOPE_LABELS: Record<string, string> = {
   CITY: "City",
   VENUE: "Venue",
@@ -66,28 +85,53 @@ const TEMPLATE_FORM_SECTIONS: FormSectionType[] = [
 ]
 
 export function TemplatesManager() {
-  const [templates, setTemplates] = useState<SearchTemplate[]>([])
+  const [phrases, setPhrases] = useState<UnifiedPhrase[]>([])
   const [loading, setLoading] = useState(true)
   const [formValues, setFormValues] = useState<Record<string, unknown>>({})
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
 
-  const fetchTemplates = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     try {
-      const res = await fetch("/api/search-templates")
-      if (!res.ok) throw new Error("Failed to fetch")
-      setTemplates(await res.json())
+      const [templatesRes, termsRes] = await Promise.all([
+        fetch("/api/search-templates"),
+        fetch("/api/search-terms"),
+      ])
+      if (!templatesRes.ok || !termsRes.ok) throw new Error("Failed to fetch")
+      const templates: SearchTemplate[] = await templatesRes.json()
+      const terms: SearchTermRecord[] = await termsRes.json()
+
+      const unified: UnifiedPhrase[] = [
+        ...templates.map((t) => ({
+          id: t.id,
+          type: "template" as const,
+          phrase: t.template,
+          scopeLabel: SCOPE_LABELS[t.scope] ?? t.scope,
+          scopeVariant: SCOPE_VARIANTS[t.scope] ?? "neutral",
+          active: t.active,
+        })),
+        ...terms.map((t) => ({
+          id: t.id,
+          type: "literal" as const,
+          phrase: t.keyword,
+          scopeLabel: t.location ? `${t.location.name} (${t.location.city}, ${t.location.state})` : "Global",
+          scopeVariant: t.location ? "warning" as const : "neutral" as const,
+          active: t.active,
+        })),
+      ]
+
+      setPhrases(unified)
     } catch {
-      toast.error("Failed to load templates")
+      toast.error("Failed to load search phrases")
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchTemplates()
-  }, [fetchTemplates])
+    fetchAll()
+  }, [fetchAll])
 
   const handleCreate = async (values: Record<string, unknown>) => {
     setIsSubmitting(true)
@@ -105,7 +149,7 @@ export function TemplatesManager() {
       setFormValues({})
       setFormErrors({})
       setFormOpen(false)
-      fetchTemplates()
+      fetchAll()
     } catch {
       toast.error("Failed to create template")
     } finally {
@@ -113,46 +157,58 @@ export function TemplatesManager() {
     }
   }
 
-  const toggleTemplate = async (t: SearchTemplate, active: boolean) => {
+  const togglePhrase = async (p: UnifiedPhrase, active: boolean) => {
     try {
-      await fetch(`/api/search-templates/${t.id}`, {
+      const endpoint = p.type === "template" ? "search-templates" : "search-terms"
+      await fetch(`/api/${endpoint}/${p.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active }),
       })
-      fetchTemplates()
+      fetchAll()
     } catch {
-      toast.error("Failed to update template")
+      toast.error(`Failed to update ${p.type}`)
     }
   }
 
-  const deleteTemplate = async (t: SearchTemplate) => {
-    if (!confirm(`Delete template "${t.template}"?`)) return
+  const deletePhrase = async (p: UnifiedPhrase) => {
+    const label = p.type === "template" ? "template" : "keyword"
+    if (!confirm(`Delete ${label} "${p.phrase}"?`)) return
     try {
-      await fetch(`/api/search-templates/${t.id}`, { method: "DELETE" })
-      toast.success("Template deleted")
-      fetchTemplates()
+      const endpoint = p.type === "template" ? "search-templates" : "search-terms"
+      await fetch(`/api/${endpoint}/${p.id}`, { method: "DELETE" })
+      toast.success(`${label.charAt(0).toUpperCase() + label.slice(1)} deleted`)
+      fetchAll()
     } catch {
-      toast.error("Failed to delete template")
+      toast.error(`Failed to delete ${label}`)
     }
   }
 
-  const columns: ColumnDef<SearchTemplate, unknown>[] = [
+  const columns: ColumnDef<UnifiedPhrase, unknown>[] = [
     {
-      accessorKey: "template",
-      header: "Template",
+      id: "type",
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge variant={row.original.type === "template" ? "info" : "warning"} size="sm">
+          {row.original.type === "template" ? "Template" : "Literal"}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "phrase",
+      header: "Phrase",
       cell: ({ row }) => (
         <div>
-          <p className="font-medium text-sm font-mono">{row.original.template}</p>
+          <p className="font-medium text-sm font-mono">{row.original.phrase}</p>
         </div>
       ),
     },
     {
       id: "scope",
-      header: "Scope",
+      header: "Scope / Location",
       cell: ({ row }) => (
-        <Badge variant={SCOPE_VARIANTS[row.original.scope] ?? "neutral"} size="sm">
-          {SCOPE_LABELS[row.original.scope] ?? row.original.scope}
+        <Badge variant={row.original.scopeVariant} size="sm">
+          {row.original.scopeLabel}
         </Badge>
       ),
     },
@@ -164,7 +220,7 @@ export function TemplatesManager() {
         <div className="flex justify-center">
           <Switch
             checked={row.original.active}
-            onCheckedChange={(checked) => toggleTemplate(row.original, checked)}
+            onCheckedChange={(checked) => togglePhrase(row.original, checked)}
             size="sm"
           />
         </div>
@@ -172,25 +228,28 @@ export function TemplatesManager() {
     },
   ]
 
-  const rowActions = (t: SearchTemplate) => (
+  const rowActions = (p: UnifiedPhrase) => (
     <Button
       variant="ghost"
       size="sm"
       onClick={(e) => {
         e.stopPropagation()
-        deleteTemplate(t)
+        deletePhrase(p)
       }}
-      title="Delete template"
+      title={`Delete ${p.type}`}
     >
       <Trash2 className="h-3.5 w-3.5 text-destructive" />
     </Button>
   )
 
+  const templateCount = phrases.filter((p) => p.type === "template").length
+  const literalCount = phrases.filter((p) => p.type === "literal").length
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {templates.length} template{templates.length !== 1 ? "s" : ""}
+          {templateCount} template{templateCount !== 1 ? "s" : ""} &middot; {literalCount} literal keyword{literalCount !== 1 ? "s" : ""}
         </p>
         <Button onClick={() => setFormOpen(true)} leftIcon={Plus}>
           Add Template
@@ -229,13 +288,13 @@ export function TemplatesManager() {
 
       <UniversalList
         columns={columns}
-        data={templates}
+        data={phrases}
         getRowId={(row) => row.id}
         isLoading={loading}
-        emptyMessage="No templates yet."
-        ariaLabel="Search Templates"
+        emptyMessage="No search phrases yet."
+        ariaLabel="Search Phrases"
         rowActions={rowActions}
-        searchPlaceholder="Search templates..."
+        searchPlaceholder="Search phrases..."
       />
     </div>
   )

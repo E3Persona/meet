@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Trash2, Plus, Play, Clock } from "lucide-react"
+import { Trash2, Plus, Play, Clock, Pencil } from "lucide-react"
 import type { FormSection as FormSectionType } from "@/types/components"
 import { toast } from "sonner"
 import { ColumnDef } from "@tanstack/react-table"
@@ -139,6 +139,9 @@ export function SourceSitesManager() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [runningSite, setRunningSite] = useState<string | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingSite, setEditingSite] = useState<SourceSite | null>(null)
+  const [editValues, setEditValues] = useState<Record<string, unknown>>({})
 
   const fetchSites = useCallback(async () => {
     try {
@@ -197,6 +200,37 @@ export function SourceSitesManager() {
       fetchSites()
     } catch {
       toast.error("Failed to update source site")
+    }
+  }
+
+  const openEdit = (s: SourceSite) => {
+    setEditingSite(s)
+    setEditValues({ name: s.name, url: s.url ?? "", notes: s.notes ?? "" })
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdate = async (values: Record<string, unknown>) => {
+    if (!editingSite) return
+    setIsSubmitting(true)
+    try {
+      const res = await fetch(`/api/source-sites/${editingSite.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: values.url || null,
+          notes: values.notes || null,
+        }),
+      })
+      if (!res.ok) throw new Error("Failed to update")
+      toast.success("Source site updated")
+      setEditDialogOpen(false)
+      setEditingSite(null)
+      setEditValues({})
+      fetchSites()
+    } catch {
+      toast.error("Failed to update source site")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -350,6 +384,17 @@ export function SourceSitesManager() {
         size="sm"
         onClick={(e) => {
           e.stopPropagation()
+          openEdit(s)
+        }}
+        title="Edit source site"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation()
           runSiteCheck(s)
         }}
         loading={runningSite === s.id}
@@ -414,6 +459,65 @@ export function SourceSitesManager() {
             primaryLabel="Create Source Site"
             bare
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Source Site</DialogTitle>
+            <DialogDescription>Update URL or notes for this source site.</DialogDescription>
+          </DialogHeader>
+          {editingSite && (
+            <UniversalForm
+              title=""
+              variant="standard"
+              sections={[
+                {
+                  id: "edit",
+                  title: "",
+                  columns: 4,
+                  fields: [
+                    {
+                      name: "name",
+                      label: "Site Name",
+                      type: "text",
+                      disabled: true,
+                      colSpan: 2,
+                    },
+                    {
+                      name: "url",
+                      label: "Base URL",
+                      type: "text",
+                      placeholder: "https://...",
+                      colSpan: 2,
+                    },
+                    {
+                      name: "notes",
+                      label: "Scraping Notes",
+                      type: "textarea",
+                      placeholder: "LLM instructions for this site...",
+                      colSpan: 4,
+                    },
+                  ],
+                },
+              ]}
+              values={editValues}
+              errors={{}}
+              onChange={(name, value) =>
+                setEditValues((prev) => ({ ...prev, [name]: value }))
+              }
+              onSubmit={handleUpdate}
+              onCancel={() => {
+                setEditDialogOpen(false)
+                setEditingSite(null)
+                setEditValues({})
+              }}
+              isLoading={isSubmitting}
+              primaryLabel="Save"
+              bare
+            />
+          )}
         </DialogContent>
       </Dialog>
 

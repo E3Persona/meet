@@ -91,6 +91,7 @@ export const LocationScalarFieldEnum = {
   parentId: 'parentId',
   sourceUrl: 'sourceUrl',
   active: 'active',
+  lastIngestedAt: 'lastIngestedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
