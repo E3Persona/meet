@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma"
+import { prisma, withRetry as dbRetry } from "@/lib/prisma"
 import { createHash } from "crypto"
 
 const STALE_HOURS = Number(process.env.CRAWL_STALE_HOURS ?? 24)
@@ -18,7 +18,7 @@ export async function checkCrawlCache(
 ): Promise<CrawlCheckResult> {
   if (forceRefresh) return { shouldScrape: true, reason: "force_refresh" }
 
-  const existing = await prisma.crawledUrl.findUnique({ where: { url } })
+  const existing = await dbRetry(() => prisma.crawledUrl.findUnique({ where: { url } }))
   if (!existing) return { shouldScrape: true, reason: "never_crawled" }
 
   const hoursOld = (Date.now() - existing.scrapedAt.getTime()) / (1000 * 60 * 60)
@@ -33,11 +33,11 @@ export async function updateCrawlCache(
   runId: string,
   sourceSiteId?: string
 ): Promise<void> {
-  await prisma.crawledUrl.upsert({
+  await dbRetry(() => prisma.crawledUrl.upsert({
     where: { url },
     update: { contentHash, scrapedAt: new Date(), runId, sourceSiteId },
     create: { url, contentHash, scrapedAt: new Date(), runId, sourceSiteId },
-  })
+  }))
 }
 
 export async function getCachedEvents(url: string) {
@@ -48,10 +48,10 @@ export async function getCachedEvents(url: string) {
 }
 
 export async function isSiteStale(sourceSiteId: string): Promise<boolean> {
-  const latest = await prisma.crawledUrl.findFirst({
+  const latest = await dbRetry(() => prisma.crawledUrl.findFirst({
     where: { sourceSiteId },
     orderBy: { scrapedAt: "desc" },
-  })
+  }))
   if (!latest) return true
   const hoursOld = (Date.now() - latest.scrapedAt.getTime()) / (1000 * 60 * 60)
   return hoursOld >= STALE_HOURS

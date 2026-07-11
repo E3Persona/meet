@@ -1,5 +1,5 @@
 import { ProviderRegistry } from "@/lib/providers"
-import { prisma } from "@/lib/prisma"
+import { prisma, withRetry as dbRetry } from "@/lib/prisma"
 import { extractEventsWithLLM } from "@/lib/scrape/llm-extractor"
 import { createTavilyProvider } from "@/lib/providers/search/tavily"
 import { createBraveProvider } from "@/lib/providers/search/brave"
@@ -49,10 +49,10 @@ let locationCache: { id: string; name: string; city: string | null; state: strin
 
 async function getAllLocations(): Promise<{ id: string; name: string; city: string | null; state: string | null }[]> {
   if (locationCache) return locationCache
-  locationCache = await prisma.location.findMany({
+  locationCache = await dbRetry(() => prisma.location.findMany({
     where: { active: true },
     select: { id: true, name: true, city: true, state: true },
-  })
+  }))
   return locationCache
 }
 
@@ -82,24 +82,24 @@ function matchLocation(
 
 async function isDuplicate(eventName: string, locationId: string, eventDateStart: Date | null): Promise<boolean> {
   // Check exact match (same name, same location, same date)
-  const exact = await prisma.event.findFirst({
+  const exact = await dbRetry(() => prisma.event.findFirst({
     where: {
       eventName: { equals: eventName, mode: "insensitive" },
       locationId,
       eventDateStart: eventDateStart ?? undefined,
     },
-  })
+  }))
   if (exact) return true
 
   // Also check across ALL locations — if "Event X" on July 15 exists at any
   // venue or city, don't create a duplicate at a different location
   if (eventDateStart) {
-    const anyLocation = await prisma.event.findFirst({
+    const anyLocation = await dbRetry(() => prisma.event.findFirst({
       where: {
         eventName: { equals: eventName, mode: "insensitive" },
         eventDateStart,
       },
-    })
+    }))
     if (anyLocation) return true
   }
 
@@ -308,7 +308,7 @@ async function scrapeAndExtractSafe(
 
   // ── Change detection: hash compare — skip LLM if content unchanged ──
   const contentHash = hashContent(scraped.markdown)
-  const existingCache = await prisma.crawledUrl.findUnique({ where: { url: hit.url } })
+  const existingCache = await dbRetry(() => prisma.crawledUrl.findUnique({ where: { url: hit.url } }))
   if (existingCache && existingCache.contentHash === contentHash) {
     console.log(`[Cache] Content unchanged for "${hit.url}" — re-using cached events`)
     updateCrawlCache(hit.url, contentHash, runId).catch(() => {})
@@ -424,7 +424,7 @@ async function scrapeAndExtractSafe(
     }
 
     try {
-      const event = await prisma.event.create({
+      const event = await dbRetry(() => prisma.event.create({
         data: {
           locationId,
           eventName,
@@ -433,7 +433,7 @@ async function scrapeAndExtractSafe(
           sourceUrl: ext.sourceUrl ?? hit.url,
           runId,
         },
-      })
+      }))
       counters.totalNew++
       const shortName = eventName.length > 50 ? eventName.slice(0, 50) + "…" : eventName
       progress?.(`Saved: "${shortName}"`)
@@ -443,7 +443,7 @@ async function scrapeAndExtractSafe(
         let firstSaved = false
         for (const c of finalContacts) {
           if (!c.name || c.name.length < 2) continue
-          await prisma.eventContact.create({
+          await dbRetry(() => prisma.eventContact.create({
             data: {
               eventId: event.id,
               name: c.name,
@@ -454,9 +454,9 @@ async function scrapeAndExtractSafe(
               sourceUrl: ext.sourceUrl ?? hit.url,
               confidence: c.confidence ?? "medium",
             },
-          })
+          }))
           if (!firstSaved) {
-            await prisma.event.update({
+            await dbRetry(() => prisma.event.update({
               where: { id: event.id },
               data: {
                 organizerName: c.name,
@@ -464,7 +464,7 @@ async function scrapeAndExtractSafe(
                 organizerEmail: c.email,
                 organizerPhone: c.phone,
               },
-            })
+            }))
             firstSaved = true
           }
         }
@@ -506,9 +506,9 @@ async function runScrapes(
 async function buildFallbackQueries(
   locationsWithNoHits: { id: string; name: string; city: string | null }[],
 ): Promise<SearchQuery[]> {
-  const sites = await prisma.sourceSite.findMany({
+  const sites = await dbRetry(() => prisma.sourceSite.findMany({
     where: { scrapeMode: { in: ["calendar", "directory"] }, url: { not: null }, active: true },
-  })
+  }))
 
   const fallbackQueries: SearchQuery[] = []
   for (const loc of locationsWithNoHits) {

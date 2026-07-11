@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma"
+import { prisma, withRetry as dbRetry } from "@/lib/prisma"
 import type { SearchQuery } from "./search-pipeline"
 
 export async function buildSearchQueries(
@@ -14,20 +14,20 @@ export async function buildSearchQueries(
   const queries: SearchQuery[] = []
 
   // ── Load templates with scope ──────────────────────────────────────────
-  const templates = await prisma.searchTemplate.findMany({
+  const templates = await dbRetry(() => prisma.searchTemplate.findMany({
     where: {
       active: true,
       ...(opts.templateIds?.length ? { id: { in: opts.templateIds } } : {}),
     },
-  })
+  }))
 
   // ── Load search terms (global + location-pinned) ───────────────────────
-  const globalTerms = await prisma.searchTerm.findMany({
+  const globalTerms = await dbRetry(() => prisma.searchTerm.findMany({
     where: { active: true, locationId: null },
-  })
-  const pinnedTerms = await prisma.searchTerm.findMany({
+  }))
+  const pinnedTerms = await dbRetry(() => prisma.searchTerm.findMany({
     where: { active: true, locationId: { not: null } },
-  })
+  }))
   const pinnedByLocation = new Map<string, typeof pinnedTerms>()
   for (const term of pinnedTerms) {
     const locId = term.locationId!
@@ -36,20 +36,20 @@ export async function buildSearchQueries(
   }
 
   // ── Resolve scope targets ─────────────────────────────────────────────
-  const cityLocations = await prisma.location.findMany({
+  const cityLocations = await dbRetry(() => prisma.location.findMany({
     where: {
       active: true,
       type: "CITY",
       ...(opts.locationIds?.length ? { id: { in: opts.locationIds } } : {}),
     },
-  })
-  const venueLocations = await prisma.location.findMany({
+  }))
+  const venueLocations = await dbRetry(() => prisma.location.findMany({
     where: {
       active: true,
       type: "VENUE",
       ...(opts.locationIds?.length ? { id: { in: opts.locationIds } } : {}),
     },
-  })
+  }))
 
   // If specific locationIds given but none are CITY, we still need cities
   // that own the requested venues for CITY-scoped templates
@@ -58,9 +58,9 @@ export async function buildSearchQueries(
     const parentIds = [...new Set(venueLocations.map((v) => v.parentId).filter(Boolean))]
     const missingCityIds = parentIds.filter((pid) => !allCities.some((c) => c.id === pid))
     if (missingCityIds.length > 0) {
-      const missingCities = await prisma.location.findMany({
+      const missingCities = await dbRetry(() => prisma.location.findMany({
         where: { id: { in: missingCityIds as string[] }, active: true },
-      })
+      }))
       allCities = [...allCities, ...missingCities]
     }
   }

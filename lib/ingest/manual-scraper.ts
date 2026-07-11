@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma"
+import { prisma, withRetry as dbRetry } from "@/lib/prisma"
 
 const MANUAL_FRESHNESS_DAYS = 14
 
@@ -15,14 +15,14 @@ export async function runManualSourceChecks(
   runId: string,
   opts?: { sourceSiteId?: string }
 ): Promise<ManualCheckResult[]> {
-  const sources = await prisma.sourceSite.findMany({
+  const sources = await dbRetry(() => prisma.sourceSite.findMany({
     where: {
       sourceMode: "manual",
       active: true,
       ...(opts?.sourceSiteId ? { id: opts.sourceSiteId } : {}),
     },
     orderBy: { lastManualCheckAt: "asc" },
-  })
+  }))
 
   const results: ManualCheckResult[] = []
   const now = new Date()
@@ -44,10 +44,10 @@ export async function runManualSourceChecks(
       continue
     }
 
-    await prisma.sourceSite.update({
+    await dbRetry(() => prisma.sourceSite.update({
       where: { id: source.id },
       data: { lastManualCheckAt: now },
-    })
+    }))
 
     results.push({
       sourceSiteId: source.id,
