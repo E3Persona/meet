@@ -14,6 +14,7 @@ const SCRAPER_KEYS: Record<string, string> = {
   "ingest-sgmp.ts": "sgmp",
   "ingest-thetradeshowcalendar.ts": "thetradeshowcalendar",
   "ingest-infosec.ts": "infosec",
+  "ingest-generic-llm.ts": "generic-llm",
 }
 
 export async function startScraperRun(

@@ -105,6 +105,14 @@ const SCRAPERS: ScraperDef[] = [
     description: "Cybersecurity conferences from infosec-conferences.com",
     tech: "fetch",
   },
+  {
+    id: "generic-llm",
+    name: "Generic LLM Scraper",
+    site: "All source sites (no dedicated scraper)",
+    apiPath: "/api/ingest/generic-llm",
+    description: "Scrape all active source sites without dedicated scrapers via LLM API server",
+    tech: "fetch",
+  },
 ]
 
 export function ScrapersPanel() {

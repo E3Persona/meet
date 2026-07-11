@@ -4,6 +4,7 @@ import type { SearchQuery } from "./search-pipeline"
 export async function buildSearchQueries(
   opts: {
     locationIds?: string[]
+    templateIds?: string[]
     dateFrom?: string
     dateTo?: string
     maxQueries?: number
@@ -13,7 +14,12 @@ export async function buildSearchQueries(
   const queries: SearchQuery[] = []
 
   // ── Load templates with scope ──────────────────────────────────────────
-  const templates = await prisma.searchTemplate.findMany({ where: { active: true } })
+  const templates = await prisma.searchTemplate.findMany({
+    where: {
+      active: true,
+      ...(opts.templateIds?.length ? { id: { in: opts.templateIds } } : {}),
+    },
+  })
 
   // ── Load search terms (global + location-pinned) ───────────────────────
   const globalTerms = await prisma.searchTerm.findMany({

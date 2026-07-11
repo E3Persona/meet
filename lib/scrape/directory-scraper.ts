@@ -2,6 +2,7 @@
 import * as cheerio from "cheerio"
 import { extractEventsWithLLM } from "./llm-extractor"
 import { createJinaProvider } from "@/lib/providers/scrape/jina"
+import { isExcludedDomain } from "../scrapers/dedicated-domains"
 
 export interface SourceSiteConfigInput {
   paginationType: string | null
@@ -124,29 +125,7 @@ function extractHref(el: cheerio.Cheerio<any>, selector: string | null): string 
   return href?.trim() || null
 }
 
-// Domains with dedicated scrapers - exclude from generic directory scraper
-const EXCLUDED_DOMAINS = [
-  "allconferencealert.net",
-  "asaecenter.org",
-  "blackmeetingsandtourism.com",
-  "conferencenext.com",
-  "eventseye.com",
-  "exhibitcitynews.com",
-  "internationalconferencealerts.com",
-  "sgmp.org",
-  "showsbee.com",
-  "thetradeshowcalendar.com",
-  "tradefest.io",
-]
-
-function isExcludedDomain(url: string): boolean {
-  try {
-    const hostname = new URL(url).hostname
-    return EXCLUDED_DOMAINS.some(domain => hostname === domain || hostname.endsWith(`.${domain}`))
-  } catch {
-    return false
-  }
-}
+import { isExcludedDomain } from "../scrapers/dedicated-domains"
 
 // Permanent errors that should not be retried
 const PERMANENT_ERROR_PATTERNS = [

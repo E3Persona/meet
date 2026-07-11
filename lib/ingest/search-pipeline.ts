@@ -176,30 +176,7 @@ async function withRetry<T>(
   throw lastErr
 }
 
-// ─── Domain exclusion for dedicated scrapers ───────────────────────────────
-
-const EXCLUDED_DOMAINS = [
-  "allconferencealert.net",
-  "asaecenter.org",
-  "blackmeetingsandtourism.com",
-  "conferencenext.com",
-  "eventseye.com",
-  "exhibitcitynews.com",
-  "internationalconferencealerts.com",
-  "sgmp.org",
-  "showsbee.com",
-  "thetradeshowcalendar.com",
-  "tradefest.io",
-]
-
-function isExcludedDomain(url: string): boolean {
-  try {
-    const hostname = new URL(url).hostname
-    return EXCLUDED_DOMAINS.some(domain => hostname === domain || hostname.endsWith(`.${domain}`))
-  } catch {
-    return false
-  }
-}
+import { isExcludedDomain } from "../scrapers/dedicated-domains"
 
 // ─── Search phase ──────────────────────────────────────────────────────────
 

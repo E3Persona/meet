@@ -7,6 +7,7 @@ import { Prisma } from "@/lib/generated/prisma/client"
 import { getAllProviderStatus, DEV_MODE } from "@/lib/providers/credit-tracker"
 import { createProgressCallback, clearRunProgress } from "@/lib/ingest/progress-store"
 import { scrapeConventionPlanit } from "@/lib/scrapers/conventionplanit"
+import { isExcludedDomain, isExcludedHostname } from "@/lib/scrapers/dedicated-domains"
 
 // ─── Scraper types ───────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ interface ScraperResult {
 interface RunConfig {
   scraperTypes: ScraperType[]
   locationIds?: string[]
+  templateIds?: string[]
   maxQueries?: number
   dateFrom?: string
   dateTo?: string
@@ -136,31 +138,7 @@ async function filterByFrequency(
 }
 
 // ─── Domain exclusion for dedicated scrapers ───────────────────────────────
-
-const EXCLUDED_DOMAINS = [
-  "allconferencealert.net",
-  "asaecenter.org",
-  "blackmeetingsandtourism.com",
-  "conferencenext.com",
-  "eventseye.com",
-  "exhibitcitynews.com",
-  "internationalconferencealerts.com",
-  "sgmp.org",
-  "showsbee.com",
-  "thetradeshowcalendar.com",
-  "tradefest.io",
-]
-
-function isExcludedDomain(url: string): boolean {
-  try {
-    const hostname = new URL(url).hostname
-    return EXCLUDED_DOMAINS.some(
-      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
-    )
-  } catch {
-    return false
-  }
-}
+// (imported from centralized source at lib/scrapers/dedicated-domains.ts)
 
 // ─── POST /api/ingest/run ───────────────────────────────────────────────────
 
@@ -176,6 +154,7 @@ export async function POST(request: Request) {
       body.scraperTypes = raw.scraperTypes
     }
     if (raw.locationIds) body.locationIds = raw.locationIds
+    if (raw.templateIds) body.templateIds = raw.templateIds
     if (raw.maxQueries) body.maxQueries = raw.maxQueries
     if (raw.dateFrom) body.dateFrom = raw.dateFrom
     if (raw.dateTo) body.dateTo = raw.dateTo
@@ -189,6 +168,9 @@ export async function POST(request: Request) {
   console.log(`\n[Ingest] Starting ${trigger} run at ${new Date().toISOString()}`)
   if (body.locationIds?.length) {
     console.log(`[Ingest] Targeting ${body.locationIds.length} specific location(s)`)
+  }
+  if (body.templateIds?.length) {
+    console.log(`[Ingest] Targeting ${body.templateIds.length} specific template(s)`)
   }
   if (body.dateFrom || body.dateTo) {
     console.log(`[Ingest] Date range: ${body.dateFrom ?? "any"} → ${body.dateTo ?? "any"}`)
@@ -341,6 +323,7 @@ export async function POST(request: Request) {
     progress("Building search queries...")
     const queries = await buildSearchQueries({
       locationIds: filteredLocationIds,
+      templateIds: body.templateIds,
       dateFrom: body.dateFrom,
       dateTo: body.dateTo,
       maxQueries: DEV_MODE ? undefined : (body.maxQueries ?? undefined),

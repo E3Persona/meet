@@ -6,8 +6,11 @@ import { UniversalList } from "@/components/ui/list/universallist"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Trash2, Plus } from "lucide-react"
+import { ProgressDialog } from "@/components/ui/progress-dialog"
+import { Trash2, Plus, Play } from "lucide-react"
 import type { FormSection as FormSectionType } from "@/types/components"
 import { toast } from "sonner"
 import { ColumnDef } from "@tanstack/react-table"
@@ -37,6 +40,17 @@ interface UnifiedPhrase {
   phrase: string
   scopeLabel: string
   scopeVariant: "info" | "success" | "neutral" | "warning"
+  active: boolean
+  scope: "CITY" | "VENUE" | "GLOBAL" | "LOCATION"
+  locationId: string | null
+}
+
+interface LocationOption {
+  id: string
+  name: string
+  type: "CITY" | "VENUE"
+  city: string | null
+  state: string | null
   active: boolean
 }
 
@@ -92,6 +106,15 @@ export function TemplatesManager() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
 
+  // ── Run dialog state ────────────────────────────────────────────────────
+  const [runDialogOpen, setRunDialogOpen] = useState(false)
+  const [runTarget, setRunTarget] = useState<UnifiedPhrase | null>(null)
+  const [runLocations, setRunLocations] = useState<LocationOption[]>([])
+  const [runSelectedLocationIds, setRunSelectedLocationIds] = useState<string[]>([])
+  const [runLoading, setRunLoading] = useState(false)
+  const [progressRunId, setProgressRunId] = useState<string | null>(null)
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false)
+
   const fetchAll = useCallback(async () => {
     try {
       const [templatesRes, termsRes] = await Promise.all([
@@ -110,6 +133,8 @@ export function TemplatesManager() {
           scopeLabel: SCOPE_LABELS[t.scope] ?? t.scope,
           scopeVariant: SCOPE_VARIANTS[t.scope] ?? "neutral",
           active: t.active,
+          scope: t.scope,
+          locationId: null,
         })),
         ...terms.map((t) => ({
           id: t.id,
@@ -118,6 +143,8 @@ export function TemplatesManager() {
           scopeLabel: t.location ? `${t.location.name} (${t.location.city}, ${t.location.state})` : "Global",
           scopeVariant: t.location ? "warning" as const : "neutral" as const,
           active: t.active,
+          scope: t.locationId ? "LOCATION" as const : "GLOBAL" as const,
+          locationId: t.locationId,
         })),
       ]
 
@@ -184,6 +211,89 @@ export function TemplatesManager() {
     }
   }
 
+  // ── Run handlers ─────────────────────────────────────────────────────────
+
+  const needsLocationPicker = (p: UnifiedPhrase) =>
+    p.type === "template" && (p.scope === "CITY" || p.scope === "VENUE")
+
+  const openRunDialog = async (p: UnifiedPhrase) => {
+    setRunTarget(p)
+    setRunSelectedLocationIds([])
+
+    if (!needsLocationPicker(p)) {
+      executeRun(p, [])
+      return
+    }
+
+    try {
+      const res = await fetch("/api/locations")
+      if (!res.ok) throw new Error("Failed to fetch")
+      const all: LocationOption[] = await res.json()
+      const filtered = all.filter((l) => l.type === p.scope && l.active)
+      setRunLocations(filtered)
+    } catch {
+      toast.error("Failed to load locations")
+      return
+    }
+
+    setRunDialogOpen(true)
+  }
+
+  const executeRun = async (p: UnifiedPhrase, locationIds: string[]) => {
+    setRunLoading(true)
+    setRunDialogOpen(false)
+    toast.info(`Starting search for "${p.phrase}"...`)
+
+    try {
+      const body: Record<string, unknown> = { scraperTypes: ["search"] }
+
+      if (p.type === "template") {
+        body.templateIds = [p.id]
+        if (locationIds.length > 0) body.locationIds = locationIds
+      } else {
+        if (p.locationId) {
+          body.locationIds = [p.locationId]
+        }
+      }
+
+      const res = await fetch("/api/ingest/run?trigger=manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error(data.error ?? "Search failed")
+        return
+      }
+
+      setProgressRunId(data.runId)
+      setProgressDialogOpen(true)
+    } catch {
+      toast.error("Search request failed")
+    } finally {
+      setRunLoading(false)
+    }
+  }
+
+  const handleRunConfirm = () => {
+    if (!runTarget) return
+    executeRun(runTarget, runSelectedLocationIds)
+  }
+
+  const toggleRunLocation = (id: string) => {
+    setRunSelectedLocationIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const selectAllRunLocations = () => {
+    setRunSelectedLocationIds(runLocations.map((l) => l.id))
+  }
+
+  // ── Table columns ────────────────────────────────────────────────────────
+
   const columns: ColumnDef<UnifiedPhrase, unknown>[] = [
     {
       id: "type",
@@ -229,21 +339,37 @@ export function TemplatesManager() {
   ]
 
   const rowActions = (p: UnifiedPhrase) => (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={(e) => {
-        e.stopPropagation()
-        deletePhrase(p)
-      }}
-      title={`Delete ${p.type}`}
-    >
-      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-    </Button>
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation()
+          openRunDialog(p)
+        }}
+        disabled={runLoading}
+        title={`Run search for ${p.type}`}
+      >
+        <Play className="h-3.5 w-3.5 text-primary" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation()
+          deletePhrase(p)
+        }}
+        title={`Delete ${p.type}`}
+      >
+        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+      </Button>
+    </>
   )
 
   const templateCount = phrases.filter((p) => p.type === "template").length
   const literalCount = phrases.filter((p) => p.type === "literal").length
+
+  const runTargetLabel = runTarget?.scope === "CITY" ? "cities" : "venues"
 
   return (
     <div className="space-y-6">
@@ -256,6 +382,7 @@ export function TemplatesManager() {
         </Button>
       </div>
 
+      {/* ── Create template dialog ──────────────────────────────────────── */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
@@ -285,6 +412,82 @@ export function TemplatesManager() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* ── Run location picker dialog ──────────────────────────────────── */}
+      <Dialog open={runDialogOpen} onOpenChange={setRunDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Run Search</DialogTitle>
+            <DialogDescription>
+              Select which {runTargetLabel} to run this search for.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>{runLocations.length} available ({runSelectedLocationIds.length} selected)</Label>
+              <button
+                type="button"
+                onClick={selectAllRunLocations}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Select all
+              </button>
+            </div>
+            <div className="max-h-64 overflow-y-auto border border-border rounded-md p-2 space-y-0.5 text-sm">
+              {runLocations.length === 0 && (
+                <p className="text-muted-foreground text-xs p-2">Loading {runTargetLabel}...</p>
+              )}
+              {runLocations.map((loc) => (
+                <label
+                  key={loc.id}
+                  className="flex items-center gap-2 cursor-pointer hover:bg-muted/30 rounded px-2 py-1.5"
+                >
+                  <Checkbox
+                    checked={runSelectedLocationIds.includes(loc.id)}
+                    onCheckedChange={() => toggleRunLocation(loc.id)}
+                  />
+                  <span className="font-medium">{loc.name}</span>
+                  {loc.city && loc.city !== loc.name && (
+                    <span className="text-xs text-muted-foreground">({loc.city}, {loc.state})</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setRunDialogOpen(false)}
+              disabled={runLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRunConfirm}
+              leftIcon={runLoading ? undefined : Play}
+              loading={runLoading}
+              disabled={runSelectedLocationIds.length === 0}
+            >
+              {runLoading ? "Starting..." : "Run Search"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Progress dialog ─────────────────────────────────────────────── */}
+      <ProgressDialog
+        open={progressDialogOpen}
+        title={`Running: ${runTarget?.phrase ?? "Search"}`}
+        runId={progressRunId}
+        onComplete={() => {
+          setProgressDialogOpen(false)
+          setProgressRunId(null)
+          toast.success("Search complete")
+          fetchAll()
+        }}
+      />
 
       <UniversalList
         columns={columns}
