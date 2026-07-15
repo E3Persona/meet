@@ -61,16 +61,16 @@ First run after deploy populates the cache. Subsequent runs skip recently-scrape
 
 Each API provider has daily request/token limits tracked in-memory:
 
-| Provider | Default Daily Limit | Env Override |
-|---|---|---|
-| Tavily | 33 requests | `TAVILY_DAILY_LIMIT` |
-| Brave | 66 requests | `BRAVE_DAILY_LIMIT` |
-| DuckDuckGo | unlimited | — |
-| Jina | 200 requests | `JINA_DAILY_LIMIT` |
-| WebPeel | 125 requests | `WEBPEEL_DAILY_LIMIT` |
-| Firecrawl | 16 requests | `FIRECRAWL_DAILY_LIMIT` |
-| Groq | 1000 req / 100k tokens | `GROQ_DAILY_LIMIT` / `GROQ_DAILY_TOKEN_LIMIT` |
-| OpenRouter | 200 req / 500k tokens | `OPENROUTER_DAILY_LIMIT` / `OPENROUTER_DAILY_TOKEN_LIMIT` |
+| Provider   | Default Daily Limit    | Env Override                                              |
+| ---------- | ---------------------- | --------------------------------------------------------- |
+| Tavily     | 33 requests            | `TAVILY_DAILY_LIMIT`                                      |
+| Brave      | 66 requests            | `BRAVE_DAILY_LIMIT`                                       |
+| DuckDuckGo | unlimited              | —                                                         |
+| Jina       | 200 requests           | `JINA_DAILY_LIMIT`                                        |
+| WebPeel    | 125 requests           | `WEBPEEL_DAILY_LIMIT`                                     |
+| Firecrawl  | 16 requests            | `FIRECRAWL_DAILY_LIMIT`                                   |
+| Groq       | 1000 req / 100k tokens | `GROQ_DAILY_LIMIT` / `GROQ_DAILY_TOKEN_LIMIT`             |
+| OpenRouter | 200 req / 500k tokens  | `OPENROUTER_DAILY_LIMIT` / `OPENROUTER_DAILY_TOKEN_LIMIT` |
 
 Set `DEV_MODE=1` to remove all artificial limits (no batching, no max queries, no frequency filter).
 
@@ -88,3 +88,7 @@ See `.env.example` for required vars. Key ones:
 - `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY` — provider keys
 - `CRAWL_STALE_HOURS` — change detection window (default 24)
 - `DEV_MODE` — set to `1` for unlimited dev mode
+
+Subdirectory URL: e3ei.e3personnel.com
+Subdomain Name; e3evint
+e3evint.e3personnel.com
