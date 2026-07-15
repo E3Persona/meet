@@ -2,123 +2,124 @@
   "templates": [
     {
       "template": "{CITY} convention listings",
-      "example": "Philadelphia convention listings",
+      "example": "Chicago convention listings",
       "scope": "CITY"
     },
     {
       "template": "{CITY} trade show listings",
-      "example": "Philadelphia trade show listings",
+      "example": "Las Vegas trade show listings",
       "scope": "CITY"
     },
     {
       "template": "{CITY} business event listings",
-      "example": "Philadelphia business event listings",
+      "example": "Atlanta business event listings",
       "scope": "CITY"
     },
     {
       "template": "{CITY} professional event calendar",
-      "example": "Philadelphia professional event calendar",
+      "example": "Austin professional event calendar",
       "scope": "CITY"
     },
     {
       "template": "{CITY} expo listings",
-      "example": "Philadelphia Expo listings",
+      "example": "Phoenix Expo listings",
       "scope": "CITY"
     },
     {
       "template": "{CITY} conference listings",
-      "example": "Philadelphia conference listings",
+      "example": "Seattle conference listings",
       "scope": "CITY"
     },
     {
       "template": "{CITY} industry event calendar",
-      "example": "Philadelphia industry event calendar",
+      "example": "Denver industry event calendar",
       "scope": "CITY"
     },
     {
       "template": "upcoming meetings in {CITY}",
-      "example": "upcoming meetings in Philadelphia",
+      "example": "upcoming meetings in New York",
       "scope": "CITY"
     },
     {
       "template": "upcoming conventions in {CITY}",
-      "example": "upcoming conventions in Philadelphia",
+      "example": "upcoming conventions in Los Angeles",
       "scope": "CITY"
     },
     {
       "template": "{CITY} convention schedule",
-      "example": "Philadelphia convention schedule",
+      "example": "Miami convention schedule",
       "scope": "CITY"
     },
     {
       "template": "national conventions {CITY}",
-      "example": "national conventions Philadelphia",
+      "example": "national conventions Boston",
       "scope": "CITY"
     },
     {
       "template": "upcoming trade shows in {CITY}",
-      "example": "upcoming trade shows in Philadelphia",
+      "example": "upcoming trade shows in Orlando",
       "scope": "CITY"
     },
     {
       "template": "{CITY} trade show calendar",
-      "example": "Philadelphia trade show calendar",
+      "example": "Dallas trade show calendar",
       "scope": "CITY"
     },
     {
       "template": "events at {VENUE}",
-      "example": "events at Philadelphia Marriott Downtown",
+      "example": "events at McCormick Place Chicago",
       "scope": "VENUE"
     },
     {
       "template": "{MONTH} {YEAR} conference {VENUE}",
-      "example": "October 2026 conference Philadelphia Marriott Downtown",
+      "example": "October 2026 conference Las Vegas Convention Center",
       "scope": "VENUE"
     },
     {
       "template": "{MONTH} {YEAR} convention {VENUE}",
-      "example": "October 2026 convention Philadelphia Marriott Downtown",
+      "example": "October 2026 convention Javits Center New York",
       "scope": "VENUE"
     },
     {
       "template": "{MONTH} {YEAR} trade show {VENUE}",
-      "example": "October 2026 trade show Philadelphia Marriott Downtown",
+      "example": "October 2026 trade show Moscone Center San Francisco",
       "scope": "VENUE"
     },
     {
       "template": "{MONTH} {YEAR} meeting {VENUE}",
-      "example": "October 2026 meeting Philadelphia Marriott Downtown",
+      "example": "October 2026 meeting Atlanta Hilton",
       "scope": "VENUE"
     }
   ],
   "literalKeywords": [
-    "upcoming tradeshow in Philadelphia",
-    "Symposium Baltimore Convention Center",
-    "Summit Baltimore Convention Center",
-    "Sales Meeting Baltimore Convention Center",
-    "Financial Meeting Baltimore Convention Center",
-    "Congress Baltimore Convention Center",
-    "Consumer Show Baltimore Convention Center",
-    "Association Baltimore Convention Center",
-    "Association Meeting Baltimore Convention Center",
-    "Clinical Meeting Baltimore Convention Center",
-    "Public Show Baltimore Convention Center",
-    "Training Summit Baltimore Convention Center",
-    "Annual Meeting Baltimore Convention Center",
-    "Forum Baltimore Convention Center",
-    "Exposition Baltimore Convention Center",
-    "User Group Baltimore Convention Center",
-    "Compliance Baltimore Convention Center",
+    "upcoming tradeshow in Chicago",
+    "upcoming tradeshow in Las Vegas",
+    "Symposium convention center",
+    "Summit convention center",
+    "Sales Meeting conference",
+    "Financial Meeting conference",
+    "Congress convention",
+    "Consumer Show expo",
+    "Association conference",
+    "Association Meeting convention",
+    "Clinical Meeting healthcare",
+    "Public Show expo",
+    "Training Summit professional",
+    "Annual Meeting convention",
+    "Forum conference",
+    "Exposition trade show",
+    "User Group technology",
+    "Compliance conference",
     "Road Show",
-    "Food Event Baltimore Convention Center",
-    "Festival Baltimore Convention Center",
-    "Wine Event Baltimore Convention Center",
-    "Convocation Baltimore Convention Center",
-    "Assembly Baltimore Convention Center",
+    "Food Event culinary",
+    "Festival community",
+    "Wine Event tasting",
+    "Convocation ceremony",
+    "Assembly professional",
     "CME Credit",
     "CLE Credit",
-    "Caucus  Baltimore Convention Center",
-    "Roundtable Baltimore Convention Center",
+    "Caucus political",
+    "Roundtable discussion",
     "Promotional Tour",
     "Sampling Tour"
   ]

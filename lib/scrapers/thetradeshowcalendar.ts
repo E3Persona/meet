@@ -5,45 +5,10 @@ import { createJinaProvider } from "../providers/scrape/jina"
 const ECN_BASE = "https://thetradeshowcalendar.com/ecn2.2024"
 const LISTING_URL = `${ECN_BASE}/index.php`
 
-// ---------- Target region config (mirrors ICA_CITY_SLUGS pattern) ----------
-
-export const ECN_TARGET_REGIONS: Record<
-  string,
-  { city: string; state: string }
-> = {
-  philadelphia: { city: "Philadelphia", state: "PA" },
-  "washington-dc": { city: "Washington", state: "DC" },
-  baltimore: { city: "Baltimore", state: "MD" },
-}
-
-// Loose regional match so nearby satellite towns count as "in scope"
-const REGION_ALIASES: Record<string, string> = {
-  "national harbor": "washington-dc",
-  bethesda: "washington-dc",
-  "upper marlboro": "washington-dc",
-  arlington: "washington-dc",
-  chester: "philadelphia",
-  oaks: "philadelphia",
-  "valley forge": "philadelphia",
-  wilmington: "philadelphia",
-  "ellicott city": "baltimore",
-  "west friendship": "baltimore",
-}
-
-function classifyRegion(city: string, state: string | null): string | null {
-  const c = city.toLowerCase().trim()
-  const s = (state ?? "").toLowerCase().trim()
-
-  for (const [slug, meta] of Object.entries(ECN_TARGET_REGIONS)) {
-    if (
-      c === meta.city.toLowerCase() &&
-      (!s || s === meta.state.toLowerCase())
-    ) {
-      return slug
-    }
-  }
-  if (REGION_ALIASES[c]) return REGION_ALIASES[c]
-  return null
+// All US cities are in scope — no hardcoded city restriction.
+// regionSlug is derived for analytics/telemetry but does not filter events.
+function classifyRegion(city: string, state: string | null): string {
+  return `${city.toLowerCase().trim().replace(/\s+/g, "-")}-${(state ?? "").toLowerCase().trim()}`
 }
 
 // ---------- Types ----------
@@ -413,14 +378,11 @@ export async function scrapeECN(options?: {
     await browser.close()
   }
 
-  // Client-side region filter (belt-and-suspenders even if the server-side
-  // country filter worked correctly)
-  const regionMatched = raw
-    .map((ev) => ({
-      ...ev,
-      regionSlug: classifyRegion(ev.venueCity, ev.venueState),
-    }))
-    .filter((ev) => ev.regionSlug !== null)
+  // All events from the US are in scope — no city-based filtering.
+  const regionMatched = raw.map((ev) => ({
+    ...ev,
+    regionSlug: classifyRegion(ev.venueCity, ev.venueState),
+  }))
 
   const results: ECNEvent[] = []
   let contactLookups = 0
