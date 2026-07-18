@@ -1,20 +1,16 @@
 import { NextResponse } from "next/server"
 import { prisma, withRetry } from "@/lib/prisma"
+import { getSheetsClient, HEADERS } from "@/lib/google-sheets/client"
 
-export async function POST(request: Request) {
-  const authHeader = request.headers.get("authorization") ?? ""
-  const apiKey = authHeader.replace(/^Bearer\s+/i, "").trim()
-
-  if (!apiKey || apiKey !== process.env.GOOGLE_SHEETS_SYNC_API_KEY) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+export async function POST() {
+  const apiKey = process.env.GOOGLE_SHEETS_SYNC_API_KEY
+  if (!apiKey) {
+    return NextResponse.json({ error: "API key not configured" }, { status: 500 })
   }
 
-  const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL
-  if (!webhookUrl) {
-    return NextResponse.json(
-      { error: "GOOGLE_SHEETS_WEBHOOK_URL is not configured" },
-      { status: 500 }
-    )
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
+  if (!spreadsheetId) {
+    return NextResponse.json({ error: "Spreadsheet ID not configured" }, { status: 500 })
   }
 
   const events = await withRetry(() =>
@@ -30,8 +26,8 @@ export async function POST(request: Request) {
     e.eventName,
     e.eventDateStart ? e.eventDateStart.toISOString().split("T")[0] : "",
     e.eventDateEnd   ? e.eventDateEnd.toISOString().split("T")[0]   : "",
-    e.location.type === "CITY"    ? e.location.name : e.location.city ?? "",
-    e.location.type === "VENUE"   ? e.location.name : "",
+    e.location.type === "CITY"  ? e.location.name : e.location.city ?? "",
+    e.location.type === "VENUE" ? e.location.name : "",
     e.organizerName   ?? "",
     e.organizerTitle  ?? "",
     e.organizerEmail  ?? "",
@@ -42,33 +38,35 @@ export async function POST(request: Request) {
   ])
 
   try {
-    const response = await fetch(webhookUrl, {
-      method: "post",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ rows }),
+    const sheets = getSheetsClient()
+    const range = "Sheet1!A1:L"
+
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId,
+      range,
     })
 
-    const json = await response.json()
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "Sheet1!A1:L1",
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [HEADERS],
+      },
+    })
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: json.error ?? "Sheet sync failed", details: json },
-        { status: 502 }
-      )
+    if (rows.length > 0) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `Sheet1!A2:L${rows.length + 1}`,
+        valueInputOption: "RAW",
+        requestBody: { values: rows },
+      })
     }
 
-    return NextResponse.json({
-      pushed: rows.length,
-      success: true,
-    })
+    return NextResponse.json({ pushed: rows.length, success: true })
   } catch (err) {
     console.error("[/api/events/export-sheet]", err)
-    return NextResponse.json(
-      { error: "Failed to reach Google Sheets webhook" },
-      { status: 502 }
-    )
+    return NextResponse.json({ error: "Failed to write to Google Sheet" }, { status: 502 })
   }
 }
