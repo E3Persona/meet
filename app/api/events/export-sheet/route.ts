@@ -38,7 +38,7 @@ export async function POST() {
   ])
 
   try {
-    const sheets = getSheetsClient()
+    const sheets = await getSheetsClient()
     const range = "Sheet1!A1:L"
 
     await sheets.spreadsheets.values.clear({

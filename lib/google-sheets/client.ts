@@ -1,10 +1,9 @@
-import { google } from "googleapis"
 import { readFileSync, existsSync } from "fs"
 import { resolve } from "path"
 
 const SHEETS_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-export function getSheetsClient() {
+export async function getSheetsClient() {
   let credentials: Record<string, unknown>
 
   const jsonStr = process.env.GOOGLE_SHEETS_CREDENTIALS_JSON
@@ -25,6 +24,7 @@ export function getSheetsClient() {
     credentials = JSON.parse(readFileSync(filePath, "utf8"))
   }
 
+  const { google } = await import("googleapis")
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: SHEETS_SCOPES,
