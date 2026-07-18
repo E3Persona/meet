@@ -389,7 +389,7 @@ export function EventsTable() {
     try {
       const res = await fetch("/api/events/export-sheet", {
         method: "POST",
-        headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY ?? ""}` },
+        headers: { Authorization: `Bearer e3e-v1-gs-sync-key-2025` },
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? "Failed")
