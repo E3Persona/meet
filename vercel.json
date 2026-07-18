@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "runtime": "nodejs20.x",
   "crons": [
     {
       "path": "/api/ingest/run?trigger=scheduled",
