@@ -258,6 +258,7 @@ export function EventsTable() {
   const [exportYear, setExportYear] = useState<string>(
     String(new Date().getFullYear())
   )
+  const [pushingToSheet, setPushingToSheet] = useState(false)
 
   // Contact finder modal state
   const [contactModal, setContactModal] = useState<{
@@ -380,6 +381,26 @@ export function EventsTable() {
   }, [fetchEvents])
 
   console.log("Events",events)
+  // ── Push to Google Sheet ─────────────────────────────────────────────────
+
+  const pushToSheet = async () => {
+    setPushingToSheet(true)
+    toast.info("Pushing events to Google Sheet...")
+    try {
+      const res = await fetch("/api/events/export-sheet", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY ?? ""}` },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? "Failed")
+      toast.success(`Pushed ${data.pushed} events to Google Sheet`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Push to sheet failed")
+    } finally {
+      setPushingToSheet(false)
+    }
+  }
+
   // ── Excel Export ──────────────────────────────────────────────────────────
 
   const exportToExcel = () => {
@@ -862,6 +883,19 @@ export function EventsTable() {
           <Button variant="outline" size="sm" onClick={exportToExcel}>
             <Download className="mr-1.5 h-4 w-4" />
             Export
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={pushToSheet}
+            disabled={pushingToSheet || total === 0}
+          >
+            {pushingToSheet ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-1.5 h-4 w-4" />
+            )}
+            Push to Sheet
           </Button>
           <Dialog
             open={importOpen}
