@@ -1,4 +1,4 @@
-import { createHmac, createSign } from "crypto"
+import { createSign } from "crypto"
 import { readFileSync, existsSync } from "fs"
 import { resolve } from "path"
 
@@ -59,20 +59,24 @@ async function getAccessToken(): Promise<string> {
   return data.access_token
 }
 
-export async function clearSheet(spreadsheetId: string, sheetName = "Sheet1"): Promise<void> {
+export async function clearSheet(spreadsheetId: string, sheetName = "Events"): Promise<void> {
   const token = await getAccessToken()
-  const range = `${sheetName}!A1:Z`
+  const range = `${sheetName}!A1:ZZ`
 
-  await fetch(`${SHEETS_API}/${spreadsheetId}/values/${encodeURIComponent(range)}:clear`, {
+  const res = await fetch(`${SHEETS_API}/${spreadsheetId}/values/${encodeURIComponent(range)}:clear`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   })
+  const data = await res.json() as { error?: { message: string } }
+  if (data.error) {
+    throw new Error(`Failed to clear sheet: ${data.error.message}`)
+  }
 }
 
 export async function writeSheet(
   spreadsheetId: string,
   data: string[][],
-  sheetName = "Sheet1"
+  sheetName = "Events"
 ): Promise<void> {
   const token = await getAccessToken()
 
@@ -80,15 +84,22 @@ export async function writeSheet(
 
   const range = `${sheetName}!A1:L${data.length + 1}`
 
-  await fetch(`${SHEETS_API}/${spreadsheetId}/values/${encodeURIComponent(range)}`, {
-    method: "PUT",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      values: data,
-      range,
-      majorDimension: "ROWS",
-    }),
-  })
+  const res = await fetch(
+    `${SHEETS_API}/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`,
+    {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        values: data,
+        range,
+        majorDimension: "ROWS",
+      }),
+    }
+  )
+  const response = await res.json() as { error?: { message: string } }
+  if (response.error) {
+    throw new Error(`Failed to write sheet: ${response.error.message}`)
+  }
 }
 
 export const HEADERS = [
