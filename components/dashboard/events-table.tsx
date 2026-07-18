@@ -1032,7 +1032,7 @@ export function EventsTable() {
             )}
             Find All Contacts ({eventsMissingContacts})
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             size="sm"
             className="text-destructive hover:bg-destructive/10"
@@ -1045,7 +1045,7 @@ export function EventsTable() {
               <Trash2 className="mr-1.5 h-4 w-4" />
             )}
             Delete All ({total})
-          </Button>
+          </Button> */}
           <span className="ml-auto text-xs text-muted-foreground">
             {events.length > 0
               ? `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`

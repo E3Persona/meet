@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma, withRetry } from "@/lib/prisma"
-import { getSheetsClient, HEADERS } from "@/lib/google-sheets/client"
+import { clearSheet, writeSheet, HEADERS } from "@/lib/google-sheets/client"
 
 export async function POST() {
   const apiKey = process.env.GOOGLE_SHEETS_SYNC_API_KEY
@@ -38,32 +38,8 @@ export async function POST() {
   ])
 
   try {
-    const sheets = await getSheetsClient()
-    const range = "Sheet1!A1:L"
-
-    await sheets.spreadsheets.values.clear({
-      spreadsheetId,
-      range,
-    })
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: "Sheet1!A1:L1",
-      valueInputOption: "RAW",
-      requestBody: {
-        values: [HEADERS],
-      },
-    })
-
-    if (rows.length > 0) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `Sheet1!A2:L${rows.length + 1}`,
-        valueInputOption: "RAW",
-        requestBody: { values: rows },
-      })
-    }
-
+    await clearSheet(spreadsheetId)
+    await writeSheet(spreadsheetId, [HEADERS, ...rows])
     return NextResponse.json({ pushed: rows.length, success: true })
   } catch (err) {
     console.error("[/api/events/export-sheet]", err)
