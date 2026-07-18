@@ -287,58 +287,53 @@ export async function GET(request: Request) {
     data: { trigger, status: "running" },
   })
 
-  const scraperRoutes = [
-    "/api/ingest/aca",
-    "/api/ingest/asae",
-    "/api/ingest/blackmeetings",
-    "/api/ingest/cn",
-    "/api/ingest/eventseye",
-    "/api/ingest/generic-llm",
-    "/api/ingest/ica",
-    "/api/ingest/infosec",
-    "/api/ingest/sgmp",
-    "/api/ingest/showsbee",
-    "/api/ingest/tf",
-    "/api/ingest/thetradeshowcalendar",
-  ]
+  setImmediate(async () => {
+    const scraperRoutes = [
+      "/api/ingest/aca",
+      "/api/ingest/asae",
+      "/api/ingest/blackmeetings",
+      "/api/ingest/cn",
+      "/api/ingest/eventseye",
+      "/api/ingest/generic-llm",
+      "/api/ingest/ica",
+      "/api/ingest/infosec",
+      "/api/ingest/sgmp",
+      "/api/ingest/showsbee",
+      "/api/ingest/tf",
+      "/api/ingest/thetradeshowcalendar",
+    ]
 
-  const scraperResults = await Promise.allSettled(
-    scraperRoutes.map((route) =>
-      fetch(`${baseUrl}${route}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-cron-parent": parentRun.id,
-          "x-cron-trigger": trigger,
-        },
-        body: JSON.stringify({}),
-      }).then(async (res) => ({
-        route,
-        status: res.status,
-        body: await res.clone().json().catch(() => null),
-      }))
+    await Promise.allSettled(
+      scraperRoutes.map((route) =>
+        fetch(`${baseUrl}${route}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-cron-parent": parentRun.id,
+            "x-cron-trigger": trigger,
+          },
+          body: JSON.stringify({}),
+        }).then(async (res) => ({
+          route,
+          status: res.status,
+          body: await res.clone().json().catch(() => null),
+        }))
+      )
     )
-  )
 
-  const scraperSummary = scraperResults.map((r, i) => {
-    if (r.status === "rejected") {
-      return { route: scraperRoutes[i], status: "error", error: String(r.reason) }
+    try {
+      await runIngest(trigger, { scraperTypes: ["search", "cp"] })
+    } catch (err) {
+      console.error("[Cron] search pipeline error:", err)
     }
-    return { route: r.value.route, status: r.value.status, runId: r.value.body?.runId ?? null }
+
+    await prisma.ingestionRun.update({
+      where: { id: parentRun.id },
+      data: { status: "success", finishedAt: new Date() },
+    })
   })
 
-  const searchResult = await runIngest(trigger, { scraperTypes: ["search", "cp"] })
-
-  await prisma.ingestionRun.update({
-    where: { id: parentRun.id },
-    data: { status: "success", finishedAt: new Date() },
-  })
-
-  return NextResponse.json({
-    parentRunId: parentRun.id,
-    scrapers: scraperSummary,
-    searchPipeline: searchResult,
-  })
+  return NextResponse.json({ parentRunId: parentRun.id, status: "started" })
 }
 
 // ─── POST /api/ingest/run ───────────────────────────────────────────────────
