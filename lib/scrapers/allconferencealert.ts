@@ -35,13 +35,12 @@ async function getBrowser() {
 }
 
 async function setHumanHeaders(page: any) {
-  await page.setExtraHeaders({
+  await page.setExtraHTTPHeaders({
     "User-Agent":
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     "Accept-Language": "en-US,en;q=0.9",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
   })
-  await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }])
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
