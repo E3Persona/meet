@@ -96,20 +96,23 @@ async function main() {
         if (dateFrom && eventDate && eventDate < dateFrom) continue
         if (dateTo && eventDate && eventDate > dateTo) continue
 
-        // Deduplicate by eventName + date
-        const existing = await prisma.event.findFirst({
-          where: {
-            eventName: { equals: normalizeEventName(ev.eventName), mode: "insensitive" },
-            eventDateStart: eventDate ?? undefined,
-            locationId: site.id,
-          },
-        })
-        if (existing) continue
-
-        let locationId = null
+        let locationId: string | null = null
         if (ev.city) {
           const loc = await prisma.location.findFirst({ where: { name: ev.city, active: true, type: "CITY" } })
           if (loc) locationId = loc.id
+        }
+
+        // Deduplicate by eventName + matched locationId
+        const existing = await prisma.event.findFirst({
+          where: {
+            eventName: { equals: normalizeEventName(ev.eventName), mode: "insensitive" },
+            ...(locationId ? { locationId } : {}),
+            ...(eventDate ? { eventDateStart: eventDate } : {}),
+          },
+        })
+        if (existing) {
+          console.log(`[GenericLLM] Duplicate skip: "${ev.eventName}"`)
+          continue
         }
 
         await prisma.event.create({

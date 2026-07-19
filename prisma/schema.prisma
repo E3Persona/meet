@@ -257,6 +257,8 @@ model IngestConfig {
   maxPages     Int      @default(3)  // max listing pages per city/slug
   maxLocations Int      @default(0)  // 0 = unlimited, N = cap cities per run
   active       Boolean  @default(true)
+  batchSize    Int      @default(5)   // how many listing pages per batch (TheTradeShowCalendar)
+  batchDelayMs Int      @default(10000) // ms to sleep between batches (TheTradeShowCalendar)
   updatedAt    DateTime @updatedAt
 
   @@map("ingest_configs")

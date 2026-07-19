@@ -1,7 +1,7 @@
 import "dotenv/config"
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "../lib/generated/prisma/client"
-import { scrapeECN } from "../lib/scrapers/thetradeshowcalendar"
+import { scrapeECN, type ECNEvent } from "../lib/scrapers/thetradeshowcalendar"
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
@@ -16,6 +16,8 @@ async function getConfig() {
   return {
     active: cfg?.active ?? true,
     maxLocations: cfg?.maxLocations ?? 0,
+    batchSize: cfg?.batchSize ?? 5,
+    batchDelayMs: cfg?.batchDelayMs ?? 10_000,
   }
 }
 
@@ -69,71 +71,76 @@ async function main() {
 
   const sourceSiteId = sourceSite?.id ?? null
 
-  const allEvents = await scrapeECN({
-    country: "United States",
-    skipContacts: false,
-    maxContactLookups: 30,
-  })
-  console.log(`[TheTradeShowCalendar/Ingest] ${allEvents.length} events scraped`)
-
   let totalFound = 0
   let totalNew = 0
 
-  for (const ev of allEvents) {
-    totalFound++
+  async function processBatch(events: ECNEvent[]) {
+    for (const ev of events) {
+      totalFound++
 
-    const loc = matchCityState(ev.venueCity, ev.venueState, locations)
-    if (!loc) continue
+      const loc = matchCityState(ev.venueCity, ev.venueState, locations)
+      if (!loc) continue
 
-    const existing = await prisma.event.findFirst({
-      where: {
-        eventName: { equals: ev.eventName, mode: "insensitive" },
-        locationId: loc.id,
-      },
-    })
-    if (existing) continue
-
-    const { start, end } = parseRange(ev.eventDateStart, ev.eventDateEnd)
-
-    if (dateFrom && start && start < dateFrom) continue
-    if (dateTo && start && start > dateTo) continue
-    const contact = ev.contacts?.[0] ?? null
-    const hasContact = contact && (contact.organizerName || contact.organizerEmail)
-
-    const event = await prisma.event.create({
-      data: {
-        locationId: loc.id,
-        eventName: ev.eventName,
-        eventDateStart: start ?? undefined,
-        eventDateEnd: end ?? undefined,
-        sourceUrl: ev.officialWebsite || null,
-        sourceSiteId,
-        runId: runId ?? undefined,
-        expectedAttendees: ev.attendees ?? null,
-        organizerName: contact?.organizerName ?? null,
-        organizerEmail: contact?.organizerEmail ?? null,
-        organizerPhone: contact?.organizerPhone ?? null,
-      },
-    })
-    totalNew++
-
-    if (hasContact) {
-      await prisma.eventContact.create({
-        data: {
-          eventId: event.id,
-          name: contact!.organizerName ?? "",
-          email: contact!.organizerEmail,
-          phone: contact!.organizerPhone,
-          isPrimary: true,
-          sourceUrl: ev.officialWebsite ?? null,
-          confidence: "medium",
+      const existing = await prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.eventName, mode: "insensitive" },
+          locationId: loc.id,
         },
       })
-      console.log(`[TheTradeShowCalendar/Ingest] Saved contact for "${ev.eventName}"`)
+      if (existing) continue
+
+      const { start, end } = parseRange(ev.eventDateStart, ev.eventDateEnd)
+
+      if (dateFrom && start && start < dateFrom) continue
+      if (dateTo && start && start > dateTo) continue
+      const contact = ev.contacts?.[0] ?? null
+      const hasContact = contact && (contact.organizerName || contact.organizerEmail)
+
+      const event = await prisma.event.create({
+        data: {
+          locationId: loc.id,
+          eventName: ev.eventName,
+          eventDateStart: start ?? undefined,
+          eventDateEnd: end ?? undefined,
+          sourceUrl: ev.officialWebsite || null,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          expectedAttendees: ev.attendees ?? null,
+          organizerName: contact?.organizerName ?? null,
+          organizerEmail: contact?.organizerEmail ?? null,
+          organizerPhone: contact?.organizerPhone ?? null,
+        },
+      })
+      totalNew++
+
+      if (hasContact) {
+        await prisma.eventContact.create({
+          data: {
+            eventId: event.id,
+            name: contact!.organizerName ?? "",
+            email: contact!.organizerEmail,
+            phone: contact!.organizerPhone,
+            isPrimary: true,
+            sourceUrl: ev.officialWebsite ?? null,
+            confidence: "medium",
+          },
+        })
+      }
     }
   }
 
-  console.log(`[TheTradeShowCalendar/Ingest] Complete: ${totalNew} new from ${totalFound}`)
+  const result = await scrapeECN(
+    {
+      country: "United States",
+      skipContacts: false,
+      maxContactLookups: 30,
+      batchSize: config.batchSize,
+      batchDelayMs: config.batchDelayMs,
+    },
+    processBatch
+  )
+
+  console.log(`[TheTradeShowCalendar/Ingest] Complete: ${totalNew} new from ${totalFound} across ${result.totalBatches} batches`)
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

@@ -189,19 +189,27 @@ function parseListingRows(
 
 async function scrapeListing(
   page: any,
-  options: { pageSize?: number; maxPages?: number }
-): Promise<Omit<ECNEvent, "contacts" | "regionSlug" | "sourceSite">[]> {
+  options: {
+    pageSize?: number
+    batchSize?: number
+    batchDelayMs?: number
+    onBatch?: (
+      events: Omit<ECNEvent, "contacts" | "regionSlug" | "sourceSite">[]
+    ) => Promise<void>
+  }
+): Promise<void> {
   const pageSize = options.pageSize ?? 30
-  const maxPages = options.maxPages ?? 200
+  const batchSize = options.batchSize ?? 5
+  const batchDelayMs = options.batchDelayMs ?? 10_000
 
-  const all: Omit<ECNEvent, "contacts" | "regionSlug" | "sourceSite">[] = []
   const seenUrls = new Set<string>()
 
   let pos = 0
   let total = Infinity
   let pageCount = 0
+  let batchNum = 0
 
-  while (pos < total && pageCount < maxPages) {
+  while (pos < total) {
     const url = `${LISTING_URL}?vShow=&vSort=&vPos=${pos}&vRpP=${pageSize}`
     console.log(`[ECN] Listing page: ${url}`)
 
@@ -217,18 +225,28 @@ async function scrapeListing(
     const rows = parseListingRows($)
     if (rows.length === 0) break
 
+    const batch: Omit<ECNEvent, "contacts" | "regionSlug" | "sourceSite">[] = []
     for (const row of rows) {
       if (seenUrls.has(row.officialWebsite)) continue
       seenUrls.add(row.officialWebsite)
-      all.push(row)
+      batch.push(row)
     }
 
     pos += pageSize
     pageCount++
-    await wait(jitter(1200))
-  }
 
-  return all
+    if (batch.length > 0) {
+      await options.onBatch?.(batch)
+    }
+
+    if (pageCount % batchSize === 0) {
+      batchNum++
+      console.log(`[ECN] Batch ${batchNum} complete (${pageCount} pages, ${seenUrls.size} events) — sleeping ${batchDelayMs}ms`)
+      await wait(batchDelayMs)
+    } else {
+      await wait(jitter(1200))
+    }
+  }
 }
 
 // ---------- Phase 2: organizer contact fallback via Jina ----------
@@ -331,13 +349,17 @@ export async function scrapeOrganizerContact(
 
 // ---------- Orchestration ----------
 
-export async function scrapeECN(options?: {
-  country?: string
-  pageSize?: number
-  maxPages?: number
-  skipContacts?: boolean
-  maxContactLookups?: number
-}): Promise<ECNEvent[]> {
+export async function scrapeECN(
+  options?: {
+    country?: string
+    pageSize?: number
+    batchSize?: number
+    batchDelayMs?: number
+    skipContacts?: boolean
+    maxContactLookups?: number
+  },
+  onBatch?: (events: ECNEvent[]) => Promise<void>
+): Promise<{ totalBatches: number; totalEvents: number }> {
   const country = options?.country ?? "United States"
   const skipContacts = options?.skipContacts ?? false
   const maxContactLookups = options?.maxContactLookups ?? Infinity
@@ -361,70 +383,64 @@ export async function scrapeECN(options?: {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
   )
 
-  let raw: Omit<ECNEvent, "contacts" | "regionSlug" | "sourceSite">[] = []
+  let contactLookups = 0
+  let batchCount = 0
+  let totalEvents = 0
 
   try {
     const ok = await submitCountrySearch(page, country)
     if (!ok) {
-      console.warn(
-        `[ECN] Form submission failed — falling back to unfiltered global listing, will client-filter instead`
-      )
+      console.warn(`[ECN] Form submission failed — falling back to unfiltered global listing`)
     }
-    raw = await scrapeListing(page, {
+
+    await scrapeListing(page, {
       pageSize: options?.pageSize,
-      maxPages: options?.maxPages,
+      batchSize: options?.batchSize,
+      batchDelayMs: options?.batchDelayMs,
+      async onBatch(batch) {
+        const regionMatched = batch.map((ev) => ({
+          ...ev,
+          regionSlug: classifyRegion(ev.venueCity, ev.venueState),
+        }))
+
+        const batchEvents: ECNEvent[] = []
+
+        for (const ev of regionMatched) {
+          let contacts: ECNContact[] = [{
+            organizerName: null, organizerOrg: null, organizerEmail: null,
+            organizerPhone: null, organizerLinkedIn: null, contactSource: null,
+          }]
+
+          if (!skipContacts && contactLookups < maxContactLookups) {
+            try {
+              contacts = [await scrapeOrganizerContact(ev.officialWebsite)]
+            } catch (err) {
+              console.warn(`[ECN] Contact lookup error for ${ev.officialWebsite}: ${err}`)
+            }
+            contactLookups++
+            await wait(jitter(1200))
+          }
+
+          batchEvents.push({
+            ...ev,
+            contacts,
+            expectedAttendees: ev.attendees,
+            sourceSite: "exhibitcitynews.com",
+          })
+        }
+
+        batchCount++
+        totalEvents += batchEvents.length
+        console.log(`[ECN] Batch ${batchCount} complete — ${batchEvents.length} events, passing to callback`)
+
+        if (onBatch) {
+          await onBatch(batchEvents)
+        }
+      },
     })
   } finally {
     await browser.close()
   }
 
-  // All events from the US are in scope — no city-based filtering.
-  const regionMatched = raw.map((ev) => ({
-    ...ev,
-    regionSlug: classifyRegion(ev.venueCity, ev.venueState),
-  }))
-
-  const results: ECNEvent[] = []
-  let contactLookups = 0
-
-  for (const ev of regionMatched) {
-    let contacts: ECNContact[] = [
-      {
-        organizerName: null,
-        organizerOrg: null,
-        organizerEmail: null,
-        organizerPhone: null,
-        organizerLinkedIn: null,
-        contactSource: null,
-      },
-    ]
-
-    if (!skipContacts && contactLookups < maxContactLookups) {
-      try {
-        contacts = [await scrapeOrganizerContact(ev.officialWebsite)]
-      } catch (err) {
-        console.error(
-          `[ECN] Contact lookup error for ${ev.officialWebsite}:`,
-          err
-        )
-      }
-      contactLookups++
-      await wait(jitter(1200))
-    }
-
-    results.push({
-      ...ev,
-      contacts,
-      expectedAttendees: ev.attendees,
-      sourceSite: "exhibitcitynews.com",
-    })
-  }
-
-  results.sort(
-    (a, b) =>
-      new Date(a.eventDateStart).getTime() -
-      new Date(b.eventDateStart).getTime()
-  )
-
-  return results
+  return { totalBatches: batchCount, totalEvents }
 }

@@ -27,22 +27,43 @@ function matchLocation(
     .join(" ")
     .toLowerCase()
 
+  const STATE_TO_CODE: Record<string, string> = {
+    alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+    colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
+    hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA",
+    kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
+    massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS", missouri: "MO",
+    montana: "MT", nebraska: "NE", nevada: "NV", "new hampshire": "NH", "new jersey": "NJ",
+    "new mexico": "NM", "new york": "NY", "north carolina": "NC", "north dakota": "ND",
+    ohio: "OH", oklahoma: "OK", oregon: "OR", pennsylvania: "PA", "rhode island": "RI",
+    "south carolina": "SC", "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT",
+    vermont: "VT", virginia: "VA", washington: "WA", "west virginia": "WV",
+    wisconsin: "WI", wyoming: "WY",
+  }
+  const CODE_TO_STATE = Object.fromEntries(
+    Object.entries(STATE_TO_CODE).map(([k, v]) => [v.toLowerCase(), k])
+  )
+
   for (const loc of locations) {
     const name = loc.name.toLowerCase()
     const city = loc.city?.toLowerCase()
     const state = loc.state?.toLowerCase()
 
     if (ev.venueCity && ev.venueState && city && state) {
-      if (
-        ev.venueCity.toLowerCase().includes(city) &&
-        ev.venueState.toLowerCase() === state
-      )
-        return loc
+      const cityMatch = ev.venueCity.toLowerCase().includes(city) || city.includes(ev.venueCity.toLowerCase())
+      const stateMatch = ev.venueState.toLowerCase() === state
+      if (cityMatch && stateMatch) return loc
     }
     if (city && state && searchText.includes(city) && searchText.includes(state)) return loc
     if (name && searchText.includes(name)) return loc
     if (city && searchText.includes(city)) return loc
+
+    if (state) {
+      const stateName = CODE_TO_STATE[state]
+      if (stateName && searchText.includes(stateName)) return loc
+    }
   }
+
   return null
 }
 

@@ -28,6 +28,20 @@ function norm(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ")
 }
 
+const STATE_NAME_TO_CODE: Record<string, string> = {
+  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+  colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
+  hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA",
+  kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
+  massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS", missouri: "MO",
+  montana: "MT", nebraska: "NE", nevada: "NV", "new hampshire": "NH", "new jersey": "NJ",
+  "new mexico": "NM", "new york": "NY", "north carolina": "NC", "north dakota": "ND",
+  ohio: "OH", oklahoma: "OK", oregon: "OR", pennsylvania: "PA", "rhode island": "RI",
+  "south carolina": "SC", "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT",
+  vermont: "VT", virginia: "VA", washington: "WA", "west virginia": "WV",
+  wisconsin: "WI", wyoming: "WY", "district of columbia": "DC",
+}
+
 async function main() {
   console.log(`[Infosec/Ingest] Starting at ${new Date().toISOString()}`)
   console.log(
@@ -106,6 +120,7 @@ async function main() {
   for (const t of targetLocations) {
     console.log(`  - "${t.cityName}, ${t.stateCode}" → ${t.locationIds.length} location(s)`)
   }
+  console.log(`[Infosec/Ingest] targetLocationMap keys:`, [...targetLocationMap.keys()].slice(0, 10))
 
   let totalFound = 0
   let totalNew = 0
@@ -140,14 +155,13 @@ async function main() {
     }
 
     for (const ev of events) {
+      console.log(`[Infosec/Ingest] DEBUG: ev.city="${ev.city}" ev.state="${ev.state}" name="${ev.eventName}"`)
       const cityKey = norm(ev.city)
-      const stateKey = ev.state.toUpperCase()
-
-      // Find matching location IDs
-      const matchKey = `${cityKey}|${stateKey}`
+      const stateCode = STATE_NAME_TO_CODE[norm(ev.state)] ?? ev.state.toUpperCase()
+      const matchKey = `${cityKey}|${stateCode}`
       const match = targetLocationMap.get(matchKey)
       if (!match) {
-        debug(`Skip (no location match): "${ev.eventName}" city="${ev.city}", state="${ev.state}"`)
+        debug(`Skip (no location match): "${ev.eventName}" city="${ev.city}", state="${ev.state}" → tried key="${matchKey}"`)
         continue
       }
 

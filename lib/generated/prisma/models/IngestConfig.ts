@@ -30,12 +30,16 @@ export type IngestConfigAvgAggregateOutputType = {
   maxMonths: number | null
   maxPages: number | null
   maxLocations: number | null
+  batchSize: number | null
+  batchDelayMs: number | null
 }
 
 export type IngestConfigSumAggregateOutputType = {
   maxMonths: number | null
   maxPages: number | null
   maxLocations: number | null
+  batchSize: number | null
+  batchDelayMs: number | null
 }
 
 export type IngestConfigMinAggregateOutputType = {
@@ -45,6 +49,8 @@ export type IngestConfigMinAggregateOutputType = {
   maxPages: number | null
   maxLocations: number | null
   active: boolean | null
+  batchSize: number | null
+  batchDelayMs: number | null
   updatedAt: Date | null
 }
 
@@ -55,6 +61,8 @@ export type IngestConfigMaxAggregateOutputType = {
   maxPages: number | null
   maxLocations: number | null
   active: boolean | null
+  batchSize: number | null
+  batchDelayMs: number | null
   updatedAt: Date | null
 }
 
@@ -65,6 +73,8 @@ export type IngestConfigCountAggregateOutputType = {
   maxPages: number
   maxLocations: number
   active: number
+  batchSize: number
+  batchDelayMs: number
   updatedAt: number
   _all: number
 }
@@ -74,12 +84,16 @@ export type IngestConfigAvgAggregateInputType = {
   maxMonths?: true
   maxPages?: true
   maxLocations?: true
+  batchSize?: true
+  batchDelayMs?: true
 }
 
 export type IngestConfigSumAggregateInputType = {
   maxMonths?: true
   maxPages?: true
   maxLocations?: true
+  batchSize?: true
+  batchDelayMs?: true
 }
 
 export type IngestConfigMinAggregateInputType = {
@@ -89,6 +103,8 @@ export type IngestConfigMinAggregateInputType = {
   maxPages?: true
   maxLocations?: true
   active?: true
+  batchSize?: true
+  batchDelayMs?: true
   updatedAt?: true
 }
 
@@ -99,6 +115,8 @@ export type IngestConfigMaxAggregateInputType = {
   maxPages?: true
   maxLocations?: true
   active?: true
+  batchSize?: true
+  batchDelayMs?: true
   updatedAt?: true
 }
 
@@ -109,6 +127,8 @@ export type IngestConfigCountAggregateInputType = {
   maxPages?: true
   maxLocations?: true
   active?: true
+  batchSize?: true
+  batchDelayMs?: true
   updatedAt?: true
   _all?: true
 }
@@ -206,6 +226,8 @@ export type IngestConfigGroupByOutputType = {
   maxPages: number
   maxLocations: number
   active: boolean
+  batchSize: number
+  batchDelayMs: number
   updatedAt: Date
   _count: IngestConfigCountAggregateOutputType | null
   _avg: IngestConfigAvgAggregateOutputType | null
@@ -239,6 +261,8 @@ export type IngestConfigWhereInput = {
   maxPages?: Prisma.IntFilter<"IngestConfig"> | number
   maxLocations?: Prisma.IntFilter<"IngestConfig"> | number
   active?: Prisma.BoolFilter<"IngestConfig"> | boolean
+  batchSize?: Prisma.IntFilter<"IngestConfig"> | number
+  batchDelayMs?: Prisma.IntFilter<"IngestConfig"> | number
   updatedAt?: Prisma.DateTimeFilter<"IngestConfig"> | Date | string
 }
 
@@ -249,6 +273,8 @@ export type IngestConfigOrderByWithRelationInput = {
   maxPages?: Prisma.SortOrder
   maxLocations?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  batchSize?: Prisma.SortOrder
+  batchDelayMs?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -262,6 +288,8 @@ export type IngestConfigWhereUniqueInput = Prisma.AtLeast<{
   maxPages?: Prisma.IntFilter<"IngestConfig"> | number
   maxLocations?: Prisma.IntFilter<"IngestConfig"> | number
   active?: Prisma.BoolFilter<"IngestConfig"> | boolean
+  batchSize?: Prisma.IntFilter<"IngestConfig"> | number
+  batchDelayMs?: Prisma.IntFilter<"IngestConfig"> | number
   updatedAt?: Prisma.DateTimeFilter<"IngestConfig"> | Date | string
 }, "id" | "scraper">
 
@@ -272,6 +300,8 @@ export type IngestConfigOrderByWithAggregationInput = {
   maxPages?: Prisma.SortOrder
   maxLocations?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  batchSize?: Prisma.SortOrder
+  batchDelayMs?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.IngestConfigCountOrderByAggregateInput
   _avg?: Prisma.IngestConfigAvgOrderByAggregateInput
@@ -290,6 +320,8 @@ export type IngestConfigScalarWhereWithAggregatesInput = {
   maxPages?: Prisma.IntWithAggregatesFilter<"IngestConfig"> | number
   maxLocations?: Prisma.IntWithAggregatesFilter<"IngestConfig"> | number
   active?: Prisma.BoolWithAggregatesFilter<"IngestConfig"> | boolean
+  batchSize?: Prisma.IntWithAggregatesFilter<"IngestConfig"> | number
+  batchDelayMs?: Prisma.IntWithAggregatesFilter<"IngestConfig"> | number
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"IngestConfig"> | Date | string
 }
 
@@ -300,6 +332,8 @@ export type IngestConfigCreateInput = {
   maxPages?: number
   maxLocations?: number
   active?: boolean
+  batchSize?: number
+  batchDelayMs?: number
   updatedAt?: Date | string
 }
 
@@ -310,6 +344,8 @@ export type IngestConfigUncheckedCreateInput = {
   maxPages?: number
   maxLocations?: number
   active?: boolean
+  batchSize?: number
+  batchDelayMs?: number
   updatedAt?: Date | string
 }
 
@@ -320,6 +356,8 @@ export type IngestConfigUpdateInput = {
   maxPages?: Prisma.IntFieldUpdateOperationsInput | number
   maxLocations?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  batchSize?: Prisma.IntFieldUpdateOperationsInput | number
+  batchDelayMs?: Prisma.IntFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -330,6 +368,8 @@ export type IngestConfigUncheckedUpdateInput = {
   maxPages?: Prisma.IntFieldUpdateOperationsInput | number
   maxLocations?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  batchSize?: Prisma.IntFieldUpdateOperationsInput | number
+  batchDelayMs?: Prisma.IntFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -340,6 +380,8 @@ export type IngestConfigCreateManyInput = {
   maxPages?: number
   maxLocations?: number
   active?: boolean
+  batchSize?: number
+  batchDelayMs?: number
   updatedAt?: Date | string
 }
 
@@ -350,6 +392,8 @@ export type IngestConfigUpdateManyMutationInput = {
   maxPages?: Prisma.IntFieldUpdateOperationsInput | number
   maxLocations?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  batchSize?: Prisma.IntFieldUpdateOperationsInput | number
+  batchDelayMs?: Prisma.IntFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -360,6 +404,8 @@ export type IngestConfigUncheckedUpdateManyInput = {
   maxPages?: Prisma.IntFieldUpdateOperationsInput | number
   maxLocations?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  batchSize?: Prisma.IntFieldUpdateOperationsInput | number
+  batchDelayMs?: Prisma.IntFieldUpdateOperationsInput | number
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -370,6 +416,8 @@ export type IngestConfigCountOrderByAggregateInput = {
   maxPages?: Prisma.SortOrder
   maxLocations?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  batchSize?: Prisma.SortOrder
+  batchDelayMs?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -377,6 +425,8 @@ export type IngestConfigAvgOrderByAggregateInput = {
   maxMonths?: Prisma.SortOrder
   maxPages?: Prisma.SortOrder
   maxLocations?: Prisma.SortOrder
+  batchSize?: Prisma.SortOrder
+  batchDelayMs?: Prisma.SortOrder
 }
 
 export type IngestConfigMaxOrderByAggregateInput = {
@@ -386,6 +436,8 @@ export type IngestConfigMaxOrderByAggregateInput = {
   maxPages?: Prisma.SortOrder
   maxLocations?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  batchSize?: Prisma.SortOrder
+  batchDelayMs?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -396,6 +448,8 @@ export type IngestConfigMinOrderByAggregateInput = {
   maxPages?: Prisma.SortOrder
   maxLocations?: Prisma.SortOrder
   active?: Prisma.SortOrder
+  batchSize?: Prisma.SortOrder
+  batchDelayMs?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -403,6 +457,8 @@ export type IngestConfigSumOrderByAggregateInput = {
   maxMonths?: Prisma.SortOrder
   maxPages?: Prisma.SortOrder
   maxLocations?: Prisma.SortOrder
+  batchSize?: Prisma.SortOrder
+  batchDelayMs?: Prisma.SortOrder
 }
 
 
@@ -414,6 +470,8 @@ export type IngestConfigSelect<ExtArgs extends runtime.Types.Extensions.Internal
   maxPages?: boolean
   maxLocations?: boolean
   active?: boolean
+  batchSize?: boolean
+  batchDelayMs?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["ingestConfig"]>
 
@@ -424,6 +482,8 @@ export type IngestConfigSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   maxPages?: boolean
   maxLocations?: boolean
   active?: boolean
+  batchSize?: boolean
+  batchDelayMs?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["ingestConfig"]>
 
@@ -434,6 +494,8 @@ export type IngestConfigSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   maxPages?: boolean
   maxLocations?: boolean
   active?: boolean
+  batchSize?: boolean
+  batchDelayMs?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["ingestConfig"]>
 
@@ -444,10 +506,12 @@ export type IngestConfigSelectScalar = {
   maxPages?: boolean
   maxLocations?: boolean
   active?: boolean
+  batchSize?: boolean
+  batchDelayMs?: boolean
   updatedAt?: boolean
 }
 
-export type IngestConfigOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scraper" | "maxMonths" | "maxPages" | "maxLocations" | "active" | "updatedAt", ExtArgs["result"]["ingestConfig"]>
+export type IngestConfigOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scraper" | "maxMonths" | "maxPages" | "maxLocations" | "active" | "batchSize" | "batchDelayMs" | "updatedAt", ExtArgs["result"]["ingestConfig"]>
 
 export type $IngestConfigPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "IngestConfig"
@@ -459,6 +523,8 @@ export type $IngestConfigPayload<ExtArgs extends runtime.Types.Extensions.Intern
     maxPages: number
     maxLocations: number
     active: boolean
+    batchSize: number
+    batchDelayMs: number
     updatedAt: Date
   }, ExtArgs["result"]["ingestConfig"]>
   composites: {}
@@ -889,6 +955,8 @@ export interface IngestConfigFieldRefs {
   readonly maxPages: Prisma.FieldRef<"IngestConfig", 'Int'>
   readonly maxLocations: Prisma.FieldRef<"IngestConfig", 'Int'>
   readonly active: Prisma.FieldRef<"IngestConfig", 'Boolean'>
+  readonly batchSize: Prisma.FieldRef<"IngestConfig", 'Int'>
+  readonly batchDelayMs: Prisma.FieldRef<"IngestConfig", 'Int'>
   readonly updatedAt: Prisma.FieldRef<"IngestConfig", 'DateTime'>
 }
     

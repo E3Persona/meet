@@ -1422,6 +1422,8 @@ export const IngestConfigScalarFieldEnum = {
   maxPages: 'maxPages',
   maxLocations: 'maxLocations',
   active: 'active',
+  batchSize: 'batchSize',
+  batchDelayMs: 'batchDelayMs',
   updatedAt: 'updatedAt'
 } as const
 
