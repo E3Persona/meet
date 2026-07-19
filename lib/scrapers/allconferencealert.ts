@@ -34,6 +34,16 @@ async function getBrowser() {
   })
 }
 
+async function setHumanHeaders(page: any) {
+  await page.setExtraHeaders({
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+  })
+  await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }])
+}
+
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 function withHardTimeout<T>(
@@ -64,6 +74,25 @@ async function gotoAndGetStatus(
       `goto ${url}`
     )) as { status(): number } | null
     const status = response ? response.status() : null
+
+    // Cloudflare challenge pages often return 403 or 503 with challenge HTML
+    if (status === 403 || status === 503) {
+      const html = await page.content()
+      if (isCloudflareChallenge(html)) {
+        console.log(`[ACA] Cloudflare challenge detected (status=${status}), waiting for challenge to complete...`)
+        await wait(5000)
+        try {
+          await page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 20000 })
+        } catch {
+          // No subsequent navigation fired — challenge may have resolved in-place
+        }
+        const newStatus = response.status()
+        if (newStatus === 200) {
+          return { ok: true, status: 200, error: null }
+        }
+      }
+    }
+
     const ok = status !== null && status >= 200 && status < 400
     if (!ok) console.warn(`[ACA] Non-OK status ${status} for ${url}`)
     return { ok, status, error: null }
@@ -72,6 +101,15 @@ async function gotoAndGetStatus(
     console.error(`[ACA] Navigation failed for ${url}: ${message}`)
     return { ok: false, status: null, error: message }
   }
+}
+
+function isCloudflareChallenge(html: string): boolean {
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")
+  return (
+    text.includes("Just a moment") ||
+    text.includes("Enable JavaScript and cookies") ||
+    text.includes("Cloudflare")
+  )
 }
 
 const MONTHS: Record<string, number> = {
@@ -528,6 +566,8 @@ export async function scrapeACA(options?: {
   try {
     const listingPage = await browser.newPage()
     const detailPage = fetchDetails ? await browser.newPage() : null
+    await setHumanHeaders(listingPage)
+    if (detailPage) await setHumanHeaders(detailPage)
 
     console.log(`[ACA] Listing: ${listingUrl}`)
 
