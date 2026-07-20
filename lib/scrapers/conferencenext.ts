@@ -84,7 +84,25 @@ async function getBrowser() {
   })
 }
 
+async function setHumanHeaders(page: any) {
+  await page.setExtraHTTPHeaders({
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+  })
+}
+
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+function isCloudflareChallenge(html: string): boolean {
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ")
+  return (
+    text.includes("Just a moment") ||
+    text.includes("Enable JavaScript and cookies") ||
+    text.includes("Cloudflare")
+  )
+}
 
 // Decode Cloudflare email obfuscation (fallback only — most events show plain email in .descr)
 function decodeCFEmail(encoded: string): string {
@@ -123,7 +141,23 @@ async function scrapeListingPage(
   page: any,
   url: string
 ): Promise<{ cards: RawCard[]; hasNext: boolean }> {
-  await withRetry(() => page.goto(url, { waitUntil: "networkidle2", timeout: 30000 }), `listing ${url}`)
+  await withRetry(async () => {
+    const resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 })
+    if (resp && (resp.status() === 403 || resp.status() === 503)) {
+      const html = await page.content()
+      if (isCloudflareChallenge(html)) {
+        console.log(`[CN] Cloudflare challenge on listing (status=${resp.status()}), waiting...`)
+        await wait(10000)
+        try {
+          await page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 20000 })
+        } catch { /* challenge may have resolved in-place */ }
+        const htmlAfter = await page.content()
+        if (!isCloudflareChallenge(htmlAfter)) {
+          console.log(`[CN] Challenge resolved for listing`)
+        }
+      }
+    }
+  }, `listing ${url}`)
 
   const result = await page.evaluate(() => {
     const cards: RawCard[] = []
@@ -185,7 +219,23 @@ async function scrapeDetailPage(
   page: any,
   url: string
 ): Promise<Partial<CNDetailResult>> {
-  await withRetry(() => page.goto(url, { waitUntil: "networkidle2", timeout: 30000 }), `detail ${url}`)
+  await withRetry(async () => {
+    const resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 })
+    if (resp && (resp.status() === 403 || resp.status() === 503)) {
+      const html = await page.content()
+      if (isCloudflareChallenge(html)) {
+        console.log(`[CN] Cloudflare challenge on detail (status=${resp.status()}), waiting...`)
+        await wait(10000)
+        try {
+          await page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 20000 })
+        } catch { /* challenge may have resolved in-place */ }
+        const htmlAfter = await page.content()
+        if (!isCloudflareChallenge(htmlAfter)) {
+          console.log(`[CN] Challenge resolved for detail`)
+        }
+      }
+    }
+  }, `detail ${url}`)
 
   return await page.evaluate(
     (decodeFnBody: string) => {
@@ -285,7 +335,7 @@ export async function scrapeCN(options?: {
   maxDetailPages?: number // cap on how many detail pages to visit
 }): Promise<CNEvent[]> {
   const slugsToScrape = options?.citySlugs || Object.keys(TARGET_CITY_SLUGS)
-  const maxPages = options?.maxPagesPerCity || 20
+  const maxPages = options?.maxPagesPerCity ?? 999
   const skipDetails = options?.skipDetailPages ?? false
   const maxDetail = options?.maxDetailPages ?? Infinity
 
@@ -297,6 +347,8 @@ export async function scrapeCN(options?: {
   try {
     const listingPage = await browser.newPage()
     const detailPage = skipDetails ? null : await browser.newPage()
+    await setHumanHeaders(listingPage)
+    if (detailPage) await setHumanHeaders(detailPage)
 
     for (const slug of slugsToScrape) {
       const cityMeta = TARGET_CITY_SLUGS[slug] || { city: slug, state: null }
