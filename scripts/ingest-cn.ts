@@ -72,148 +72,168 @@ async function main() {
   const runLocations = config.maxLocations > 0
     ? cnLocations.slice(0, config.maxLocations)
     : cnLocations
-  console.log(`[CN/Ingest] ${cnLocations.length} CN-supported locations, running ${runLocations.length}:`)
+  const pagesPerBatch = 5
+  console.log(`[CN/Ingest] ${cnLocations.length} CN-supported locations, running ${runLocations.length}, pagesPerBatch=${pagesPerBatch}:`)
   for (const loc of runLocations) {
     const slug = cityToCnSlug(loc.city ?? "", loc.state ?? "")
     console.log(`  - "${loc.name}" (${loc.city}, ${loc.state}) → slug="${slug}"`)
+  }
+
+  // Build cityKey -> location lookup (cityKey = "city|state")
+  const cityLocMap = new Map<string, typeof runLocations[number]>()
+  for (const loc of runLocations) {
+    const key = `${loc.city ?? ""}|${loc.state ?? ""}`.toLowerCase()
+    cityLocMap.set(key, loc)
   }
 
   let totalFound = 0
   let totalNew = 0
   let skippedDuplicate = 0
   let skippedDateRange = 0
+  let skippedNoLocation = 0
   let withContact = 0
   let withoutContact = 0
+  let batchNum = 0
 
-  for (const loc of runLocations) {
-    const slug = cityToCnSlug(loc.city ?? "", loc.state ?? "")
-    if (!slug) continue
+  const slugsToScrape = runLocations
+    .map((loc) => cityToCnSlug(loc.city ?? "", loc.state ?? ""))
+    .filter((s): s is string => s !== null)
 
-    console.log(`\n[CN/Ingest] Scraping ${slug} → ${loc.name}`)
-    try {
-      const scrapeStart = Date.now()
-      const events = await scrapeCN({
-        citySlugs: [slug],
+  const saveBatch = async (events: import("../lib/scrapers/conferencenext").CNEvent[]) => {
+    batchNum++
+    console.log(`\n[CN/Ingest] === Batch ${batchNum}: saving ${events.length} events ===`)
+    for (const ev of events) {
+      totalFound++
+
+      // Match event's scraped city/state back to a DB location
+      const locKey = `${ev.venueCity}|${ev.venueState ?? ""}`.toLowerCase()
+      const loc = cityLocMap.get(locKey)
+      if (!loc) {
+        skippedNoLocation++
+        debug(`Skip (no location match): "${ev.eventName}" city="${ev.venueCity}" state="${ev.venueState}"`)
+        continue
+      }
+
+      let eventDateStart: Date | null = null
+      let eventDateEnd: Date | null = null
+      if (ev.eventDateStart) {
+        const d = new Date(ev.eventDateStart)
+        if (!isNaN(d.getTime())) eventDateStart = d
+      }
+      if (ev.eventDateEnd) {
+        const d = new Date(ev.eventDateEnd)
+        if (!isNaN(d.getTime())) eventDateEnd = d
+      }
+
+      if (dateFrom && eventDateStart && eventDateStart < dateFrom) {
+        skippedDateRange++
+        debug(`Skip (before dateFrom): "${ev.eventName}" date=${eventDateStart.toISOString().slice(0, 10)}`)
+        continue
+      }
+      if (dateTo && eventDateStart && eventDateStart > dateTo) {
+        skippedDateRange++
+        debug(`Skip (after dateTo): "${ev.eventName}" date=${eventDateStart.toISOString().slice(0, 10)}`)
+        continue
+      }
+
+      const existing = await prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.eventName, mode: "insensitive" },
+          locationId: loc.id,
+          eventDateStart: eventDateStart ?? undefined,
+        },
+      })
+      if (existing) {
+        skippedDuplicate++
+        debug(`Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
+        continue
+      }
+
+      const contacts = ev.contacts ?? []
+      const primaryContact = contacts.find((c) => c.organizerEmail) ?? contacts[0]
+
+      debug(`Processing: "${ev.eventName}" → location="${loc.name}" (${loc.id})`)
+      debug(`  sourceUrl=${ev.eventUrl}`)
+      debug(`  contact: name="${primaryContact?.organizerName ?? ""}" email="${primaryContact?.organizerEmail ?? ""}" phone="${primaryContact?.organizerPhone ?? ""}" org="${primaryContact?.organizerOrg ?? ""}"`)
+
+      const event = await prisma.event.create({
+        data: {
+          locationId: loc.id,
+          eventName: ev.eventName,
+          eventDateStart,
+          eventDateEnd,
+          sourceUrl: ev.eventUrl,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          expectedAttendees: null,
+          organizerName: primaryContact?.organizerName ?? null,
+          organizerTitle: primaryContact?.organizerOrg ?? null,
+          organizerEmail: primaryContact?.organizerEmail ?? null,
+          organizerPhone: primaryContact?.organizerPhone ?? null,
+        },
+      })
+      totalNew++
+
+      let savedContact = false
+      for (const c of contacts) {
+        if (!c.organizerName && !c.organizerEmail) continue
+        await prisma.eventContact.create({
+          data: {
+            eventId: event.id,
+            name: c.organizerName ?? "",
+            title: c.organizerOrg,
+            email: c.organizerEmail,
+            phone: c.organizerPhone,
+            isPrimary: !savedContact,
+            sourceUrl: ev.eventUrl,
+            confidence: "high",
+          },
+        })
+        savedContact = true
+      }
+
+      if (savedContact) {
+        withContact++
+        console.log(`[CN/Ingest] ✓ Saved "${ev.eventName}" — name="${primaryContact?.organizerName ?? ""}" email="${primaryContact?.organizerEmail ?? ""}"`)
+      } else {
+        withoutContact++
+        console.log(`[CN/Ingest] ✗ No contact for "${ev.eventName}" url=${ev.eventUrl}`)
+      }
+    }
+    console.log(`[CN/Ingest] === Batch ${batchNum} done: ${events.length} processed ===`)
+  }
+
+  try {
+    let hasMore = false
+    let batchIdx = 0
+
+    do {
+      batchIdx++
+      console.log(`\n[CN/Ingest] Batch-cycle ${batchIdx}: scraping next ${pagesPerBatch} pages across all ${slugsToScrape.length} cities...`)
+      const { events, hasMore: hm } = await scrapeCN({
+        citySlugs: slugsToScrape,
         maxPagesPerCity: config.maxPages,
         skipDetailPages: false,
+        pagesPerBatch,
+        onBatch: saveBatch,
       })
-      const scrapeDuration = ((Date.now() - scrapeStart) / 1000).toFixed(1)
-
-      console.log(`[CN/Ingest] ${slug}: ${events.length} events scraped in ${scrapeDuration}s`)
-
-      if (events.length > 0) {
-        debug(`First 3 events from ${slug}:`)
-        for (const ev of events.slice(0, 3)) {
-          debug(`  "${ev.eventName}" date=${ev.eventDateStart ?? "null"} url=${ev.eventUrl}`)
-          debug(`    contacts=${JSON.stringify(ev.contacts)}`)
-        }
-      }
-
-      for (const ev of events) {
-        totalFound++
-
-        let eventDateStart: Date | null = null
-        let eventDateEnd: Date | null = null
-        if (ev.eventDateStart) {
-          const d = new Date(ev.eventDateStart)
-          if (!isNaN(d.getTime())) eventDateStart = d
-        }
-        if (ev.eventDateEnd) {
-          const d = new Date(ev.eventDateEnd)
-          if (!isNaN(d.getTime())) eventDateEnd = d
-        }
-
-        if (dateFrom && eventDateStart && eventDateStart < dateFrom) {
-          skippedDateRange++
-          debug(`Skip (before dateFrom): "${ev.eventName}" date=${eventDateStart.toISOString().slice(0, 10)}`)
-          continue
-        }
-        if (dateTo && eventDateStart && eventDateStart > dateTo) {
-          skippedDateRange++
-          debug(`Skip (after dateTo): "${ev.eventName}" date=${eventDateStart.toISOString().slice(0, 10)}`)
-          continue
-        }
-
-        const existing = await prisma.event.findFirst({
-          where: {
-            eventName: { equals: ev.eventName, mode: "insensitive" },
-            locationId: loc.id,
-            eventDateStart: eventDateStart ?? undefined,
-          },
-        })
-        if (existing) {
-          skippedDuplicate++
-          debug(`Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
-          continue
-        }
-
-        const contacts = ev.contacts ?? []
-        const primaryContact = contacts.find((c) => c.organizerEmail) ?? contacts[0]
-
-        debug(`Processing: "${ev.eventName}" → location="${loc.name}" (${loc.id})`)
-        debug(`  sourceUrl=${ev.eventUrl}`)
-        debug(`  contact: name="${primaryContact?.organizerName ?? ""}" email="${primaryContact?.organizerEmail ?? ""}" phone="${primaryContact?.organizerPhone ?? ""}" org="${primaryContact?.organizerOrg ?? ""}"`)
-
-        const event = await prisma.event.create({
-          data: {
-            locationId: loc.id,
-            eventName: ev.eventName,
-            eventDateStart,
-            eventDateEnd,
-            sourceUrl: ev.eventUrl,
-            sourceSiteId,
-            runId: runId ?? undefined,
-            expectedAttendees: null,
-            organizerName: primaryContact?.organizerName ?? null,
-            organizerTitle: primaryContact?.organizerOrg ?? null,
-            organizerEmail: primaryContact?.organizerEmail ?? null,
-            organizerPhone: primaryContact?.organizerPhone ?? null,
-          },
-        })
-        totalNew++
-        debug(`  Saved event id=${event.id}`)
-
-        // Save all contacts to EventContact
-        let savedContact = false
-        for (const c of contacts) {
-          if (!c.organizerName && !c.organizerEmail) continue
-          await prisma.eventContact.create({
-            data: {
-              eventId: event.id,
-              name: c.organizerName ?? "",
-              title: c.organizerOrg,
-              email: c.organizerEmail,
-              phone: c.organizerPhone,
-              isPrimary: !savedContact,
-              sourceUrl: ev.eventUrl,
-              confidence: "high",
-            },
-          })
-          savedContact = true
-          debug(`  Saved contact: name="${c.organizerName}" email="${c.organizerEmail}" phone="${c.organizerPhone}"`)
-        }
-
-        if (savedContact) {
-          withContact++
-          console.log(`[CN/Ingest] ✓ Saved "${ev.eventName}" — name="${primaryContact?.organizerName ?? ""}" email="${primaryContact?.organizerEmail ?? ""}" phone="${primaryContact?.organizerPhone ?? ""}"`)
-        } else {
-          withoutContact++
-          console.log(`[CN/Ingest] ✗ No contact for "${ev.eventName}" url=${ev.eventUrl}`)
-        }
-      }
-    } catch (err) {
-      console.error(`[CN/Ingest] Error scraping ${slug}:`, err)
-    }
+      hasMore = hm
+      console.log(`[CN/Ingest] Batch-cycle ${batchIdx} complete: ${events.length} events, hasMore=${hasMore}`)
+    } while (hasMore)
+  } catch (err) {
+    console.error(`[CN/Ingest] Error during scrape:`, err)
   }
 
   console.log(`\n[CN/Ingest] ═══════════════════════════════════════`)
   console.log(`[CN/Ingest] SUMMARY`)
-  console.log(`[CN/Ingest]   Total scraped:    ${totalFound}`)
-  console.log(`[CN/Ingest]   Date filtered:    ${skippedDateRange}`)
-  console.log(`[CN/Ingest]   Duplicates:       ${skippedDuplicate}`)
-  console.log(`[CN/Ingest]   New saved:        ${totalNew}`)
-  console.log(`[CN/Ingest]     with contact:   ${withContact}`)
+  console.log(`[CN/Ingest]   Total scraped:     ${totalFound}`)
+  console.log(`[CN/Ingest]   No location match: ${skippedNoLocation}`)
+  console.log(`[CN/Ingest]   Date filtered:     ${skippedDateRange}`)
+  console.log(`[CN/Ingest]   Duplicates:        ${skippedDuplicate}`)
+  console.log(`[CN/Ingest]   New saved:         ${totalNew}`)
+  console.log(`[CN/Ingest]     with contact:    ${withContact}`)
   console.log(`[CN/Ingest]     without contact: ${withoutContact}`)
+  console.log(`[CN/Ingest]   Batches:           ${batchNum}`)
   console.log(`[CN/Ingest] ═══════════════════════════════════════\n`)
 
   return { recordsFound: totalFound, recordsNew: totalNew }

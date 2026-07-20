@@ -331,18 +331,25 @@ function parseVenueText(venueText: string): { city: string; country: string } {
 export async function scrapeCN(options?: {
   citySlugs?: string[]
   maxPagesPerCity?: number
-  skipDetailPages?: boolean // when true, does not follow detail pages (no contacts extracted)
-  maxDetailPages?: number // cap on how many detail pages to visit
-}): Promise<CNEvent[]> {
+  skipDetailPages?: boolean
+  maxDetailPages?: number
+  pagesPerBatch?: number
+  onBatch?: (events: CNEvent[]) => Promise<void>
+}): Promise<{ events: CNEvent[]; hasMore: boolean }> {
   const slugsToScrape = options?.citySlugs || Object.keys(TARGET_CITY_SLUGS)
   const maxPages = options?.maxPagesPerCity ?? 999
   const skipDetails = options?.skipDetailPages ?? false
   const maxDetail = options?.maxDetailPages ?? Infinity
+  const pagesPerBatch = options?.pagesPerBatch ?? 999
+  const onBatch = options?.onBatch
 
   const browser = await getBrowser()
-  const results: CNEvent[] = []
+  const allResults: CNEvent[] = []
   const seenUrls = new Set<string>()
   let detailsVisited = 0
+  let pagesSinceBatch = 0
+  let batchEvents: CNEvent[] = []
+  let hasMorePending = false
 
   try {
     const listingPage = await browser.newPage()
@@ -385,7 +392,7 @@ export async function scrapeCN(options?: {
             await wait(2000)
           }
 
-          results.push({
+          const ev: CNEvent = {
             eventName: card.name.replace(/\s*\([A-Z0-9\-]+\)\s*$/, "").trim(),
             eventAcronym: acronym,
             eventType: "Conference",
@@ -410,12 +417,25 @@ export async function scrapeCN(options?: {
             indexedIn: detail.indexedIn || [],
             expectedAttendees: null,
             sourceSite: "conferencenext.com",
-          })
+          }
+
+          batchEvents.push(ev)
+          allResults.push(ev)
         }
 
         keepGoing = hasNext
         pageNum++
+        pagesSinceBatch++
         await wait(1500) // between listing pages
+
+        if (pagesSinceBatch >= pagesPerBatch && onBatch) {
+          console.log(`[CN] Batch of ${pagesSinceBatch} pages complete, yielding ${batchEvents.length} events`)
+          await onBatch([...batchEvents])
+          batchEvents = []
+          pagesSinceBatch = 0
+          hasMorePending = true
+          console.log(`[CN] Resuming next batch...`)
+        }
       }
     }
 
@@ -425,12 +445,16 @@ export async function scrapeCN(options?: {
     await browser.close()
   }
 
-  // Chronological sort — hard requirement
-  results.sort(
+  if (batchEvents.length > 0 && onBatch) {
+    await onBatch(batchEvents)
+    batchEvents = []
+  }
+
+  allResults.sort(
     (a, b) =>
       new Date(a.eventDateStart).getTime() -
       new Date(b.eventDateStart).getTime()
   )
 
-  return results
+  return { events: allResults, hasMore: hasMorePending }
 }
