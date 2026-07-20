@@ -349,7 +349,6 @@ export async function scrapeCN(options?: {
   let detailsVisited = 0
   let pagesSinceBatch = 0
   let batchEvents: CNEvent[] = []
-  let hasMorePending = false
 
   try {
     const listingPage = await browser.newPage()
@@ -429,12 +428,11 @@ export async function scrapeCN(options?: {
         await wait(1500) // between listing pages
 
         if (pagesSinceBatch >= pagesPerBatch && onBatch) {
-          console.log(`[CN] Batch of ${pagesSinceBatch} pages complete, yielding ${batchEvents.length} events`)
+          console.log(`[CN] Batch of ${pagesSinceBatch} pages complete, yielding ${batchEvents.length} events — saving to DB`)
           await onBatch([...batchEvents])
           batchEvents = []
           pagesSinceBatch = 0
-          hasMorePending = true
-          console.log(`[CN] Resuming next batch...`)
+          console.log(`[CN] Resuming scraping...`)
         }
       }
     }
@@ -456,5 +454,5 @@ export async function scrapeCN(options?: {
       new Date(b.eventDateStart).getTime()
   )
 
-  return { events: allResults, hasMore: hasMorePending }
+  return { events: allResults, hasMore: false }
 }

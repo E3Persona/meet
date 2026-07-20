@@ -204,22 +204,15 @@ async function main() {
   }
 
   try {
-    let hasMore = false
-    let batchIdx = 0
-
-    do {
-      batchIdx++
-      console.log(`\n[CN/Ingest] Batch-cycle ${batchIdx}: scraping next ${pagesPerBatch} pages across all ${slugsToScrape.length} cities...`)
-      const { events, hasMore: hm } = await scrapeCN({
-        citySlugs: slugsToScrape,
-        maxPagesPerCity: config.maxPages,
-        skipDetailPages: false,
-        pagesPerBatch,
-        onBatch: saveBatch,
-      })
-      hasMore = hm
-      console.log(`[CN/Ingest] Batch-cycle ${batchIdx} complete: ${events.length} events, hasMore=${hasMore}`)
-    } while (hasMore)
+    console.log(`\n[CN/Ingest] Starting single scrape run across all ${slugsToScrape.length} cities, saving to DB every ${pagesPerBatch} pages...`)
+    const { events, hasMore } = await scrapeCN({
+      citySlugs: slugsToScrape,
+      maxPagesPerCity: config.maxPages,
+      skipDetailPages: false,
+      pagesPerBatch,
+      onBatch: saveBatch,
+    })
+    console.log(`[CN/Ingest] Scrape complete: ${events.length} events total, hasMore=${hasMore}`)
   } catch (err) {
     console.error(`[CN/Ingest] Error during scrape:`, err)
   }
