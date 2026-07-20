@@ -79,14 +79,16 @@ async function gotoAndGetStatus(
       const html = await page.content()
       if (isCloudflareChallenge(html)) {
         console.log(`[ACA] Cloudflare challenge detected (status=${status}), waiting for challenge to complete...`)
-        await wait(5000)
+        await wait(10000)
         try {
           await page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 20000 })
         } catch {
           // No subsequent navigation fired — challenge may have resolved in-place
         }
-        const newStatus = response.status()
-        if (newStatus === 200) {
+        // re-check the page content after waiting — response.status() is stale
+        const htmlAfter = await page.content()
+        if (!isCloudflareChallenge(htmlAfter)) {
+          console.log(`[ACA] Challenge resolved, page is now accessible`)
           return { ok: true, status: 200, error: null }
         }
       }
