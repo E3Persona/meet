@@ -118,6 +118,15 @@ export interface ICAEvent {
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const jitter = (baseMs: number) => baseMs + Math.random() * baseMs * 0.5
 
+async function setHumanHeaders(page: any) {
+  await page.setExtraHTTPHeaders({
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+  })
+}
+
 function decodeCFEmail(encoded: string): string {
   let email = ""
   const r = parseInt(encoded.slice(0, 2), 16)
@@ -250,23 +259,18 @@ async function fetchListingPage(
   totalPages: number
 }> {
   await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 })
-  await wait(8000)
 
   let html: string = await page.content()
 
   if (isCloudflareChallenge(html)) {
-    await wait(5000)
-    try {
-      await page.waitForNavigation({
-        waitUntil: "networkidle2",
-        timeout: 15000,
-      })
-    } catch {}
+    console.log(`[ICA] CF challenge detected, waiting up to 30s...`)
+    await wait(30000)
     html = await page.content()
     if (isCloudflareChallenge(html)) {
       console.warn(`[ICA] Still blocked by Cloudflare: ${url}`)
       return { cards: [], totalPages: 0 }
     }
+    console.log(`[ICA] Challenge resolved`)
   }
 
   const $ = cheerio.load(html)
@@ -375,18 +379,14 @@ async function scrapeDetailPage(
   let html: string = await page.content()
 
   if (isCloudflareChallenge(html)) {
-    await wait(5000)
-    try {
-      await page.waitForNavigation({
-        waitUntil: "networkidle2",
-        timeout: 15000,
-      })
-    } catch {}
+    console.log(`[ICA] CF challenge on detail, waiting up to 30s...`)
+    await wait(30000)
     html = await page.content()
     if (isCloudflareChallenge(html)) {
       console.warn(`[ICA] Still blocked by Cloudflare: ${url}`)
       return {}
     }
+    console.log(`[ICA] Challenge resolved`)
   }
 
   const $ = cheerio.load(html)
@@ -560,12 +560,16 @@ export async function scrapeICA(options?: {
   maxPagesPerSlug?: number
   maxDetailPages?: number
   skipDetailPages?: boolean
-}): Promise<ICAEvent[]> {
+  pagesPerBatch?: number
+  onBatch?: (events: ICAEvent[]) => Promise<void>
+}): Promise<{ events: ICAEvent[]; hasMore: boolean }> {
   const slugs = options?.citySlugs ?? Object.keys(ICA_CITY_SLUGS)
   const months = options?.months ?? ICA_MONTHS
-  const maxPages = options?.maxPagesPerSlug ?? 10
+  const maxPages = options?.maxPagesPerSlug ?? 999
   const maxDetail = options?.maxDetailPages ?? Infinity
   const skipDetail = options?.skipDetailPages ?? false
+  const pagesPerBatch = options?.pagesPerBatch ?? 999
+  const onBatch = options?.onBatch
 
   const { launch: launchBrowser } = await import("puppeteer-core")
 
@@ -582,12 +586,12 @@ export async function scrapeICA(options?: {
 
   const page = await browser.newPage()
   await page.setViewport({ width: 1920, height: 1080 })
-  await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-  )
+  await setHumanHeaders(page)
 
-  const results: ICAEvent[] = []
+  const allResults: ICAEvent[] = []
   const seenUrls = new Set<string>()
+  let pagesSinceBatch = 0
+  let batchEvents: ICAEvent[] = []
 
   try {
     for (const slug of slugs) {
@@ -598,7 +602,7 @@ export async function scrapeICA(options?: {
         let pageNum = 1
         let totalPages = 1
 
-        while (pageNum <= Math.min(totalPages, maxPages)) {
+        while (pageNum <= maxPages) {
           const url = pageNum === 1 ? baseUrl : `${baseUrl}?page=${pageNum}`
           console.log(`[ICA] Listing: ${url}`)
 
@@ -628,7 +632,7 @@ export async function scrapeICA(options?: {
               await wait(jitter(2500))
             }
 
-            results.push({
+            const ev: ICAEvent = {
               eventName: cleanName,
               eventAcronym: acronym,
               eventType: card.eventType,
@@ -656,11 +660,23 @@ export async function scrapeICA(options?: {
               submissionDeadline: detail.submissionDeadline ?? null,
               expectedAttendees: null,
               sourceSite: "internationalconferencealerts.com",
-            })
+            }
+
+            batchEvents.push(ev)
+            allResults.push(ev)
           }
 
           pageNum++
+          pagesSinceBatch++
           await wait(jitter(1500))
+
+          if (pagesSinceBatch >= pagesPerBatch && onBatch) {
+            console.log(`[ICA] Batch of ${pagesSinceBatch} pages complete, saving ${batchEvents.length} events to DB`)
+            await onBatch([...batchEvents])
+            batchEvents = []
+            pagesSinceBatch = 0
+            console.log(`[ICA] Resuming scraping...`)
+          }
         }
       }
     }
@@ -668,11 +684,16 @@ export async function scrapeICA(options?: {
     await browser.close()
   }
 
-  results.sort(
+  if (batchEvents.length > 0 && onBatch) {
+    await onBatch(batchEvents)
+    batchEvents = []
+  }
+
+  allResults.sort(
     (a, b) =>
       new Date(a.eventDateStart).getTime() -
       new Date(b.eventDateStart).getTime()
   )
 
-  return results
+  return { events: allResults, hasMore: false }
 }

@@ -63,102 +63,155 @@ async function main() {
   const runLocations = config.maxLocations > 0
     ? icaLocations.slice(0, config.maxLocations)
     : icaLocations
-  console.log(`[ICA/Ingest] ${icaLocations.length} ICA-supported locations, running ${runLocations.length} (maxLocations=${config.maxLocations})`)
+  const pagesPerBatch = 5
+  console.log(`[ICA/Ingest] ${icaLocations.length} ICA-supported locations, running ${runLocations.length}, pagesPerBatch=${pagesPerBatch}`)
 
   const sourceSiteId = icaSite?.id ?? null
   const upcomingMonths = ICA_MONTHS.slice(0, config.maxMonths)
 
-  let totalFound = 0
-  let totalNew = 0
-
+  // Build cityKey -> location lookup
+  const cityLocMap = new Map<string, typeof runLocations[number]>()
   for (const loc of runLocations) {
-    const slug = cityToIcaSlug(loc.city ?? "", loc.state ?? "")
-    if (!slug) continue
-
-    console.log(`[ICA/Ingest] Scraping ${slug} → ${loc.name} (${upcomingMonths.length} months)`)
-    try {
-      const icaEvents = await scrapeICA({
-        citySlugs: [slug],
-        months: upcomingMonths,
-        maxPagesPerSlug: config.maxPages,
-        skipDetailPages: false,
-      })
-
-      console.log(`[ICA/Ingest] ${slug}: ${icaEvents.length} events from ${icaEvents.length > 0 ? "detail pages" : "listing"}`)
-
-      for (const ev of icaEvents) {
-        totalFound++
-
-        let eventDateStart: Date | null = null
-        let eventDateEnd: Date | null = null
-        if (ev.eventDateStart) {
-          const d = new Date(ev.eventDateStart)
-          if (!isNaN(d.getTime())) eventDateStart = d
-        }
-        if (ev.eventDateEnd) {
-          const d = new Date(ev.eventDateEnd)
-          if (!isNaN(d.getTime())) eventDateEnd = d
-        }
-
-        if (dateFrom && eventDateStart && eventDateStart < dateFrom) continue
-        if (dateTo && eventDateStart && eventDateStart > dateTo) continue
-
-        const existing = await prisma.event.findFirst({
-          where: {
-            eventName: { equals: ev.eventName, mode: "insensitive" },
-            locationId: loc.id,
-            eventDateStart: eventDateStart ?? undefined,
-          },
-        })
-        if (existing) continue
-
-        const contacts = ev.contacts ?? []
-        const primaryContact = contacts[0]
-
-        const event = await prisma.event.create({
-          data: {
-            locationId: loc.id,
-            eventName: ev.eventName,
-            eventDateStart,
-            eventDateEnd,
-            sourceUrl: ev.eventUrl,
-            sourceSiteId,
-            runId: runId ?? undefined,
-            expectedAttendees: null,
-            organizerName: primaryContact?.organizerName ?? null,
-            organizerTitle: primaryContact?.organizerOrg ?? null,
-            organizerEmail: primaryContact?.organizerEmail ?? null,
-          },
-        })
-        totalNew++
-
-        if (contacts.length > 0) {
-          let saved = false
-          for (const c of contacts) {
-            if (!c.organizerName && !c.organizerEmail) continue
-            await prisma.eventContact.create({
-              data: {
-                eventId: event.id,
-                name: c.organizerName ?? "",
-                title: c.organizerOrg,
-                email: c.organizerEmail,
-                phone: c.organizerPhone,
-                isPrimary: !saved,
-                sourceUrl: ev.eventUrl,
-                confidence: "high",
-              },
-            })
-            saved = true
-          }
-          if (saved) console.log(`[ICA/Ingest] Saved contact(s) for "${ev.eventName}"`)
-        }
-      }
-    } catch (err) {
-      console.error(`[ICA/Ingest] Error scraping ${slug}:`, err)
-    }
+    const key = `${loc.city ?? ""}|${loc.state ?? ""}`.toLowerCase()
+    cityLocMap.set(key, loc)
   }
 
-  console.log(`[ICA/Ingest] Complete: ${totalNew} new from ${totalFound}`)
+  const slugsToScrape = runLocations
+    .map((loc) => cityToIcaSlug(loc.city ?? "", loc.state ?? ""))
+    .filter((s): s is string => s !== null)
+
+  let totalFound = 0
+  let totalNew = 0
+  let skippedDuplicate = 0
+  let skippedDateRange = 0
+  let skippedNoLocation = 0
+  let withContact = 0
+  let withoutContact = 0
+  let batchNum = 0
+
+  const saveBatch = async (events: import("../lib/scrapers/ica").ICAEvent[]) => {
+    batchNum++
+    console.log(`\n[ICA/Ingest] === Batch ${batchNum}: saving ${events.length} events ===`)
+    for (const ev of events) {
+      totalFound++
+
+      const locKey = `${ev.venueCity}|${ev.venueState ?? ""}`.toLowerCase()
+      const loc = cityLocMap.get(locKey)
+      if (!loc) {
+        skippedNoLocation++
+        continue
+      }
+
+      let eventDateStart: Date | null = null
+      let eventDateEnd: Date | null = null
+      if (ev.eventDateStart) {
+        const d = new Date(ev.eventDateStart)
+        if (!isNaN(d.getTime())) eventDateStart = d
+      }
+      if (ev.eventDateEnd) {
+        const d = new Date(ev.eventDateEnd)
+        if (!isNaN(d.getTime())) eventDateEnd = d
+      }
+
+      if (dateFrom && eventDateStart && eventDateStart < dateFrom) {
+        skippedDateRange++
+        continue
+      }
+      if (dateTo && eventDateStart && eventDateStart > dateTo) {
+        skippedDateRange++
+        continue
+      }
+
+      const existing = await prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.eventName, mode: "insensitive" },
+          locationId: loc.id,
+          eventDateStart: eventDateStart ?? undefined,
+        },
+      })
+      if (existing) {
+        skippedDuplicate++
+        continue
+      }
+
+      const contacts = ev.contacts ?? []
+      const primaryContact = contacts[0]
+
+      const event = await prisma.event.create({
+        data: {
+          locationId: loc.id,
+          eventName: ev.eventName,
+          eventDateStart,
+          eventDateEnd,
+          sourceUrl: ev.eventUrl,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          expectedAttendees: null,
+          organizerName: primaryContact?.organizerName ?? null,
+          organizerTitle: primaryContact?.organizerOrg ?? null,
+          organizerEmail: primaryContact?.organizerEmail ?? null,
+        },
+      })
+      totalNew++
+
+      if (contacts.length > 0) {
+        let saved = false
+        for (const c of contacts) {
+          if (!c.organizerName && !c.organizerEmail) continue
+          await prisma.eventContact.create({
+            data: {
+              eventId: event.id,
+              name: c.organizerName ?? "",
+              title: c.organizerOrg,
+              email: c.organizerEmail,
+              phone: c.organizerPhone,
+              isPrimary: !saved,
+              sourceUrl: ev.eventUrl,
+              confidence: "high",
+            },
+          })
+          saved = true
+        }
+        if (saved) {
+          withContact++
+          console.log(`[ICA/Ingest] ✓ Saved "${ev.eventName}" — name="${primaryContact?.organizerName ?? ""}" email="${primaryContact?.organizerEmail ?? ""}"`)
+        } else {
+          withoutContact++
+        }
+      } else {
+        withoutContact++
+      }
+    }
+    console.log(`[ICA/Ingest] === Batch ${batchNum} done ===`)
+  }
+
+  try {
+    console.log(`\n[ICA/Ingest] Starting single scrape across ${slugsToScrape.length} cities, saving every ${pagesPerBatch} pages...`)
+    const { events } = await scrapeICA({
+      citySlugs: slugsToScrape,
+      months: upcomingMonths,
+      maxPagesPerSlug: config.maxPages,
+      skipDetailPages: false,
+      pagesPerBatch,
+      onBatch: saveBatch,
+    })
+    console.log(`[ICA/Ingest] Scrape complete: ${events.length} events total`)
+  } catch (err) {
+    console.error(`[ICA/Ingest] Error during scrape:`, err)
+  }
+
+  console.log(`\n[ICA/Ingest] ═══════════════════════════════════════`)
+  console.log(`[ICA/Ingest] SUMMARY`)
+  console.log(`[ICA/Ingest]   Total scraped:     ${totalFound}`)
+  console.log(`[ICA/Ingest]   No location match: ${skippedNoLocation}`)
+  console.log(`[ICA/Ingest]   Date filtered:     ${skippedDateRange}`)
+  console.log(`[ICA/Ingest]   Duplicates:        ${skippedDuplicate}`)
+  console.log(`[ICA/Ingest]   New saved:         ${totalNew}`)
+  console.log(`[ICA/Ingest]     with contact:    ${withContact}`)
+  console.log(`[ICA/Ingest]     without contact: ${withoutContact}`)
+  console.log(`[ICA/Ingest]   Batches:           ${batchNum}`)
+  console.log(`[ICA/Ingest] ═══════════════════════════════════════\n`)
+
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 
