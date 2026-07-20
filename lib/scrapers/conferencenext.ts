@@ -143,18 +143,17 @@ async function scrapeListingPage(
 ): Promise<{ cards: RawCard[]; hasNext: boolean }> {
   await withRetry(async () => {
     const resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 })
-    if (resp && (resp.status() === 403 || resp.status() === 503)) {
+    const status = resp ? resp.status() : null
+    if (status === 403 || status === 503) {
       const html = await page.content()
       if (isCloudflareChallenge(html)) {
-        console.log(`[CN] Cloudflare challenge on listing (status=${resp.status()}), waiting...`)
-        await wait(10000)
-        try {
-          await page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 20000 })
-        } catch { /* challenge may have resolved in-place */ }
+        console.log(`[CN] CF challenge on listing (status=${status}), waiting up to 30s...`)
+        await wait(30000)
         const htmlAfter = await page.content()
-        if (!isCloudflareChallenge(htmlAfter)) {
-          console.log(`[CN] Challenge resolved for listing`)
+        if (isCloudflareChallenge(htmlAfter)) {
+          throw new Error(`CF challenge unresolved after 30s for ${url}`)
         }
+        console.log(`[CN] Challenge resolved`)
       }
     }
   }, `listing ${url}`)
@@ -221,18 +220,17 @@ async function scrapeDetailPage(
 ): Promise<Partial<CNDetailResult>> {
   await withRetry(async () => {
     const resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 })
-    if (resp && (resp.status() === 403 || resp.status() === 503)) {
+    const status = resp ? resp.status() : null
+    if (status === 403 || status === 503) {
       const html = await page.content()
       if (isCloudflareChallenge(html)) {
-        console.log(`[CN] Cloudflare challenge on detail (status=${resp.status()}), waiting...`)
-        await wait(10000)
-        try {
-          await page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 20000 })
-        } catch { /* challenge may have resolved in-place */ }
+        console.log(`[CN] CF challenge on detail (status=${status}), waiting up to 30s...`)
+        await wait(30000)
         const htmlAfter = await page.content()
-        if (!isCloudflareChallenge(htmlAfter)) {
-          console.log(`[CN] Challenge resolved for detail`)
+        if (isCloudflareChallenge(htmlAfter)) {
+          throw new Error(`CF challenge unresolved after 30s for ${url}`)
         }
+        console.log(`[CN] Challenge resolved`)
       }
     }
   }, `detail ${url}`)
