@@ -61,7 +61,12 @@ export const ModelName = {
   IngestionSchedule: 'IngestionSchedule',
   IngestConfig: 'IngestConfig',
   CrawledUrl: 'CrawledUrl',
-  EventContact: 'EventContact'
+  EventContact: 'EventContact',
+  Directory: 'Directory',
+  VenueDirectorySource: 'VenueDirectorySource',
+  SeenBlock: 'SeenBlock',
+  EventDetailPage: 'EventDetailPage',
+  EventDetailSection: 'EventDetailSection'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -90,6 +95,7 @@ export const LocationScalarFieldEnum = {
   state: 'state',
   parentId: 'parentId',
   sourceUrl: 'sourceUrl',
+  venueType: 'venueType',
   active: 'active',
   lastIngestedAt: 'lastIngestedAt',
   createdAt: 'createdAt',
@@ -139,7 +145,14 @@ export const EventScalarFieldEnum = {
   contactNote: 'contactNote',
   status: 'status',
   dateAdded: 'dateAdded',
-  runId: 'runId'
+  runId: 'runId',
+  venueId: 'venueId',
+  matchType: 'matchType',
+  rawVenueText: 'rawVenueText',
+  rawLocationText: 'rawLocationText',
+  sourceUrlIsListingFallback: 'sourceUrlIsListingFallback',
+  seenBlockId: 'seenBlockId',
+  extractionMethod: 'extractionMethod'
 } as const
 
 export type EventScalarFieldEnum = (typeof EventScalarFieldEnum)[keyof typeof EventScalarFieldEnum]
@@ -269,6 +282,82 @@ export const EventContactScalarFieldEnum = {
 } as const
 
 export type EventContactScalarFieldEnum = (typeof EventContactScalarFieldEnum)[keyof typeof EventContactScalarFieldEnum]
+
+
+export const DirectoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  baseUrl: 'baseUrl',
+  type: 'type',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DirectoryScalarFieldEnum = (typeof DirectoryScalarFieldEnum)[keyof typeof DirectoryScalarFieldEnum]
+
+
+export const VenueDirectorySourceScalarFieldEnum = {
+  id: 'id',
+  directoryId: 'directoryId',
+  venueId: 'venueId',
+  sourceUrl: 'sourceUrl',
+  strategy: 'strategy',
+  isActive: 'isActive',
+  lastFullHash: 'lastFullHash',
+  lastScrapedAt: 'lastScrapedAt',
+  nextCheckAt: 'nextCheckAt',
+  healthStatus: 'healthStatus',
+  suggestedUrl: 'suggestedUrl',
+  discoveryMethod: 'discoveryMethod',
+  discoveryConfidence: 'discoveryConfidence',
+  originalSourceUrl: 'originalSourceUrl',
+  batchSize: 'batchSize',
+  batchDelayMs: 'batchDelayMs',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type VenueDirectorySourceScalarFieldEnum = (typeof VenueDirectorySourceScalarFieldEnum)[keyof typeof VenueDirectorySourceScalarFieldEnum]
+
+
+export const SeenBlockScalarFieldEnum = {
+  id: 'id',
+  sourceId: 'sourceId',
+  blockHash: 'blockHash',
+  identityKey: 'identityKey',
+  firstSeenAt: 'firstSeenAt',
+  lastSeenAt: 'lastSeenAt'
+} as const
+
+export type SeenBlockScalarFieldEnum = (typeof SeenBlockScalarFieldEnum)[keyof typeof SeenBlockScalarFieldEnum]
+
+
+export const EventDetailPageScalarFieldEnum = {
+  id: 'id',
+  eventId: 'eventId',
+  url: 'url',
+  fullHash: 'fullHash',
+  rawMarkdown: 'rawMarkdown',
+  nextCheckAt: 'nextCheckAt',
+  lastFetchedAt: 'lastFetchedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EventDetailPageScalarFieldEnum = (typeof EventDetailPageScalarFieldEnum)[keyof typeof EventDetailPageScalarFieldEnum]
+
+
+export const EventDetailSectionScalarFieldEnum = {
+  id: 'id',
+  eventDetailPageId: 'eventDetailPageId',
+  sectionName: 'sectionName',
+  sectionHash: 'sectionHash',
+  content: 'content',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EventDetailSectionScalarFieldEnum = (typeof EventDetailSectionScalarFieldEnum)[keyof typeof EventDetailSectionScalarFieldEnum]
 
 
 export const SortOrder = {

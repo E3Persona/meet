@@ -17,6 +17,23 @@ export const LocationType = {
 export type LocationType = (typeof LocationType)[keyof typeof LocationType]
 
 
+export const VenueType = {
+  ConventionCenter: 'ConventionCenter',
+  Hotel: 'Hotel',
+  Arena: 'Arena',
+  Casino: 'Casino',
+  Fairgrounds: 'Fairgrounds',
+  Museum: 'Museum',
+  Stadium: 'Stadium',
+  ExpoCenter: 'ExpoCenter',
+  University: 'University',
+  SpecialEventSpace: 'SpecialEventSpace',
+  Other: 'Other'
+} as const
+
+export type VenueType = (typeof VenueType)[keyof typeof VenueType]
+
+
 export const TemplateScope = {
   CITY: 'CITY',
   VENUE: 'VENUE',
@@ -24,6 +41,16 @@ export const TemplateScope = {
 } as const
 
 export type TemplateScope = (typeof TemplateScope)[keyof typeof TemplateScope]
+
+
+export const EventMatchType = {
+  venue_matched_from_source: 'venue_matched_from_source',
+  venue_matched: 'venue_matched',
+  location_matched: 'location_matched',
+  unmatched: 'unmatched'
+} as const
+
+export type EventMatchType = (typeof EventMatchType)[keyof typeof EventMatchType]
 
 
 export const EventStatus = {
@@ -80,3 +107,42 @@ export const ScrapeStatus = {
 } as const
 
 export type ScrapeStatus = (typeof ScrapeStatus)[keyof typeof ScrapeStatus]
+
+
+export const DirectoryType = {
+  per_venue_page: 'per_venue_page',
+  city_aggregator: 'city_aggregator',
+  official_site: 'official_site'
+} as const
+
+export type DirectoryType = (typeof DirectoryType)[keyof typeof DirectoryType]
+
+
+export const FetchStrategy = {
+  jina_markdown: 'jina_markdown',
+  puppeteer_html: 'puppeteer_html',
+  gemini_url_context: 'gemini_url_context',
+  gemini_location_search: 'gemini_location_search'
+} as const
+
+export type FetchStrategy = (typeof FetchStrategy)[keyof typeof FetchStrategy]
+
+
+export const ExtractionMethod = {
+  jina_markdown: 'jina_markdown',
+  puppeteer_html: 'puppeteer_html',
+  gemini_url_context: 'gemini_url_context',
+  gemini_location_search: 'gemini_location_search'
+} as const
+
+export type ExtractionMethod = (typeof ExtractionMethod)[keyof typeof ExtractionMethod]
+
+
+export const HealthStatus = {
+  unconfirmed: 'unconfirmed',
+  valid: 'valid',
+  suggested_correction: 'suggested_correction',
+  broken: 'broken'
+} as const
+
+export type HealthStatus = (typeof HealthStatus)[keyof typeof HealthStatus]

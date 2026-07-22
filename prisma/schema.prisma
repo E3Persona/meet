@@ -17,6 +17,20 @@ enum LocationType {
   VENUE
 }
 
+enum VenueType {
+  ConventionCenter
+  Hotel
+  Arena
+  Casino
+  Fairgrounds
+  Museum
+  Stadium
+  ExpoCenter
+  University
+  SpecialEventSpace
+  Other
+}
+
 model Location {
   id        String       @id @default(cuid())
   type      LocationType
@@ -27,6 +41,7 @@ model Location {
   state     String?
   parentId  String?      // Venue -> its City. Null for CITY rows.
   sourceUrl String?
+  venueType VenueType?   // Venue only — convention_center, hotel, arena, etc.
   active         Boolean    @default(true)
   lastIngestedAt DateTime?
   createdAt      DateTime   @default(now())
@@ -36,6 +51,8 @@ model Location {
   venues      Location[]   @relation("CityVenues")
   searchTerms SearchTerm[]
   events      Event[]
+  venueDirectorySources VenueDirectorySource[] @relation("VenueDirectorySources")
+  venueEvents Event[]     @relation("VenueEvents")
 
   @@index([type, parentId])
   @@map("locations")
@@ -82,6 +99,13 @@ model SearchTemplate {
 
 // ─── Event ────────────────────────────────────────────────────────────────────
 
+enum EventMatchType {
+  venue_matched_from_source // VenueDirectorySource.venueId is set — source-certain
+  venue_matched             // fuzzy-matched to a venue by name
+  location_matched          // city/state text matched to a Location (city-level)
+  unmatched                 // no match found, flagged for review
+}
+
 model Event {
   id                 String      @id @default(cuid())
   locationId         String
@@ -99,11 +123,21 @@ model Event {
   status             EventStatus @default(new)
   dateAdded          DateTime    @default(now())
   runId              String?
+  venueId            String?     // FK to Location (VENUE type) when matched at venue level
+  matchType          EventMatchType?
+  rawVenueText       String?     // raw venue name text from the listing block
+  rawLocationText    String?     // raw city/state text from the listing block
+  sourceUrlIsListingFallback Boolean @default(false)
+  seenBlockId        String?     // FK to SeenBlock if this event was created via block dedup
+  extractionMethod   ExtractionMethod?
 
   location   Location        @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  venue     Location?       @relation("VenueEvents", fields: [venueId], references: [id], onDelete: SetNull)
   run        IngestionRun?   @relation(fields: [runId], references: [id], onDelete: SetNull)
   sourceSite SourceSite?     @relation(fields: [sourceSiteId], references: [id], onDelete: SetNull)
   contacts   EventContact[]
+  seenBlock  SeenBlock?     @relation(fields: [seenBlockId], references: [id], onDelete: SetNull)
+  detailPages EventDetailPage[]
 
   @@unique([locationId, eventName, eventDateStart])
   @@map("events")
@@ -296,4 +330,128 @@ model EventContact {
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@map("event_contacts")
+}
+
+// ─── Venue Directory Sources ─────────────────────────────────────────────────
+
+enum DirectoryType {
+  per_venue_page   // single-venue event calendar page — Path A applies
+  city_aggregator  // multi-venue city calendar — falls to Path B
+  official_site    // the venue's own homepage — auto-created from batch Official Site column
+}
+
+enum FetchStrategy {
+  jina_markdown          // r.jina.ai/ URL → markdown (default for health-checked sources)
+  puppeteer_html         // headless Chrome → HTML/DOM (for JS-rendered sites)
+  gemini_url_context     // Gemini Interactions API with url_context tool
+  gemini_location_search // Gemini Interactions API with google_search tool
+}
+
+enum ExtractionMethod {
+  jina_markdown
+  puppeteer_html
+  gemini_url_context
+  gemini_location_search
+}
+
+enum HealthStatus {
+  unconfirmed          // not yet checked
+  valid                // confirmed live, returns events
+  suggested_correction // health check found a better URL
+  broken               // no working calendar found
+}
+
+model Directory {
+  id          String       @id @default(cuid())
+  name        String       // display name e.g. "10times /events"
+  baseUrl     String       @unique  // root domain e.g. "https://www.paconvention.com"
+  type        DirectoryType
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  sources     VenueDirectorySource[]
+
+  @@map("directories")
+}
+
+model VenueDirectorySource {
+  id                   String        @id @default(cuid())
+  directoryId          String
+  venueId              String        // FK to Location (VENUE type) — the venue this source is for
+  sourceUrl            String?       // full URL being scraped e.g. "https://www.paconvention.com/events"
+  strategy             FetchStrategy @default(jina_markdown)
+  isActive             Boolean       @default(true)
+  lastFullHash         String?       // hash of last-seen full listing content
+  lastScrapedAt        DateTime?
+  nextCheckAt          DateTime?
+  healthStatus         HealthStatus  @default(unconfirmed)
+  suggestedUrl         String?       // better URL found by health-check discovery
+  discoveryMethod      String?       // how the suggestion was found e.g. "sitemap" | "path_discovery" | "content_validation"
+  discoveryConfidence   Float?        // 0.0–1.0 confidence in the suggested URL
+  originalSourceUrl    String?       // preserved when suggestion replaces sourceUrl after manual approval
+  batchSize            Int           @default(5)   // listing pages per batch save
+  batchDelayMs         Int           @default(10000)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  directory            Directory     @relation(fields: [directoryId], references: [id], onDelete: Cascade)
+  venue                Location      @relation("VenueDirectorySources", fields: [venueId], references: [id], onDelete: Cascade)
+  seenBlocks           SeenBlock[]
+
+  @@unique([directoryId, venueId, sourceUrl])
+  @@map("venue_directory_sources")
+}
+
+// ─── Block-level dedup (listing page) ──────────────────────────────────────
+
+model SeenBlock {
+  id           String    @id @default(cuid())
+  sourceId     String    // FK to VenueDirectorySource
+  blockHash    String    // hash of the full block content
+  identityKey  String    // regex-derived name+date key for edit detection
+  firstSeenAt  DateTime  @default(now())
+  lastSeenAt   DateTime  @default(now())
+
+  source       VenueDirectorySource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  events       Event[]
+
+  @@unique([sourceId, blockHash])
+  @@unique([sourceId, identityKey])
+  @@index([sourceId, lastSeenAt])
+  @@map("seen_blocks")
+}
+
+// ─── Detail page tracking ───────────────────────────────────────────────────
+
+model EventDetailPage {
+  id           String    @id @default(cuid())
+  eventId      String
+  url          String    // the detail page URL
+  fullHash     String?   // hash of full page content
+  rawMarkdown  String?   // last-fetched markdown content
+  nextCheckAt  DateTime?
+  lastFetchedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  event        Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sections     EventDetailSection[]
+
+  @@unique([eventId, url])
+  @@map("event_detail_pages")
+}
+
+model EventDetailSection {
+  id                String  @id @default(cuid())
+  eventDetailPageId String
+  sectionName       String  // e.g. "Description", "Agenda", "Speakers", "Venue Info"
+  sectionHash       String
+  content           String  // last-fetched section content
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  eventDetailPage   EventDetailPage @relation(fields: [eventDetailPageId], references: [id], onDelete: Cascade)
+
+  @@unique([eventDetailPageId, sectionName])
+  @@map("event_detail_sections")
 }

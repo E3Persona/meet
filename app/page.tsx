@@ -9,6 +9,7 @@ import { LocationsManager } from "@/components/locations/locations-manager"
 import { TemplatesManager } from "@/components/templates/templates-manager"
 import { SourceSitesManager } from "@/components/source-sites/source-sites-manager"
 import { DirectoriesManager } from "@/components/directories/directories-manager"
+import { VenueDirectoriesManager } from "@/components/directories/venue-directories-manager"
 import { ScrapersPanel } from "@/components/dashboard/scrapers-panel"
 import { ScheduleManager } from "@/components/schedules/schedule-manager"
 import { Sidebar, type SidebarSection } from "@/components/dashboard/sidebar"
@@ -38,6 +39,11 @@ const SECTION_TITLES: Record<
     title: "Directories",
     description:
       "Configure CSS selectors for deterministic event extraction from directory sites.",
+  },
+  "venue-directories": {
+    title: "Venue Directories",
+    description:
+      "Manage venue-scraped directory sources — health status, URLs, bulk updates.",
   },
   scrapers: {
     title: "Site Scrapers",
@@ -100,6 +106,7 @@ export default function DashboardPage() {
             {active === "templates" && <TemplatesManager />}
             {active === "sources" && <SourceSitesManager />}
             {active === "directories" && <DirectoriesManager />}
+            {active === "venue-directories" && <VenueDirectoriesManager />}
             {active === "scrapers" && <ScrapersPanel />}
             {active === "schedules" && <ScheduleManager />}
             {active === "runs" && <RunHistoryTable />}

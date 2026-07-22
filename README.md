@@ -92,3 +92,28 @@ See `.env.example` for required vars. Key ones:
 Subdirectory URL: e3ei.e3personnel.com
 Subdomain Name; e3evint
 e3evint.e3personnel.com
+
+The test script is doing its job — it exposes exactly where things break. You can run:
+
+# See all due sources
+
+npx tsx scripts/test-listing-scrape.ts --show-sources
+
+# Test a specific source
+
+npx tsx scripts/test-listing-scrape.ts --venue-id=<full-id>
+
+# Test any URL directly
+
+npx tsx scripts/test-listing-scrape.ts --url=https://www.paconvention.com/events
+
+# With date filter
+
+npx tsx scripts/test-listing-scrape.ts --url=https://example.com/events --date-from=2025-07-01
+You now have full visibility into Jina → blocks → LLM at each step. Want me to look at why the block s
+
+*NET MINISTRIES TRUST* 
+Meeting with Tijwa Limited
+
+ *©9PM - 9:40PM📍* 
+ https://us06web.zoom.us/j/86318491769?pwd=0hpdMEAbMe0Itvi6v1qyu9Gfc5bpYG.1

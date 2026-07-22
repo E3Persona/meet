@@ -8,10 +8,11 @@ import { getAllProviderStatus, DEV_MODE } from "@/lib/providers/credit-tracker"
 import { createProgressCallback, clearRunProgress } from "@/lib/ingest/progress-store"
 import { scrapeConventionPlanit } from "@/lib/scrapers/conventionplanit"
 import { isExcludedDomain, isExcludedHostname } from "@/lib/scrapers/dedicated-domains"
+import { spawn } from "child_process"
 
 // ─── Scraper types ───────────────────────────────────────────────────────────
 
-type ScraperType = "ica" | "cn" | "tf" | "showsbee" | "eventseye" | "aca" | "search" | "cp"
+type ScraperType = "ica" | "cn" | "tf" | "showsbee" | "eventseye" | "aca" | "search" | "cp" | "venues"
 
 interface ScraperResult {
   scraper: ScraperType
@@ -252,6 +253,11 @@ async function runIngest(
         progress(`ConventionPlanit: ${venuesCreated} new venue(s) created, ${cpResults.length} total matched`)
         results.push({ scraper: "cp", recordsFound: cpResults.length, recordsNew: venuesCreated })
       }
+      if (scraperType === "venues") {
+        progress("Scraping venue directory listings...")
+        await runVenueListingScraper(body.dateFrom ?? undefined, body.dateTo ?? undefined)
+        progress("Venue directory scraping complete")
+      }
     }
 
     progress(`Complete: ${totalNew} new events found, ${totalFound} scanned`)
@@ -271,6 +277,41 @@ async function runIngest(
     await prisma.ingestionRun.update({ where: { id: run.id }, data: { status: "failed", finishedAt: new Date(), errorMessage } })
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
+}
+
+// ─── Venue listing scraper ──────────────────────────────────────────────────
+
+async function runVenueListingScraper(dateFrom?: string, dateTo?: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const env = { ...process.env }
+    if (dateFrom) env.DATE_FROM = dateFrom
+    if (dateTo) env.DATE_TO = dateTo
+
+    const child = spawn("npx", ["tsx", "jobs/scrapeListing.ts"], {
+      cwd: process.cwd(),
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    })
+
+    child.stdout?.on("data", (data) => {
+      for (const line of data.toString().split("\n")) {
+        if (line.trim()) console.log(`[venues] ${line}`)
+      }
+    })
+
+    child.stderr?.on("data", (data) => {
+      for (const line of data.toString().split("\n")) {
+        if (line.trim()) console.error(`[venues] ${line}`)
+      }
+    })
+
+    child.on("close", (code) => {
+      if (code === 0) resolve()
+      else reject(new Error(`scrapeListing.ts exited with code ${code}`))
+    })
+
+    child.on("error", (err) => reject(err))
+  })
 }
 
 // ─── GET /api/ingest/run ─── cron entry point ───────────────────────────────
@@ -322,7 +363,7 @@ export async function GET(request: Request) {
     )
 
     try {
-      await runIngest(trigger, { scraperTypes: ["search", "cp"] })
+      await runIngest(trigger, { scraperTypes: ["search", "cp", "venues"] })
     } catch (err) {
       console.error("[Cron] search pipeline error:", err)
     }

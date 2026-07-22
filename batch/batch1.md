@@ -1,0 +1,12 @@
+| Venue                                  | Official Site                     | Directory 1                                    | Directory 2 | Directory 3        | Directory 4        | Directory 5         |
+| -------------------------------------- | --------------------------------- | ---------------------------------------------- | ----------- | ------------------ | ------------------ | ------------------- |
+| Subaru Park                            | subarupark.com                    | `/events`                                      | `/tickets`  | `/stadium`         | `/plan-your-visit` | `/calendar`*        |
+| Pennsylvania Convention Center         | paconvention.com                  | `/events`                                      | `/calendar` | `/upcoming-events` | `/news`            | `/front-and-center` |
+| Greater Philadelphia Expo Center       | phillyexpocenter.com              | `/events`                                      | `/calendar` | `/shows`           | `/upcoming-events` | `/attend`           |
+| Valley Forge Casino Resort             | vfcasino.com                      | `/entertainment`                               | `/events`   | `/promotions`      | `/calendar`        | `/shows`            |
+| Walter E. Washington Convention Center | eventsdc.com                      | `/venue/walter-e-washington-convention-center` | `/events`   | `/calendar`        | `/meetings`        | `/conventions`      |
+| Gaylord National                       | marriott.com/.../gaylord-national | `/events`                                      | `/calendar` | `/experiences`     | `/dining`          | `/special-offers`   |
+| MGM National Harbor                    | mgmnationalharbor.mgmresorts.com  | `/entertainment`                               | `/shows`    | `/restaurants`     | `/nightlife`       | `/offers`           |
+| Atlantic City Convention Center        | accenter.com                      | `/events`                                      | `/attend`   | `/plan`            | `/calendar`        | `/news`             |
+| Baltimore Convention Center            | baltimorecc.com                   | `/events`                                      | `/calendar` | `/upcoming-events` | `/attend`          | `/news`             |
+| Chase Center on the Riverfront         | centerontheriverfront.com         | `/events`                                      | `/calendar` | `/upcoming-events` | `/attend`          | `/news`             |

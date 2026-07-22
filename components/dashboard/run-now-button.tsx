@@ -46,7 +46,7 @@ export function RunNowButton({ onComplete }: { onComplete?: () => void }) {
     toast.info("Ingestion job started...")
 
     try {
-      const body: Record<string, any> = {}
+      const body: Record<string, any> = { scraperTypes: ["search", "cp", "venues"] }
       if (selectedLocationIds.length > 0) body.locationIds = selectedLocationIds
       if (dateFrom) body.dateFrom = dateFrom
       if (dateTo) body.dateTo = dateTo

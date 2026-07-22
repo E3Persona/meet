@@ -15,6 +15,7 @@ import {
   X,
   Bot,
   BarChart3,
+  Building2,
 } from "lucide-react"
 
 export type SidebarSection =
@@ -23,6 +24,7 @@ export type SidebarSection =
   | "templates"
   | "sources"
   | "directories"
+  | "venue-directories"
   | "scrapers"
   | "schedules"
   | "runs"
@@ -33,6 +35,7 @@ const NAV_ITEMS: { id: SidebarSection; label: string; icon: React.ComponentType<
   { id: "templates", label: "Search Templates", icon: Search },
   { id: "sources", label: "Source Sites", icon: Globe },
   { id: "directories", label: "Directories", icon: FileText },
+  { id: "venue-directories", label: "Venue Directories", icon: Building2 },
   { id: "scrapers", label: "Scrapers", icon: Bot },
   { id: "schedules", label: "Schedules", icon: CalendarClock },
   { id: "runs", label: "Run History", icon: History },

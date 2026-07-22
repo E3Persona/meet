@@ -72,3 +72,28 @@ export type CrawledUrl = Prisma.CrawledUrlModel
  * 
  */
 export type EventContact = Prisma.EventContactModel
+/**
+ * Model Directory
+ * 
+ */
+export type Directory = Prisma.DirectoryModel
+/**
+ * Model VenueDirectorySource
+ * 
+ */
+export type VenueDirectorySource = Prisma.VenueDirectorySourceModel
+/**
+ * Model SeenBlock
+ * 
+ */
+export type SeenBlock = Prisma.SeenBlockModel
+/**
+ * Model EventDetailPage
+ * 
+ */
+export type EventDetailPage = Prisma.EventDetailPageModel
+/**
+ * Model EventDetailSection
+ * 
+ */
+export type EventDetailSection = Prisma.EventDetailSectionModel

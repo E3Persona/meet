@@ -79,3 +79,19 @@ All three scrapers now have `withRetry()` (3 attempts, 3s backoff) around `page.
 https://script.google.com/macros/s/AKfycbz0LuZoB3yZCXzhMWg1iSp8vxcWokOgAjXJ-G-3-S687pTrvpV-62YfO7iaT0kYniQn/exec
 
 meeting-data-sheet@glossy-waters-502807-b6.iam.gserviceaccount.com-email-service-account
+
+curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent" \
+  -H 'Content-Type: application/json' \
+  -H 'X-goog-api-key: AIzaSyD86yO2_I2CoKTUJVNrPwxxW2Mp8Y6JIGs' \
+  -X POST \
+  -d '{
+    "contents": [
+      {
+        "parts": [
+          {
+            "text": "Explain how AI works in a few words"
+          }
+        ]
+      }
+    ]
+  }'
