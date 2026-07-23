@@ -349,6 +349,7 @@ export async function GET(request: Request) {
       "/api/ingest/gaylordnational",
       "/api/ingest/eventsdc",
       "/api/ingest/tradefairdates",
+      "/api/ingest/phillyexpocenter",
     ]
 
     const CONCURRENCY = 3

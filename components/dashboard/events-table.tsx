@@ -380,7 +380,7 @@ export function EventsTable() {
     fetchEvents()
   }, [fetchEvents])
 
-  console.log("Events",events)
+  console.log("Events", events)
   // ── Push to Google Sheet ─────────────────────────────────────────────────
 
   const pushToSheet = async () => {
@@ -480,7 +480,9 @@ export function EventsTable() {
       if (filterDateTo) body.dateTo = filterDateTo
       if (filterLocation !== "all") body.locationIds = [filterLocation]
       else if (filterCity !== "all") {
-        const cityLocs = locations.filter((l) => l.parentId === filterCity || l.id === filterCity)
+        const cityLocs = locations.filter(
+          (l) => l.parentId === filterCity || l.id === filterCity
+        )
         if (cityLocs.length > 0) body.locationIds = cityLocs.map((l) => l.id)
       }
 
@@ -498,12 +500,16 @@ export function EventsTable() {
 
       setProgressTitle("Search Complete")
 
-      const parts = [`${data.recordsNew} new events found (${data.recordsFound} total scanned)`]
+      const parts = [
+        `${data.recordsNew} new events found (${data.recordsFound} total scanned)`,
+      ]
       toast.success(parts.join(" · "))
 
       if (data.warnings?.length > 0) {
         const uniqueWarnings = [...new Set(data.warnings)]
-        toast.warning(`Provider issues: ${uniqueWarnings.slice(0, 3).join("; ")}${uniqueWarnings.length > 3 ? ` (+${uniqueWarnings.length - 3} more)` : ""}`)
+        toast.warning(
+          `Provider issues: ${uniqueWarnings.slice(0, 3).join("; ")}${uniqueWarnings.length > 3 ? ` (+${uniqueWarnings.length - 3} more)` : ""}`
+        )
       }
 
       fetchEvents()
@@ -650,7 +656,11 @@ export function EventsTable() {
           const val = row.original.expectedAttendees
           return (
             <span className="text-sm">
-              {val != null ? val.toLocaleString() : <span className="text-muted-foreground italic">—</span>}
+              {val != null ? (
+                val.toLocaleString()
+              ) : (
+                <span className="text-muted-foreground italic">—</span>
+              )}
             </span>
           )
         },
@@ -826,7 +836,6 @@ export function EventsTable() {
               className="h-9 rounded-lg border border-input bg-background px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
               title="To date"
             />
-         
           </div>
           <Select value={exportMonth} onValueChange={setExportMonth}>
             <SelectTrigger className="w-32" size="sm">
@@ -859,27 +868,27 @@ export function EventsTable() {
             </SelectContent>
           </Select>
           <Button
-              variant="primary"
-              size="sm"
-              onClick={handleRunSearch}
-              disabled={searchRunning}
-            >
-              {searchRunning ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="mr-1.5 h-4 w-4" />
-              )}
-              Run Search
-            </Button>
-            <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={forceRefresh}
-                onChange={(e) => setForceRefresh(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-input accent-primary"
-              />
-              Force refresh
-            </label>
+            variant="primary"
+            size="sm"
+            onClick={handleRunSearch}
+            disabled={searchRunning}
+          >
+            {searchRunning ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="mr-1.5 h-4 w-4" />
+            )}
+            Run Search
+          </Button>
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground select-none">
+            <input
+              type="checkbox"
+              checked={forceRefresh}
+              onChange={(e) => setForceRefresh(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-input accent-primary"
+            />
+            Force refresh
+          </label>
           <Button variant="outline" size="sm" onClick={exportToExcel}>
             <Download className="mr-1.5 h-4 w-4" />
             Export
@@ -1140,10 +1149,10 @@ export function EventsTable() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
+                <SelectItem value="400">400</SelectItem>
+                <SelectItem value="600">600</SelectItem>
+                <SelectItem value="1000">1000</SelectItem>
               </SelectContent>
             </Select>
             <span>of {total}</span>
