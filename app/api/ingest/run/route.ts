@@ -329,6 +329,8 @@ export async function GET(request: Request) {
   })
 
   setImmediate(async () => {
+    // Run dedicated scrapers in batches of 3 to avoid overwhelming Vercel
+    // concurrency limits and target-site rate limits.
     const scraperRoutes = [
       "/api/ingest/aca",
       "/api/ingest/asae",
@@ -342,25 +344,55 @@ export async function GET(request: Request) {
       "/api/ingest/showsbee",
       "/api/ingest/tf",
       "/api/ingest/thetradeshowcalendar",
+      "/api/ingest/philadelphiaunion",
+      "/api/ingest/rrbitc",
+      "/api/ingest/gaylordnational",
+      "/api/ingest/eventsdc",
+      "/api/ingest/tradefairdates",
     ]
 
-    await Promise.allSettled(
-      scraperRoutes.map((route) =>
-        fetch(`${baseUrl}${route}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-cron-parent": parentRun.id,
-            "x-cron-trigger": trigger,
-          },
-          body: JSON.stringify({}),
-        }).then(async (res) => ({
-          route,
-          status: res.status,
-          body: await res.clone().json().catch(() => null),
-        }))
+    const CONCURRENCY = 3
+    const results: { route: string; status?: number; error?: string }[] = []
+
+    for (let i = 0; i < scraperRoutes.length; i += CONCURRENCY) {
+      const batch = scraperRoutes.slice(i, i + CONCURRENCY)
+      console.log(`[Cron] Running batch ${Math.floor(i / CONCURRENCY) + 1}: ${batch.join(", ")}`)
+      const batchResults = await Promise.allSettled(
+        batch.map((route) =>
+          fetch(`${baseUrl}${route}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-cron-parent": parentRun.id,
+              "x-cron-trigger": trigger,
+            },
+            body: JSON.stringify({}),
+            signal: AbortSignal.timeout(30000),
+          })
+            .then(async (res) => ({
+              route,
+              status: res.status,
+              body: await res.clone().json().catch(() => null),
+            }))
+            .catch((err: Error) => ({
+              route,
+              error: err.message,
+            }))
+        )
       )
-    )
+      for (const r of batchResults) {
+        if (r.status === "fulfilled") results.push(r.value)
+        else results.push({ route: "unknown", error: r.reason?.message ?? "unknown" })
+      }
+    }
+
+    // Report results
+    const succeeded = results.filter((r) => r.status === 200)
+    const failed = results.filter((r) => r.error || (r.status && r.status >= 400))
+    console.log(`[Cron] Dedicated scrapers done: ${succeeded.length} ok, ${failed.length} failed`)
+    for (const f of failed) {
+      console.warn(`[Cron]   ${f.route}: ${f.error ?? f.status}`)
+    }
 
     try {
       await runIngest(trigger, { scraperTypes: ["search", "cp", "venues"] })

@@ -105,28 +105,80 @@ const SCRAPERS: ScraperDef[] = [
     description: "Cybersecurity conferences from infosec-conferences.com",
     tech: "fetch",
   },
-  {
-    id: "generic-llm",
-    name: "Generic LLM Scraper",
-    site: "All source sites (no dedicated scraper)",
-    apiPath: "/api/ingest/generic-llm",
-    description: "Scrape all active source sites without dedicated scrapers via LLM API server",
-    tech: "fetch",
-  },
-]
+    {
+      id: "tradefairdates",
+      name: "TradeFairDates",
+      site: "tradefairdates.com",
+      apiPath: "/api/ingest/tradefairdates",
+      description: "773 US trade fairs — paginated listing with contact enrichment",
+      tech: "fetch",
+    },
+    {
+      id: "eventsdc",
+      name: "EventsDC",
+      site: "eventsdc.com",
+      apiPath: "/api/ingest/eventsdc",
+      description: "Events at Walter E. Washington Convention Center (Washington DC)",
+      tech: "puppeteer",
+    },
+    {
+      id: "gaylordnational",
+      name: "Gaylord National",
+      site: "tickets.gaylordnational.com",
+      apiPath: "/api/ingest/gaylordnational",
+      description: "Events at Gaylord National Resort & Convention Center (National Harbor, MD)",
+      tech: "puppeteer",
+    },
+    {
+      id: "rrbitc",
+      name: "RRBITC",
+      site: "rrbitc.com",
+      apiPath: "/api/ingest/rrbitc",
+      description: "Events at the Ronald Reagan Building & International Trade Center (DC)",
+      tech: "fetch",
+    },
+    {
+      id: "philadelphiaunion",
+      name: "Philadelphia Union",
+      site: "philadelphiaunion.com",
+      apiPath: "/api/ingest/philadelphiaunion",
+      description: "Non-Union events at Subaru Park via image OCR (Wrexham, PLL, Breakaway, USWNT)",
+      tech: "fetch",
+    },
+    {
+      id: "generic-llm",
+      name: "Generic LLM Scraper",
+      site: "All source sites (no dedicated scraper)",
+      apiPath: "/api/ingest/generic-llm",
+      description: "Scrape all active source sites without dedicated scrapers via LLM API server",
+      tech: "fetch",
+    },
+    {
+      id: "venues",
+      name: "Venue Directories",
+      site: "Venue listing pages",
+      apiPath: "/api/ingest/run",
+      description: "Scrapes venue directory pages (paconvention.com, etc.) for events",
+      tech: "fetch",
+    },
+  ]
 
 export function ScrapersPanel() {
   const [running, setRunning] = useState<string | null>(null)
 
   const handleRun = async (scraper: ScraperDef) => {
     setRunning(scraper.id)
-    toast.info(`${scraper.name} ingestion started (test: 1 location)...`)
+    toast.info(`${scraper.name} ingestion started...`)
+
+    const body = scraper.id === "venues"
+      ? { scraperTypes: ["venues"] }
+      : { maxLocations: 1 }
 
     try {
       const res = await fetch(scraper.apiPath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maxLocations: 1 }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
 

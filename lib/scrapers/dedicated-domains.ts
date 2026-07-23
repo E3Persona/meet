@@ -16,6 +16,11 @@ export const DEDICATED_SCRAPER_DOMAINS = [
   "showsbee.com",
   "thetradeshowcalendar.com",
   "tradefest.io",
+  "philadelphiaunion.com",
+  "rrbitc.com",
+  "tickets.gaylordnational.com",
+  "eventsdc.com",
+  "tradefairdates.com",
 ] as const
 
 export type DedicatedScraperDomain = typeof DEDICATED_SCRAPER_DOMAINS[number]
