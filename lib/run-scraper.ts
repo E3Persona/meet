@@ -23,6 +23,9 @@ const SCRAPER_KEYS: Record<string, string> = {
   "ingest-phillyexpocenter.ts": "phillyexpocenter",
   "ingest-marriott.ts": "marriott",
   "ingest-eventbrite.ts": "eventbrite",
+  "ingest-eventbrite-api.ts": "eventbrite-api",
+  "ingest-bigevent.ts": "bigevent",
+  "ingest-webmobi.ts": "webmobi",
 }
 
 export async function startScraperRun(

@@ -96,8 +96,6 @@ async function main() {
           const existing = await prisma.event.findFirst({
             where: {
               eventName: { equals: ev.eventName, mode: "insensitive" },
-              locationId: v.id,
-              eventDateStart: ev.eventDateStart ? new Date(ev.eventDateStart) : undefined,
             },
           })
           if (existing) {

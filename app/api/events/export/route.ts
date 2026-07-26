@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
   const events = await prisma.event.findMany({
     where,
-    include: { location: true, sourceSite: true, contacts: true },
+    include: { location: true, sourceSite: true, venue: true, contacts: true },
     orderBy: { eventDateStart: "asc" },
   })
 
@@ -54,7 +54,8 @@ export async function GET(request: Request) {
         : false
     return {
       "Event Name": e.eventName,
-      Location: e.location.name,
+      Location: e.rawLocationText ?? e.location.name,
+      Venue: e.venue?.name ?? e.rawVenueText ?? "",
       "Expected Attendees": e.expectedAttendees ?? "",
       "Contact Name": primary?.name ?? e.organizerName ?? "",
       "Contact Title": primary?.title ?? e.organizerTitle ?? "",
@@ -76,6 +77,7 @@ export async function GET(request: Request) {
   ws["!cols"] = [
     { wch: 40 },
     { wch: 30 },
+    { wch: 25 },
     { wch: 25 },
     { wch: 25 },
     { wch: 18 },

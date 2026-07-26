@@ -95,3 +95,6 @@ curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lates
       }
     ]
   }'
+
+
+https://www.eventbrite.com/api/v3/destination/events/?event_ids=115577717063,127257012149",130323899291,141503740497,143005871411,313979339657,621121801027,856508378617,1225418592999,1268113304029,1307032201499,1328573803009,1345495115109,1364768642749,1390856763019&page_size=100&expand=event_sales_status,image,primary_venue,saves,ticket_availability,primary_organizer,primary_organizer.image,public_collections

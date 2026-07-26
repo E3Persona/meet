@@ -102,12 +102,16 @@ async function main() {
           if (loc) locationId = loc.id
         }
 
-        // Deduplicate by eventName + matched locationId
+        // Skip if no location matched (locationId is required)
+        if (!locationId) {
+          console.log(`[GenericLLM] Skip (no location match): "${ev.eventName}" city="${ev.city}"`)
+          continue
+        }
+
+        // Deduplicate by eventName
         const existing = await prisma.event.findFirst({
           where: {
             eventName: { equals: normalizeEventName(ev.eventName), mode: "insensitive" },
-            ...(locationId ? { locationId } : {}),
-            ...(eventDate ? { eventDateStart: eventDate } : {}),
           },
         })
         if (existing) {
@@ -117,7 +121,7 @@ async function main() {
 
         await prisma.event.create({
           data: {
-            locationId: locationId ?? "",
+            locationId,
             eventName: ev.eventName,
             eventDateStart: eventDate,
             eventDateEnd: ev.eventDateEnd ? new Date(ev.eventDateEnd) : null,
@@ -125,6 +129,8 @@ async function main() {
             sourceSiteId: site.id,
             runId: runId ?? undefined,
             status: "new",
+            rawLocationText: ev.city ?? null,
+            rawVenueText: ev.venue ?? null,
           },
         })
         totalNew++

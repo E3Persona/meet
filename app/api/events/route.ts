@@ -74,8 +74,25 @@ export async function GET(request: Request) {
     Promise.all([
       prisma.event.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          eventName: true,
+          eventDateStart: true,
+          eventDateEnd: true,
+          expectedAttendees: true,
+          sourceUrl: true,
+          organizerName: true,
+          organizerTitle: true,
+          organizerEmail: true,
+          organizerPhone: true,
+          contactNote: true,
+          status: true,
+          dateAdded: true,
+          rawVenueText: true,
+          rawLocationText: true,
+          venueId: true,
           location: { select: { name: true, city: true, state: true } },
+          venue: { select: { id: true, name: true, city: true, state: true } },
           contacts: {
             select: { id: true, name: true, isPrimary: true, email: true, phone: true, title: true },
             orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],

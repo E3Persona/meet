@@ -38,9 +38,13 @@ async function main() {
   }
   console.log(`[ICA/Ingest] Config: maxMonths=${config.maxMonths}, maxPages=${config.maxPages}`)
 
-  const [locations, icaSite] = await Promise.all([
+  const [locations, venues, icaSite] = await Promise.all([
     prisma.location.findMany({
-      where: { active: true },
+      where: { active: true, type: "CITY" },
+      select: { id: true, name: true, city: true, state: true },
+    }),
+    prisma.location.findMany({
+      where: { active: true, type: "VENUE" },
       select: { id: true, name: true, city: true, state: true },
     }),
     prisma.sourceSite.findFirst({
@@ -69,11 +73,18 @@ async function main() {
   const sourceSiteId = icaSite?.id ?? null
   const upcomingMonths = ICA_MONTHS.slice(0, config.maxMonths)
 
-  // Build cityKey -> location lookup
+  // Build cityKey -> location lookup for city matching
   const cityLocMap = new Map<string, typeof runLocations[number]>()
   for (const loc of runLocations) {
     const key = `${loc.city ?? ""}|${loc.state ?? ""}`.toLowerCase()
     cityLocMap.set(key, loc)
+  }
+
+  // Build venue name lookup for venue matching
+  const venueMap = new Map<string, typeof venues[number]>()
+  for (const venue of venues) {
+    const key = venue.name.toLowerCase()
+    venueMap.set(key, venue)
   }
 
   const slugsToScrape = runLocations
@@ -95,10 +106,12 @@ async function main() {
     for (const ev of events) {
       totalFound++
 
+      // Match scraped city/state to our city locations
       const locKey = `${ev.venueCity}|${ev.venueState ?? ""}`.toLowerCase()
-      const loc = cityLocMap.get(locKey)
-      if (!loc) {
+      const cityLoc = cityLocMap.get(locKey)
+      if (!cityLoc) {
         skippedNoLocation++
+        console.log(`[ICA/Ingest] Skip (no city match): "${ev.eventName}" city="${ev.venueCity}" state="${ev.venueState}"`)
         continue
       }
 
@@ -122,11 +135,21 @@ async function main() {
         continue
       }
 
+      // Match venue name if provided
+      let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
+      let venueId: string | null = null
+      if (ev.venueFullName) {
+        const venueKey = ev.venueFullName.toLowerCase()
+        const matchedVenue = venueMap.get(venueKey)
+        if (matchedVenue) {
+          matchType = "venue_matched"
+          venueId = matchedVenue.id
+        }
+      }
+
       const existing = await prisma.event.findFirst({
         where: {
           eventName: { equals: ev.eventName, mode: "insensitive" },
-          locationId: loc.id,
-          eventDateStart: eventDateStart ?? undefined,
         },
       })
       if (existing) {
@@ -139,7 +162,9 @@ async function main() {
 
       const event = await prisma.event.create({
         data: {
-          locationId: loc.id,
+          locationId: cityLoc.id,
+          venueId,
+          matchType,
           eventName: ev.eventName,
           eventDateStart,
           eventDateEnd,
@@ -147,6 +172,8 @@ async function main() {
           sourceSiteId,
           runId: runId ?? undefined,
           expectedAttendees: null,
+          rawVenueText: ev.venueFullName ?? null,
+          rawLocationText: `${ev.venueCity}, ${ev.venueState ?? ""}`.trim(),
           organizerName: primaryContact?.organizerName ?? null,
           organizerTitle: primaryContact?.organizerOrg ?? null,
           organizerEmail: primaryContact?.organizerEmail ?? null,
@@ -174,7 +201,7 @@ async function main() {
         }
         if (saved) {
           withContact++
-          console.log(`[ICA/Ingest] ✓ Saved "${ev.eventName}" — name="${primaryContact?.organizerName ?? ""}" email="${primaryContact?.organizerEmail ?? ""}"`)
+          console.log(`[ICA/Ingest] ✓ Saved "${ev.eventName}" — city="${ev.venueCity}" venue="${ev.venueFullName ?? "none"}" name="${primaryContact?.organizerName ?? ""}" email="${primaryContact?.organizerEmail ?? ""}"`)
         } else {
           withoutContact++
         }

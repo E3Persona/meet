@@ -135,6 +135,21 @@ async function saveEvents(
   })
   const existingBlockHashes = new Set(existingBlocks.map((b) => b.blockHash))
 
+  // Find the city location for this venue
+  const cityLocation = await prisma.location.findFirst({
+    where: {
+      type: "CITY",
+      city: source.venue.city,
+      state: source.venue.state,
+      active: true,
+    },
+  })
+
+  if (!cityLocation) {
+    console.error(`[scrapeGeminiVenues] No city location found for venue ${source.venue.name} (${source.venue.city}, ${source.venue.state})`)
+    return { newEvents: 0, skipped: events.length, found: events.length }
+  }
+
   let found = 0
   let newEvents = 0
   let skipped = 0
@@ -154,12 +169,10 @@ async function saveEvents(
       continue
     }
 
-    const locationId = source.venueId
-
     const existingDup = await prisma.event.findFirst({
       where: {
         eventName: { equals: event.eventName, mode: "insensitive" },
-        locationId,
+        locationId: cityLocation.id,
         eventDateStart: event.eventDateStart ?? undefined,
       },
     })
@@ -180,7 +193,7 @@ async function saveEvents(
 
     await prisma.event.create({
       data: {
-        locationId,
+        locationId: cityLocation.id,
         venueId: source.venueId,
         matchType: "venue_matched_from_source",
         eventName: event.eventName,
@@ -192,11 +205,13 @@ async function saveEvents(
         extractionMethod: "gemini_location_search",
         runId,
         status: "new",
+        rawVenueText: source.venue.name,
+        rawLocationText: `${source.venue.city}, ${source.venue.state ?? ""}`.trim(),
       },
     })
 
     newEvents++
-    console.log(`[scrapeGeminiVenues]   + "${event.eventName}" (${event.eventDateStart?.toISOString().slice(0, 10) ?? "no date"})`)
+    console.log(`[scrapeGeminiVenues]   + "${event.eventName}" (${event.eventDateStart?.toISOString().slice(0, 10) ?? "no date"}) at ${source.venue.name}`)
   }
 
   return { newEvents, skipped, found }

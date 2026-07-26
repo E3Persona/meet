@@ -17,6 +17,7 @@ export async function POST() {
     prisma.event.findMany({
       include: {
         location: { select: { name: true, city: true, type: true } },
+        venue: { select: { name: true } },
       },
       orderBy: { eventDateStart: "asc" },
     })
@@ -26,8 +27,8 @@ export async function POST() {
     e.eventName,
     e.eventDateStart ? e.eventDateStart.toISOString().split("T")[0] : "",
     e.eventDateEnd   ? e.eventDateEnd.toISOString().split("T")[0]   : "",
-    e.location.type === "CITY"  ? e.location.name : e.location.city ?? "",
-    e.location.type === "VENUE" ? e.location.name : "",
+    e.rawLocationText ?? (e.location.type === "CITY" ? e.location.name : e.location.city ?? ""),
+    e.venue?.name ?? e.rawVenueText ?? "",
     e.organizerName   ?? "",
     e.organizerTitle  ?? "",
     e.organizerEmail  ?? "",

@@ -334,12 +334,15 @@ export async function GET(request: Request) {
     const scraperRoutes = [
       "/api/ingest/aca",
       "/api/ingest/asae",
+      "/api/ingest/bigevent",
       "/api/ingest/blackmeetings",
       "/api/ingest/cn",
+      "/api/ingest/eventbrite-api",
       "/api/ingest/eventseye",
       "/api/ingest/generic-llm",
       "/api/ingest/ica",
       "/api/ingest/infosec",
+      "/api/ingest/marriott",
       "/api/ingest/sgmp",
       "/api/ingest/showsbee",
       "/api/ingest/tf",
@@ -350,6 +353,7 @@ export async function GET(request: Request) {
       "/api/ingest/eventsdc",
       "/api/ingest/tradefairdates",
       "/api/ingest/phillyexpocenter",
+      "/api/ingest/webmobi",
     ]
 
     const CONCURRENCY = 3

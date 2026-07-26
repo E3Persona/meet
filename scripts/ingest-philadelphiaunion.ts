@@ -89,8 +89,6 @@ async function main() {
       const existing = await prisma.event.findFirst({
         where: {
           eventName: { equals: ev.eventName, mode: "insensitive" },
-          locationId: venueLocation.id,
-          eventDateStart: ev.eventDateStart ?? undefined,
         },
       })
       if (existing) {
@@ -108,12 +106,14 @@ async function main() {
           sourceUrl: ev.sourceUrl,
           sourceSiteId,
           runId: runId ?? undefined,
+          rawVenueText: "Subaru Park",
+          rawLocationText: "Chester, PA",
         },
       })
       totalNew++
       console.log(
         `[PhiladelphiaUnion/Ingest] ✓ Saved "${ev.eventName}"` +
-          ` — venue="${ev.venue}" date=${ev.eventDateStart?.toISOString().slice(0, 10) ?? "unknown"}`
+          ` — venue="Subaru Park" date=${ev.eventDateStart?.toISOString().slice(0, 10) ?? "unknown"}`
       )
     }
   } catch (err) {

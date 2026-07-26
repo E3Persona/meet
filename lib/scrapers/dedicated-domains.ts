@@ -24,6 +24,10 @@ export const DEDICATED_SCRAPER_DOMAINS = [
   "event.marriott.com",
   "axs.com",
   "eventbrite.com",
+  "api.eventbrite.com",
+  "bigevent.io",
+  "webmobi.com",
+  "phillyexpocenter.com",
 ] as const
 
 export type DedicatedScraperDomain = typeof DEDICATED_SCRAPER_DOMAINS[number]

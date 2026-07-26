@@ -89,8 +89,6 @@ async function main() {
       const existing = await prisma.event.findFirst({
         where: {
           eventName: { equals: ev.eventName, mode: "insensitive" },
-          locationId: venueLocation.id,
-          eventDateStart: ev.eventDateStart ?? undefined,
         },
       })
       if (existing) {
@@ -108,6 +106,8 @@ async function main() {
           sourceUrl: ev.sourceUrl,
           sourceSiteId,
           runId: runId ?? undefined,
+          rawVenueText: ev.venue ?? null,
+          rawLocationText: "Washington, DC",
         },
       })
       totalNew++

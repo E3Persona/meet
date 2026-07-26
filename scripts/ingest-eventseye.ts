@@ -30,11 +30,15 @@ async function main() {
   }
   console.log(`[Eventseye/Ingest] Config: active=${config.active}, maxLocations=${config.maxLocations}`)
 
-  const [locations, sourceSite] = await Promise.all([
+  const [locations, venues, sourceSite] = await Promise.all([
     prisma.location.findMany({
-      where: { active: true },
+      where: { active: true, type: "CITY" },
       select: { id: true, name: true, city: true },
       orderBy: { id: "asc" },
+    }),
+    prisma.location.findMany({
+      where: { active: true, type: "VENUE" },
+      select: { id: true, name: true, city: true },
     }),
     prisma.sourceSite.findFirst({
       where: { name: "eventseye.com" },
@@ -54,6 +58,13 @@ async function main() {
   for (const loc of locations) {
     const c = loc.city?.toLowerCase().trim()
     if (c) cityLocMap.set(c, loc)
+  }
+
+  // Build venue name lookup for venue matching
+  const venueMap = new Map<string, typeof venues[number]>()
+  for (const venue of venues) {
+    const key = venue.name.toLowerCase()
+    venueMap.set(key, venue)
   }
 
   // ── Single pass: fetch WITH details (listing page has no city data) ──
@@ -82,7 +93,6 @@ async function main() {
     const existing = await prisma.event.findFirst({
       where: {
         eventName: { equals: ev.title, mode: "insensitive" },
-        locationId: loc.id,
       },
     })
     if (existing) continue
@@ -106,9 +116,29 @@ async function main() {
     const org = ev.organizerContact ?? null
     const hasContact = org && (org.name || org.email)
 
+    // Match venue name if provided (Eventseye uses 'venues' array of objects)
+    let venueId: string | null = null
+    let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
+    let rawVenueText: string | null = null
+    if (ev.venues && ev.venues.length > 0) {
+      // venues is an array of objects, extract the name
+      const venueName = typeof ev.venues[0] === 'string' ? ev.venues[0] : (ev.venues[0] as any).name
+      if (venueName) {
+        const venueKey = venueName.toLowerCase()
+        const matchedVenue = venueMap.get(venueKey)
+        if (matchedVenue) {
+          venueId = matchedVenue.id
+          matchType = "venue_matched"
+        }
+        rawVenueText = venueName
+      }
+    }
+
     const event = await prisma.event.create({
       data: {
         locationId: loc.id,
+          venueId: venueId ?? undefined,
+        matchType,
         eventName: ev.title,
         eventDateStart,
         eventDateEnd,
@@ -116,6 +146,8 @@ async function main() {
         sourceSiteId,
         runId: runId ?? undefined,
         expectedAttendees: null,
+        rawLocationText: cityMatch.city ?? null,
+        rawVenueText,
         organizerName: org?.name ?? null,
         organizerEmail: org?.email ?? null,
         organizerPhone: org?.phone ?? null,

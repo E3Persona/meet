@@ -137,11 +137,15 @@ async function main() {
     return { recordsFound: 0, recordsNew: 0 }
   }
 
-  const [locations, sourceSite] = await Promise.all([
+  const [locations, venues, sourceSite] = await Promise.all([
     prisma.location.findMany({
-      where: { active: true },
+      where: { active: true, type: "CITY" },
       select: { id: true, name: true, city: true, state: true },
       orderBy: { id: "asc" },
+    }),
+    prisma.location.findMany({
+      where: { active: true, type: "VENUE" },
+      select: { id: true, name: true, city: true, state: true },
     }),
     prisma.sourceSite.findFirst({
       where: { name: "asaecenter.org" },
@@ -156,6 +160,13 @@ async function main() {
 
   const sourceSiteId = sourceSite?.id ?? null
 
+  // Build venue name lookup for venue matching
+  const venueMap = new Map<string, typeof venues[number]>()
+  for (const venue of venues) {
+    const key = venue.name.toLowerCase()
+    venueMap.set(key, venue)
+  }
+
   const allEvents = await scrapeASAE({
     skipContacts: false,
     maxContactLookups: 50,
@@ -168,33 +179,36 @@ async function main() {
   for (const ev of allEvents) {
     totalFound++
 
-    let loc: { id: string } | null = null
+    let cityLoc: { id: string; city: string | null; state: string | null } | null = null
 
     const citiesStates = extractCitiesAndStates(ev.locationText)
     if (citiesStates.length > 0) {
-      loc = matchLocation(locations, citiesStates)
+      const matched = matchLocation(locations, citiesStates)
+      if (matched) {
+        cityLoc = matched as { id: string; city: string | null; state: string | null }
+      }
     }
 
     // Fallback: try to match based on event name (e.g. "Washington DC" in the name)
-    if (!loc) {
+    if (!cityLoc) {
       const nameLower = ev.eventName.toLowerCase()
       for (const l of locations) {
         const cityName = l.city?.toLowerCase() ?? ""
         const stateName = l.state?.toLowerCase() ?? ""
         if (cityName && nameLower.includes(cityName)) {
           console.warn(`[ASAE/Ingest] Name-match: "${ev.eventName}" → location="${l.name}" (city in event name)`)
-          loc = l
+          cityLoc = l
           break
         }
         if (stateName && nameLower.includes(`${l.city?.toLowerCase()}, ${stateName}`)) {
           console.warn(`[ASAE/Ingest] Name-match: "${ev.eventName}" → location="${l.name}"`)
-          loc = l
+          cityLoc = l
           break
         }
       }
     }
 
-    if (!loc) {
+    if (!cityLoc) {
       console.log(
         `[ASAE/Ingest] Skipping "${ev.eventName}" — no matching location (locationText="${ev.locationText}")`
       )
@@ -206,14 +220,25 @@ async function main() {
     if (dateFrom && eventDateStart && eventDateStart < dateFrom) continue
     if (dateTo && eventDateStart && eventDateStart > dateTo) continue
 
+    // Match venue name if provided in location text (reuse citiesStates from above)
+    let venueId: string | null = null
+    let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
+    for (const cs of citiesStates) {
+      const venueKey = cs.city.toLowerCase()
+      const matchedVenue = venueMap.get(venueKey)
+      if (matchedVenue) {
+        venueId = matchedVenue.id
+        matchType = "venue_matched"
+        break
+      }
+    }
+
     // Dedup includes eventDateStart so a recurring annual event (same name,
     // same venue, different year) is treated as a new record rather than
     // silently skipped forever after its first sync.
     const existing = await prisma.event.findFirst({
       where: {
         eventName: { equals: ev.eventName, mode: "insensitive" },
-        locationId: loc.id,
-        eventDateStart: eventDateStart ?? undefined,
       },
     })
     if (existing) continue
@@ -224,13 +249,17 @@ async function main() {
 
     const event = await prisma.event.create({
       data: {
-        locationId: loc.id,
+        locationId: cityLoc.id,
+          venueId: venueId ?? undefined,
+        matchType,
         eventName: ev.eventName,
         eventDateStart: eventDateStart ?? undefined,
         sourceUrl: ev.detailUrl,
         sourceSiteId,
         runId: runId ?? undefined,
         expectedAttendees: null,
+        rawLocationText: ev.locationText,
+        rawVenueText: citiesStates.length > 0 ? citiesStates[0].city : null,
         organizerEmail: contact?.organizerEmail ?? null,
         organizerPhone: contact?.organizerPhone ?? null,
       },

@@ -32,11 +32,17 @@ async function main() {
   }
 
   // Load all active locations for city matching
-  const locations = await prisma.location.findMany({
-    where: { active: true },
-    select: { id: true, name: true, city: true, state: true },
-  })
-  console.log(`[TradeFairDates/Ingest] Loaded ${locations.length} active locations`)
+  const [locations, venues] = await Promise.all([
+    prisma.location.findMany({
+      where: { active: true, type: "CITY" },
+      select: { id: true, name: true, city: true, state: true },
+    }),
+    prisma.location.findMany({
+      where: { active: true, type: "VENUE" },
+      select: { id: true, name: true, city: true, state: true },
+    }),
+  ])
+  console.log(`[TradeFairDates/Ingest] Loaded ${locations.length} active locations, ${venues.length} active venues`)
 
   if (locations.length === 0) {
     console.log("[TradeFairDates/Ingest] No active locations — nothing to do")
@@ -56,6 +62,13 @@ async function main() {
     if (!cityMap.get(key)!.cities.includes(city)) {
       cityMap.get(key)!.cities.push(city)
     }
+  }
+
+  // Build venue name lookup for venue matching
+  const venueMap = new Map<string, typeof venues[number]>()
+  for (const venue of venues) {
+    const key = venue.name.toLowerCase()
+    venueMap.set(key, venue)
   }
 
   // Also try matching by location name (some locations are venues named after a city area)
@@ -138,12 +151,13 @@ async function main() {
     for (const { ev, locId } of matched) {
       totalFound++
 
+      // TradeFairDates scraper doesn't provide venue names, so we only match at city level
+      let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
+
       // Deduplicate
       const existing = await prisma.event.findFirst({
         where: {
           eventName: { equals: ev.eventName, mode: "insensitive" },
-          locationId: locId,
-          eventDateStart: ev.eventDateStart ?? undefined,
         },
       })
       if (existing) {
@@ -155,6 +169,7 @@ async function main() {
       await prisma.event.create({
         data: {
           locationId: locId,
+          matchType,
           eventName: ev.eventName,
           eventDateStart: ev.eventDateStart,
           eventDateEnd: ev.eventDateEnd,
@@ -163,6 +178,8 @@ async function main() {
           organizerName: ev.websiteUrl,
           sourceSiteId,
           runId: runId ?? undefined,
+          rawLocationText: ev.city,
+          rawVenueText: ev.venueName ?? null,
         },
       })
       totalNew++

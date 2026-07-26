@@ -45,11 +45,15 @@ async function main() {
     return { recordsFound: 0, recordsNew: 0 }
   }
 
-  const [locations, sourceSite] = await Promise.all([
+  const [locations, venues, sourceSite] = await Promise.all([
     prisma.location.findMany({
-      where: { active: true },
+      where: { active: true, type: "CITY" },
       select: { id: true, name: true, city: true },
       orderBy: { id: "asc" },
+    }),
+    prisma.location.findMany({
+      where: { active: true, type: "VENUE" },
+      select: { id: true, name: true, city: true },
     }),
     prisma.sourceSite.findFirst({
       where: { name: "allconferencealert.net" },
@@ -67,6 +71,13 @@ async function main() {
   debug("Raw locations:", locations.map((l) => `${l.id} | ${l.name} | city=${l.city}`))
 
   const sourceSiteId = sourceSite?.id ?? null
+
+  // Build venue name lookup for venue matching
+  const venueMap = new Map<string, typeof venues[number]>()
+  for (const venue of venues) {
+    const key = venue.name.toLowerCase()
+    venueMap.set(key, venue)
+  }
 
   const cityGroups = new Map<string, typeof locations>()
   const skippedNoCity: typeof locations = []
@@ -156,8 +167,6 @@ async function main() {
       const existing = await prisma.event.findFirst({
         where: {
           eventName: { equals: ev.eventName, mode: "insensitive" },
-          locationId: { in: locs.map((l) => l.id) },
-          eventDateStart: eventDate ?? undefined,
         },
       })
       if (existing) {
@@ -167,6 +176,9 @@ async function main() {
       }
 
       const loc = pickCityLocation(locs)
+
+      // ACA doesn't provide venue names, so we only match at city level
+      let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
 
       let contactPerson = ev.contact.contactPerson
       let organizedBy = ev.contact.organizedBy
@@ -205,15 +217,20 @@ async function main() {
         }
       }
 
+      let venueId: string | null = null
       const event = await prisma.event.create({
         data: {
           locationId: loc.id,
+          venueId: venueId ?? undefined,
+          matchType,
           eventName: ev.eventName,
           eventDateStart: eventDate,
           sourceUrl: ev.eventUrl,
           sourceSiteId,
           runId: runId ?? undefined,
           expectedAttendees: null,
+          rawLocationText: ev.venueCity,
+          rawVenueText: null,
           organizerName: contactPerson ?? null,
           organizerTitle: organizedBy ?? null,
           organizerEmail: inquiryEmail ?? null,

@@ -35,11 +35,15 @@ async function main() {
     return { recordsFound: 0, recordsNew: 0 }
   }
 
-  const [locations, sourceSite] = await Promise.all([
+  const [locations, dbVenues, sourceSite] = await Promise.all([
     prisma.location.findMany({
-      where: { active: true },
+      where: { active: true, type: "CITY" },
       select: { id: true, name: true, city: true, state: true },
       orderBy: { id: "asc" },
+    }),
+    prisma.location.findMany({
+      where: { active: true, type: "VENUE" },
+      select: { id: true, name: true, city: true, state: true },
     }),
     prisma.sourceSite.findFirst({
       where: { name: "blackmeetingsandtourism.com" },
@@ -48,17 +52,24 @@ async function main() {
   ])
 
   const sourceSiteId = sourceSite?.id ?? null
-  console.log(`[BM/Ingest] Loaded ${locations.length} active locations, sourceSite=${sourceSiteId ?? "NOT FOUND"}`)
+  console.log(`[BM/Ingest] Loaded ${locations.length} active locations, ${dbVenues.length} active venues, sourceSite=${sourceSiteId ?? "NOT FOUND"}`)
   debug("Locations:", locations.map((l) => `${l.id} | ${l.name} | city=${l.city} state=${l.state}`))
+
+  // Build venue name lookup for venue matching
+  const venueMap = new Map<string, typeof dbVenues[number]>()
+  for (const venue of dbVenues) {
+    const key = venue.name.toLowerCase()
+    venueMap.set(key, venue)
+  }
 
   // ─── Step 1: Scrape convention centers and upsert as Locations ───
   console.log("[BM/Ingest] Scraping convention centers...")
-  const venues = await scrapeBMVenues({ maxVenues: 50 })
-  console.log(`[BM/Ingest] ${venues.length} venues scraped`)
-  debug("Raw venues:", venues.map((v) => `${v.name} | url=${v.detailUrl}`))
+  const scrapedVenues = await scrapeBMVenues({ maxVenues: 50 })
+  console.log(`[BM/Ingest] ${scrapedVenues.length} venues scraped`)
+  debug("Raw venues:", scrapedVenues.map((v) => `${v.name} | url=${v.detailUrl}`))
 
   let venuesCreated = 0
-  for (const venue of venues) {
+  for (const venue of scrapedVenues) {
     const existing = await prisma.location.findFirst({
       where: {
         name: { equals: venue.name, mode: "insensitive" },
@@ -79,13 +90,26 @@ async function main() {
   }
   console.log(`[BM/Ingest] ${venuesCreated} new venues added as locations`)
 
-  // Refresh locations so events can match against freshly created venues
-  const allLocations = await prisma.location.findMany({
-    where: { active: true },
-    select: { id: true, name: true, city: true, state: true },
-    orderBy: { id: "asc" },
-  })
-  console.log(`[BM/Ingest] Refreshed to ${allLocations.length} total locations`)
+  // Refresh locations and venues so events can match against freshly created venues
+  const [allLocations, allVenues] = await Promise.all([
+    prisma.location.findMany({
+      where: { active: true, type: "CITY" },
+      select: { id: true, name: true, city: true, state: true },
+      orderBy: { id: "asc" },
+    }),
+    prisma.location.findMany({
+      where: { active: true, type: "VENUE" },
+      select: { id: true, name: true, city: true, state: true },
+    }),
+  ])
+  console.log(`[BM/Ingest] Refreshed to ${allLocations.length} total locations, ${allVenues.length} total venues`)
+
+  // Rebuild venue map with refreshed venues
+  const refreshedVenueMap = new Map<string, typeof allVenues[number]>()
+  for (const venue of allVenues) {
+    const key = venue.name.toLowerCase()
+    refreshedVenueMap.set(key, venue)
+  }
 
   // ─── Step 2: Scrape Current Events ───
   console.log("[BM/Ingest] Scraping current events...")
@@ -116,10 +140,11 @@ async function main() {
   for (const ev of allEvents) {
     totalFound++
 
-    const loc = matchLocation(ev, allLocations)
-    if (!loc) {
+    // Match city/state first
+    const cityLoc = matchLocation(ev, allLocations)
+    if (!cityLoc) {
       skippedNoLocation++
-      debug(`Skip (no location): "${ev.title}" venue="${ev.venueName}" location="${ev.venueLocation}"`)
+      debug(`Skip (no city match): "${ev.title}" venue="${ev.venueName}" location="${ev.venueLocation}"`)
       continue
     }
 
@@ -134,10 +159,21 @@ async function main() {
       continue
     }
 
+    // Match venue name if provided
+    let venueId: string | null = null
+    let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
+    if (ev.venueName) {
+      const venueKey = ev.venueName.toLowerCase()
+      const matchedVenue = refreshedVenueMap.get(venueKey)
+      if (matchedVenue) {
+        venueId = matchedVenue.id
+        matchType = "venue_matched"
+      }
+    }
+
     const existing = await prisma.event.findFirst({
       where: {
         eventName: { equals: ev.title, mode: "insensitive" },
-        locationId: loc.id,
       },
     })
     if (existing) {
@@ -149,13 +185,15 @@ async function main() {
     const primaryContact = ev.contacts?.[0] ?? null
     const hasContact = primaryContact && (primaryContact.name || primaryContact.email)
 
-    debug(`Processing: "${ev.title}" → location="${loc.name}" (${loc.id})`)
+    debug(`Processing: "${ev.title}" → city="${cityLoc.name}" (${cityLoc.id}) venue="${ev.venueName ?? "none"}"`)
     debug(`  sourceUrl=${ev.detailUrl}`)
     debug(`  contact: name="${primaryContact?.name ?? ""}" email="${primaryContact?.email ?? ""}" phone="${primaryContact?.phone ?? ""}"`)
 
     const event = await prisma.event.create({
       data: {
-        locationId: loc.id,
+        locationId: cityLoc.id,
+          venueId: venueId ?? undefined,
+        matchType,
         eventName: ev.title,
         eventDateStart: ev.eventDateStart ?? undefined,
         eventDateEnd: ev.eventDateEnd ?? undefined,
@@ -163,6 +201,8 @@ async function main() {
         sourceSiteId,
         runId: runId ?? undefined,
         expectedAttendees: null,
+        rawVenueText: ev.venueName ?? null,
+        rawLocationText: ev.venueLocation ?? null,
         organizerName: primaryContact?.name ?? null,
         organizerPhone: primaryContact?.phone ?? null,
         organizerEmail: primaryContact?.email ?? null,
@@ -184,7 +224,7 @@ async function main() {
           confidence: "medium",
         },
       })
-      console.log(`[BM/Ingest] ✓ Saved "${ev.title}" — name="${primaryContact!.name}" email="${primaryContact!.email}" phone="${primaryContact!.phone}" url=${ev.detailUrl}`)
+      console.log(`[BM/Ingest] ✓ Saved "${ev.title}" — venue="${ev.venueName ?? "none"}" name="${primaryContact!.name}" email="${primaryContact!.email}" phone="${primaryContact!.phone}" url=${ev.detailUrl}`)
     } else {
       withoutContact++
       console.log(`[BM/Ingest] ✗ No contact for "${ev.title}" url=${ev.detailUrl}`)

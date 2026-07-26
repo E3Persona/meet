@@ -57,11 +57,15 @@ async function main() {
     return { recordsFound: 0, recordsNew: 0 }
   }
 
-  const [locations, sourceSite] = await Promise.all([
+  const [locations, venues, sourceSite] = await Promise.all([
     prisma.location.findMany({
-      where: { active: true },
+      where: { active: true, type: "CITY" },
       select: { id: true, name: true, city: true, state: true },
       orderBy: { id: "asc" },
+    }),
+    prisma.location.findMany({
+      where: { active: true, type: "VENUE" },
+      select: { id: true, name: true, city: true, state: true },
     }),
     prisma.sourceSite.findFirst({
       where: {
@@ -75,12 +79,19 @@ async function main() {
   ])
 
   console.log(
-    `[Infosec/Ingest] Loaded ${locations.length} active locations, sourceSite=${sourceSite?.id ?? "NOT FOUND, will create"}`
+    `[Infosec/Ingest] Loaded ${locations.length} active locations, ${venues.length} active venues, sourceSite=${sourceSite?.id ?? "NOT FOUND, will create"}`
   )
 
   if (locations.length === 0) {
     console.log("[Infosec/Ingest] No active locations — nothing to do")
     return { recordsFound: 0, recordsNew: 0 }
+  }
+
+  // Build venue name lookup for venue matching
+  const venueMap = new Map<string, typeof venues[number]>()
+  for (const venue of venues) {
+    const key = venue.name.toLowerCase()
+    venueMap.set(key, venue)
   }
 
   // Ensure the source site exists
@@ -192,8 +203,6 @@ async function main() {
       const existing = await prisma.event.findFirst({
         where: {
           eventName: { equals: ev.eventName, mode: "insensitive" },
-          locationId: { in: match.locationIds },
-          eventDateStart: eventDate ?? undefined,
         },
       })
       if (existing) {
@@ -210,12 +219,16 @@ async function main() {
       })
       const locId = catchAllIdx >= 0 ? locationIds[catchAllIdx] : locationIds[0]
 
+      // Infosec scraper doesn't provide venue names, so we only match at city level
+      let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
+
       // Build contactNote with event type and focus info
       const notes = [ev.eventType, ev.focus].filter(Boolean).join(" | ")
 
       const event = await prisma.event.create({
         data: {
           locationId: locId,
+          matchType,
           eventName: ev.eventName,
           eventDateStart: eventDate,
           eventDateEnd: ev.eventDateEnd ? new Date(ev.eventDateEnd) : null,
@@ -226,6 +239,8 @@ async function main() {
           organizerName: ev.organizerName ?? null,
           organizerTitle: ev.focus ?? null,
           contactNote: notes || null,
+          rawLocationText: `${ev.city}, ${ev.state}`,
+          rawVenueText: null,
         },
       })
       totalNew++

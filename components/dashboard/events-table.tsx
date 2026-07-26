@@ -83,6 +83,10 @@ interface EventRow {
   eventDateEnd: string | null
   expectedAttendees: number | null
   sourceUrl: string | null
+  rawVenueText: string | null
+  rawLocationText: string | null
+  venueId: string | null
+  venue: { id: string; name: string; city: string | null; state: string | null } | null
   organizerName: string | null
   organizerTitle: string | null
   organizerEmail: string | null
@@ -101,6 +105,28 @@ interface Location {
   city: string | null
   state: string | null
   parentId: string | null
+}
+
+// ─── Truncated Cell ────────────────────────────────────────────────────────────
+
+function TruncatedCell({ text, maxChars = 40 }: { text: string; maxChars?: number }) {
+  const [expanded, setExpanded] = useState(false)
+  const needsTruncation = text.length > maxChars
+  const display = expanded || !needsTruncation ? text : text.slice(0, maxChars) + "…"
+  return (
+    <>
+      <span className="text-sm">{display}</span>
+      {needsTruncation && (
+        <button
+          type="button"
+          onClick={() => setExpanded((p) => !p)}
+          className="ml-1 text-[10px] text-primary hover:underline whitespace-nowrap"
+        >
+          {expanded ? "less" : "more"}
+        </button>
+      )}
+    </>
+  )
 }
 
 // ─── Inline Edit Cell ─────────────────────────────────────────────────────────
@@ -251,7 +277,7 @@ export function EventsTable() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [total, setTotal] = useState(0)
-  const [filterHasContact, setFilterHasContact] = useState<string>("true")
+  const [filterHasContact, setFilterHasContact] = useState<string>("all")
   const [filterDateFrom, setFilterDateFrom] = useState<string>("")
   const [filterDateTo, setFilterDateTo] = useState<string>("")
   const [exportMonth, setExportMonth] = useState<string>("all")
@@ -557,17 +583,47 @@ export function EventsTable() {
       {
         id: "location",
         header: "Location",
-        accessorFn: (row) => row.location.name,
-        cell: ({ row }) => (
-          <span className="text-sm">
-            {row.original.location.name}
-            {row.original.location.city && (
-              <span className="text-muted-foreground">
-                , {row.original.location.city}
-              </span>
-            )}
-          </span>
-        ),
+        accessorFn: (row) => row.rawLocationText ?? row.location.name,
+        cell: ({ row }) => {
+          const ev = row.original
+          const raw = ev.rawLocationText
+          const locText = raw ?? ev.location.name + (ev.location.city ? `, ${ev.location.city}` : "")
+          return (
+            <span className="text-sm">
+              <TruncatedCell text={locText} />
+              {raw && (
+                <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
+                  raw
+                </span>
+              )}
+            </span>
+          )
+        },
+      },
+      {
+        accessorKey: "rawVenueText",
+        header: "Venue",
+        cell: ({ row }) => {
+          const ev = row.original
+          const venueName = ev.venue?.name ?? ev.rawVenueText
+          const venueCity = ev.venue?.city
+          return (
+            <span className="text-sm">
+              {venueName ? (
+                <>
+                  <span className="font-medium">
+                    <TruncatedCell text={venueName} />
+                  </span>
+                  {venueCity && (
+                    <span className="text-muted-foreground">, {venueCity}</span>
+                  )}
+                </>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </span>
+          )
+        },
       },
       {
         id: "contacts",
