@@ -1,10 +1,7 @@
 import "dotenv/config"
-import { PrismaPg } from "@prisma/adapter-pg"
-import { PrismaClient } from "../lib/generated/prisma/client"
 import { scrapePhiladelphiaUnionEvents } from "../lib/scrapers/philadelphiaunion"
+import { prisma } from "../lib/prisma"
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
-const prisma = new PrismaClient({ adapter })
 const rawRunId = process.env.RUN_ID ?? null
 
 async function resolveRunId(): Promise<string | undefined> {

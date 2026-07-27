@@ -1,10 +1,7 @@
 import "dotenv/config"
-import { PrismaPg } from "@prisma/adapter-pg"
-import { PrismaClient } from "../lib/generated/prisma/client"
+import { prisma } from "../lib/prisma"
 import { scrapeBMEvents, scrapeBMVenues } from "../lib/scrapers/blackmeetings"
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
-const prisma = new PrismaClient({ adapter })
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null

@@ -1,7 +1,6 @@
 import "dotenv/config"
 
-import { PrismaClient } from "../lib/generated/prisma/client"
-import { prisma } from "@/lib/prisma"
+import { prisma } from "../lib/prisma"
 
 async function main() {
   const sourceId = process.argv[2]

@@ -1,11 +1,9 @@
 import "dotenv/config"
-import { PrismaPg } from "@prisma/adapter-pg"
-import { PrismaClient } from "../lib/generated/prisma/client"
+
 import { createEventbriteBrowser, scrapeSearchPage } from "../lib/scrapers/eventbrite"
 import { discoverEvents, type EventbriteApiEvent } from "../lib/scrapers/eventbrite-api"
+import { prisma } from "../lib/prisma"
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
-const prisma = new PrismaClient({ adapter })
 const rawRunId = process.env.RUN_ID ?? null
 
 const CITY_ALIASES: Record<string, string> = {

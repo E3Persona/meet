@@ -1,10 +1,8 @@
 import "dotenv/config"
-import { PrismaPg } from "@prisma/adapter-pg"
-import { PrismaClient } from "../lib/generated/prisma/client"
-import { scrapeMarriottLocalEvents } from "../lib/scrapers/marriott"
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
-const prisma = new PrismaClient({ adapter })
+import { scrapeMarriottLocalEvents } from "../lib/scrapers/marriott"
+import { prisma } from "../lib/prisma"
+
 const rawRunId = process.env.RUN_ID ?? null
 
 // Map location names (case-insensitive match by "contains") to Marriott property slugs.

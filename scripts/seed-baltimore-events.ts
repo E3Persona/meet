@@ -1,10 +1,8 @@
 import "dotenv/config"
-import { PrismaPg } from "@prisma/adapter-pg"
-import { PrismaClient } from "../lib/generated/prisma/client"
 import XLSX from "xlsx"
+import { prisma } from "../lib/prisma"
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
-const prisma = new PrismaClient({ adapter })
+
 
 function serialToDate(serial: number): Date {
   const epoch = new Date(1899, 11, 30)
