@@ -136,6 +136,7 @@ async function main() {
 
   for (const { ev, loc, eventDateStart, eventDateEnd } of newCandidates) {
     const detail = detailMap.get(ev.detailUrl)
+    const venueName = detail?.venues?.[0]?.name ?? ev.venueName
     // Match venue name if provided
     let venueId: string | null = null
     let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
@@ -148,14 +149,13 @@ async function main() {
       }
     }
 
-    const venueName = detail?.venues?.[0]?.name ?? ev.venueName
     const org = detail?.organizerContact ?? ev.organizerContact
     const hasContact = org && (org.name || org.email)
 
     const event = await prisma.event.create({
       data: {
         locationId: loc.id,
-          venueId: venueId ?? undefined,
+        venueId: venueId ?? undefined,
         matchType,
         eventName: ev.title,
         eventDateStart,
@@ -167,8 +167,8 @@ async function main() {
         organizerName: org?.name ?? null,
         organizerEmail: org?.email ?? null,
         organizerPhone: org?.phone ?? null,
-        rawLocationText: ev.venueName ?? null,
-        rawVenueText: ev.venueName ?? null,
+        rawLocationText: detail?.venues?.[0]?.address ?? ev.venueName ?? null,
+        rawVenueText: venueId ? null : (venueName ?? null),
       },
     })
     totalNew++
