@@ -1,0 +1,10 @@
+id,sourceSiteId,paginationType,paginationParam,paginationStart,maxPages,listingUrlTemplate,selectorEventContainer,selectorEventName,selectorEventDateStart,selectorEventDateEnd,selectorEventUrl,selectorVenue,selectorCity,followDetailPage,selectorDetailOrganizer,selectorDetailEmail,selectorDetailPhone,lastTestedAt,lastTestStatus,lastTestNotes,updatedAt,aiFallback,firecrawlFallback
+cmr9fk0au00023ibr51fvahei,cmr9cqhpp003xf2brs7hg0754,,,1,5,,,,,,,,,f,,,,,,,2026-07-06 16:24:16.518,f,t
+cmr9fubpe00053ibrsbcge5fj,cmr9cqhpp0041f2brty44v7j2,,,1,5,,,,,,,,,f,,,,,,,2026-07-06 16:32:17.858,f,t
+cmr9jitco000k3ibr5374k58a,cmr9cqhpo003uf2br8729zbw8,,,1,5,,,,,,,,,f,,,,,,,2026-07-06 18:15:19.32,f,t
+cmr9k9q7v000m3ibrgptx1emb,cmr9cqhpp004cf2brg8tgwed9,,,1,5,,,,,,,,,f,,,,,,,2026-07-06 18:36:14.971,f,t
+cmrfuttxt000021bry9sdrsn3,cmr9cqhpp004bf2br6neapjpc,none,,1,5,https://www.asaecenter.org/programs/events,,,,,,,,f,,,,,,,2026-07-11 04:18:26.129,f,t
+cmrhzqxr2000204jlco7q3alq,cmr9cqhpp0045f2brbs8rzpv5,,,1,5,,,,,,,,,f,,,,,,,2026-07-12 16:11:41.534,f,t
+cmrhzr3ox000904jloxpwleqv,cmr9cqhpp0044f2brmzfi36ck,,,1,5,,,,,,,,,f,,,,,,,2026-07-12 16:11:49.233,f,t
+cmrq5kyta000104l2y0rv7nrk,cm黑meet001,,,1,5,,,,,,,,,f,,,,,,,2026-07-18 09:17:10.079,f,t
+cmrrxk82o0005enbriv9ydx34,cmrrxcae90000trbrg1nsmtuh,,,1,5,,,,,,,,,f,,,,,,,2026-07-19 15:08:10.853,f,t

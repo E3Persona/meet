@@ -139,8 +139,8 @@ async function main() {
     // Match venue name if provided
     let venueId: string | null = null
     let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
-    if (ev.venueName) {
-      const venueKey = ev.venueName.toLowerCase()
+    if (venueName) {
+      const venueKey = venueName.toLowerCase()
       const matchedVenue = venueMap.get(venueKey)
       if (matchedVenue) {
         venueId = matchedVenue.id
@@ -148,6 +148,7 @@ async function main() {
       }
     }
 
+    const venueName = detail?.venues?.[0]?.name ?? ev.venueName
     const org = detail?.organizerContact ?? ev.organizerContact
     const hasContact = org && (org.name || org.email)
 

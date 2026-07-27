@@ -1,0 +1,13 @@
+id,scraper,maxMonths,maxPages,maxLocations,active,updatedAt,batchDelayMs,batchSize
+cmr9k9rcn000n3ibribyelhzv,asae,6,3,0,t,2026-07-06 18:36:16.439,10000,5
+cmrfzdnvg000221brjggf9mht,generic-llm,6,3,0,t,2026-07-11 06:25:49.852,10000,5
+cmrq5kyoo000104ky9odlk7x2,sgmp,6,3,0,t,2026-07-18 09:17:09.912,10000,5
+cmrq5kym4000104jyhmk8b79m,infosec,6,3,1,t,2026-07-19 15:10:49.715,10000,5
+cmrq5kyl1000104lawhxvp161,thetradeshowcalendar,6,3,1,t,2026-07-19 17:15:54.668,10000,5
+cmr9e5r1i000056brmukqiakg,blackmeetings,6,3,1,t,2026-07-19 17:49:00.423,10000,5
+cmr9fjzeo00003ibryvivekfr,eventseye,6,3,1,t,2026-07-19 18:28:44.166,10000,5
+cmrq5kyp1000104l7eqbe9zka,showsbee,6,3,1,t,2026-07-19 18:42:29.692,10000,5
+cmrhzr3mn000704jl5mksbelz,tf,6,5,1,t,2026-07-19 18:46:24.473,10000,5
+cmr9fu8g900033ibruxxvqkxh,aca,6,5,1,t,2026-07-19 20:00:37.931,10000,5
+cmr9jiqxx000i3ibrfvkduusc,cn,6,50,0,t,2026-07-20 05:10:39.709,10000,5
+cmrhzqxi8000004jlgepz4qr7,ica,6,50,0,t,2026-07-20 05:17:05.587,10000,5

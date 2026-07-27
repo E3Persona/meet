@@ -1,4 +1,6 @@
-import puppeteer from "puppeteer-core"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
+puppeteer.use(StealthPlugin())
 
 const BASE_URL = "https://conferencenext.com"
 
@@ -80,14 +82,22 @@ async function getBrowser() {
   return puppeteer.launch({
     executablePath: "/usr/bin/google-chrome",
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-blink-features=AutomationControlled",
+      "--window-size=1920,1080",
+      "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    ],
   })
 }
 
 async function setHumanHeaders(page: any) {
+  await page.setViewport({ width: 1920, height: 1080 })
+  await page.setUserAgent(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+  )
   await page.setExtraHTTPHeaders({
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     "Accept-Language": "en-US,en;q=0.9",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
   })
@@ -128,10 +138,10 @@ interface RawCard {
   endDate: string | null // ISO, from content attr
 }
 
-async function withRetry(fn: () => Promise<void>, label: string, retries = 3) {
+async function withRetry(fn: () => Promise<void>, label: string, retries = 3, delayMs = 3000) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try { await fn(); return } catch {
-      if (attempt < retries - 1) await wait(3000)
+      if (attempt < retries - 1) await wait(delayMs)
       else throw new Error(`Failed: ${label}`)
     }
   }
@@ -142,19 +152,20 @@ async function scrapeListingPage(
   url: string
 ): Promise<{ cards: RawCard[]; hasNext: boolean }> {
   await withRetry(async () => {
-    const resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 })
+    const resp = await page.goto(url, { waitUntil: "networkidle0", timeout: 60000 })
     const status = resp ? resp.status() : null
-    if (status === 403 || status === 503) {
-      const html = await page.content()
-      if (isCloudflareChallenge(html)) {
-        console.log(`[CN] CF challenge on listing (status=${status}), waiting up to 30s...`)
-        await wait(30000)
-        const htmlAfter = await page.content()
-        if (isCloudflareChallenge(htmlAfter)) {
-          throw new Error(`CF challenge unresolved after 30s for ${url}`)
-        }
-        console.log(`[CN] Challenge resolved`)
+    // CF challenge may return 200 but serve challenge content — check the page
+    const html = await page.content()
+    if (isCloudflareChallenge(html)) {
+      console.log(`[CN] CF challenge detected on listing (status=${status}), waiting 15s for JS challenge...`)
+      await wait(15000)
+      // networkidle0 again to let the challenge JS resolve
+      await page.goto(url, { waitUntil: "networkidle0", timeout: 60000 })
+      const htmlAfter = await page.content()
+      if (isCloudflareChallenge(htmlAfter)) {
+        throw new Error(`CF challenge unresolved for ${url}`)
       }
+      console.log(`[CN] Challenge resolved`)
     }
   }, `listing ${url}`)
 
@@ -219,21 +230,22 @@ async function scrapeDetailPage(
   url: string
 ): Promise<Partial<CNDetailResult>> {
   await withRetry(async () => {
-    const resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 })
+    const resp = await page.goto(url, { waitUntil: "networkidle0", timeout: 45000 })
     const status = resp ? resp.status() : null
-    if (status === 403 || status === 503) {
-      const html = await page.content()
-      if (isCloudflareChallenge(html)) {
-        console.log(`[CN] CF challenge on detail (status=${status}), waiting up to 30s...`)
-        await wait(30000)
-        const htmlAfter = await page.content()
-        if (isCloudflareChallenge(htmlAfter)) {
-          throw new Error(`CF challenge unresolved after 30s for ${url}`)
-        }
-        console.log(`[CN] Challenge resolved`)
+    const html = await page.content()
+    if (isCloudflareChallenge(html)) {
+      console.log(`[CN] CF challenge on detail (status=${status}), refreshing session...`)
+      // Re-establish session via homepage, then retry detail
+      await page.goto(BASE_URL, { waitUntil: "networkidle0", timeout: 30000 })
+      await wait(3000)
+      await page.goto(url, { waitUntil: "networkidle0", timeout: 45000 })
+      const htmlAfter = await page.content()
+      if (isCloudflareChallenge(htmlAfter)) {
+        throw new Error(`CF challenge unresolved for ${url}`)
       }
+      console.log(`[CN] Detail challenge resolved`)
     }
-  }, `detail ${url}`)
+  }, `detail ${url}`, 5, 5000)
 
   return await page.evaluate(
     (decodeFnBody: string) => {
