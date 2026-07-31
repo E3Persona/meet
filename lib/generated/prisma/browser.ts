@@ -97,3 +97,8 @@ export type EventDetailPage = Prisma.EventDetailPageModel
  * 
  */
 export type EventDetailSection = Prisma.EventDetailSectionModel
+/**
+ * Model Note
+ * 
+ */
+export type Note = Prisma.NoteModel

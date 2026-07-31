@@ -255,11 +255,12 @@ export type LocationWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Location"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Location"> | Date | string
   parent?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
-  venues?: Prisma.LocationListRelationFilter
+  children?: Prisma.LocationListRelationFilter
   searchTerms?: Prisma.SearchTermListRelationFilter
   events?: Prisma.EventListRelationFilter
   venueDirectorySources?: Prisma.VenueDirectorySourceListRelationFilter
   venueEvents?: Prisma.EventListRelationFilter
+  notes?: Prisma.NoteListRelationFilter
 }
 
 export type LocationOrderByWithRelationInput = {
@@ -278,11 +279,12 @@ export type LocationOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   parent?: Prisma.LocationOrderByWithRelationInput
-  venues?: Prisma.LocationOrderByRelationAggregateInput
+  children?: Prisma.LocationOrderByRelationAggregateInput
   searchTerms?: Prisma.SearchTermOrderByRelationAggregateInput
   events?: Prisma.EventOrderByRelationAggregateInput
   venueDirectorySources?: Prisma.VenueDirectorySourceOrderByRelationAggregateInput
   venueEvents?: Prisma.EventOrderByRelationAggregateInput
+  notes?: Prisma.NoteOrderByRelationAggregateInput
 }
 
 export type LocationWhereUniqueInput = Prisma.AtLeast<{
@@ -304,11 +306,12 @@ export type LocationWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Location"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Location"> | Date | string
   parent?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
-  venues?: Prisma.LocationListRelationFilter
+  children?: Prisma.LocationListRelationFilter
   searchTerms?: Prisma.SearchTermListRelationFilter
   events?: Prisma.EventListRelationFilter
   venueDirectorySources?: Prisma.VenueDirectorySourceListRelationFilter
   venueEvents?: Prisma.EventListRelationFilter
+  notes?: Prisma.NoteListRelationFilter
 }, "id">
 
 export type LocationOrderByWithAggregationInput = {
@@ -365,12 +368,13 @@ export type LocationCreateInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  parent?: Prisma.LocationCreateNestedOneWithoutVenuesInput
-  venues?: Prisma.LocationCreateNestedManyWithoutParentInput
+  parent?: Prisma.LocationCreateNestedOneWithoutChildrenInput
+  children?: Prisma.LocationCreateNestedManyWithoutParentInput
   searchTerms?: Prisma.SearchTermCreateNestedManyWithoutLocationInput
   events?: Prisma.EventCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceCreateNestedManyWithoutVenueInput
   venueEvents?: Prisma.EventCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteCreateNestedManyWithoutLocationInput
 }
 
 export type LocationUncheckedCreateInput = {
@@ -388,11 +392,12 @@ export type LocationUncheckedCreateInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  venues?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
+  children?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
   searchTerms?: Prisma.SearchTermUncheckedCreateNestedManyWithoutLocationInput
   events?: Prisma.EventUncheckedCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedCreateNestedManyWithoutVenueInput
   venueEvents?: Prisma.EventUncheckedCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutLocationInput
 }
 
 export type LocationUpdateInput = {
@@ -409,12 +414,13 @@ export type LocationUpdateInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  parent?: Prisma.LocationUpdateOneWithoutVenuesNestedInput
-  venues?: Prisma.LocationUpdateManyWithoutParentNestedInput
+  parent?: Prisma.LocationUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.LocationUpdateManyWithoutParentNestedInput
   searchTerms?: Prisma.SearchTermUpdateManyWithoutLocationNestedInput
   events?: Prisma.EventUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationUncheckedUpdateInput = {
@@ -432,11 +438,12 @@ export type LocationUncheckedUpdateInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  venues?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
+  children?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
   searchTerms?: Prisma.SearchTermUncheckedUpdateManyWithoutLocationNestedInput
   events?: Prisma.EventUncheckedUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUncheckedUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationCreateManyInput = {
@@ -560,9 +567,9 @@ export type LocationScalarRelationFilter = {
   isNot?: Prisma.LocationWhereInput
 }
 
-export type LocationCreateNestedOneWithoutVenuesInput = {
-  create?: Prisma.XOR<Prisma.LocationCreateWithoutVenuesInput, Prisma.LocationUncheckedCreateWithoutVenuesInput>
-  connectOrCreate?: Prisma.LocationCreateOrConnectWithoutVenuesInput
+export type LocationCreateNestedOneWithoutChildrenInput = {
+  create?: Prisma.XOR<Prisma.LocationCreateWithoutChildrenInput, Prisma.LocationUncheckedCreateWithoutChildrenInput>
+  connectOrCreate?: Prisma.LocationCreateOrConnectWithoutChildrenInput
   connect?: Prisma.LocationWhereUniqueInput
 }
 
@@ -608,14 +615,14 @@ export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
 }
 
-export type LocationUpdateOneWithoutVenuesNestedInput = {
-  create?: Prisma.XOR<Prisma.LocationCreateWithoutVenuesInput, Prisma.LocationUncheckedCreateWithoutVenuesInput>
-  connectOrCreate?: Prisma.LocationCreateOrConnectWithoutVenuesInput
-  upsert?: Prisma.LocationUpsertWithoutVenuesInput
+export type LocationUpdateOneWithoutChildrenNestedInput = {
+  create?: Prisma.XOR<Prisma.LocationCreateWithoutChildrenInput, Prisma.LocationUncheckedCreateWithoutChildrenInput>
+  connectOrCreate?: Prisma.LocationCreateOrConnectWithoutChildrenInput
+  upsert?: Prisma.LocationUpsertWithoutChildrenInput
   disconnect?: Prisma.LocationWhereInput | boolean
   delete?: Prisma.LocationWhereInput | boolean
   connect?: Prisma.LocationWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.LocationUpdateToOneWithWhereWithoutVenuesInput, Prisma.LocationUpdateWithoutVenuesInput>, Prisma.LocationUncheckedUpdateWithoutVenuesInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.LocationUpdateToOneWithWhereWithoutChildrenInput, Prisma.LocationUpdateWithoutChildrenInput>, Prisma.LocationUncheckedUpdateWithoutChildrenInput>
 }
 
 export type LocationUpdateManyWithoutParentNestedInput = {
@@ -706,7 +713,23 @@ export type LocationUpdateOneRequiredWithoutVenueDirectorySourcesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.LocationUpdateToOneWithWhereWithoutVenueDirectorySourcesInput, Prisma.LocationUpdateWithoutVenueDirectorySourcesInput>, Prisma.LocationUncheckedUpdateWithoutVenueDirectorySourcesInput>
 }
 
-export type LocationCreateWithoutVenuesInput = {
+export type LocationCreateNestedOneWithoutNotesInput = {
+  create?: Prisma.XOR<Prisma.LocationCreateWithoutNotesInput, Prisma.LocationUncheckedCreateWithoutNotesInput>
+  connectOrCreate?: Prisma.LocationCreateOrConnectWithoutNotesInput
+  connect?: Prisma.LocationWhereUniqueInput
+}
+
+export type LocationUpdateOneWithoutNotesNestedInput = {
+  create?: Prisma.XOR<Prisma.LocationCreateWithoutNotesInput, Prisma.LocationUncheckedCreateWithoutNotesInput>
+  connectOrCreate?: Prisma.LocationCreateOrConnectWithoutNotesInput
+  upsert?: Prisma.LocationUpsertWithoutNotesInput
+  disconnect?: Prisma.LocationWhereInput | boolean
+  delete?: Prisma.LocationWhereInput | boolean
+  connect?: Prisma.LocationWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.LocationUpdateToOneWithWhereWithoutNotesInput, Prisma.LocationUpdateWithoutNotesInput>, Prisma.LocationUncheckedUpdateWithoutNotesInput>
+}
+
+export type LocationCreateWithoutChildrenInput = {
   id?: string
   type: $Enums.LocationType
   name: string
@@ -720,14 +743,15 @@ export type LocationCreateWithoutVenuesInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  parent?: Prisma.LocationCreateNestedOneWithoutVenuesInput
+  parent?: Prisma.LocationCreateNestedOneWithoutChildrenInput
   searchTerms?: Prisma.SearchTermCreateNestedManyWithoutLocationInput
   events?: Prisma.EventCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceCreateNestedManyWithoutVenueInput
   venueEvents?: Prisma.EventCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteCreateNestedManyWithoutLocationInput
 }
 
-export type LocationUncheckedCreateWithoutVenuesInput = {
+export type LocationUncheckedCreateWithoutChildrenInput = {
   id?: string
   type: $Enums.LocationType
   name: string
@@ -746,11 +770,12 @@ export type LocationUncheckedCreateWithoutVenuesInput = {
   events?: Prisma.EventUncheckedCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedCreateNestedManyWithoutVenueInput
   venueEvents?: Prisma.EventUncheckedCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutLocationInput
 }
 
-export type LocationCreateOrConnectWithoutVenuesInput = {
+export type LocationCreateOrConnectWithoutChildrenInput = {
   where: Prisma.LocationWhereUniqueInput
-  create: Prisma.XOR<Prisma.LocationCreateWithoutVenuesInput, Prisma.LocationUncheckedCreateWithoutVenuesInput>
+  create: Prisma.XOR<Prisma.LocationCreateWithoutChildrenInput, Prisma.LocationUncheckedCreateWithoutChildrenInput>
 }
 
 export type LocationCreateWithoutParentInput = {
@@ -767,11 +792,12 @@ export type LocationCreateWithoutParentInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  venues?: Prisma.LocationCreateNestedManyWithoutParentInput
+  children?: Prisma.LocationCreateNestedManyWithoutParentInput
   searchTerms?: Prisma.SearchTermCreateNestedManyWithoutLocationInput
   events?: Prisma.EventCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceCreateNestedManyWithoutVenueInput
   venueEvents?: Prisma.EventCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteCreateNestedManyWithoutLocationInput
 }
 
 export type LocationUncheckedCreateWithoutParentInput = {
@@ -788,11 +814,12 @@ export type LocationUncheckedCreateWithoutParentInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  venues?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
+  children?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
   searchTerms?: Prisma.SearchTermUncheckedCreateNestedManyWithoutLocationInput
   events?: Prisma.EventUncheckedCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedCreateNestedManyWithoutVenueInput
   venueEvents?: Prisma.EventUncheckedCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutLocationInput
 }
 
 export type LocationCreateOrConnectWithoutParentInput = {
@@ -805,18 +832,18 @@ export type LocationCreateManyParentInputEnvelope = {
   skipDuplicates?: boolean
 }
 
-export type LocationUpsertWithoutVenuesInput = {
-  update: Prisma.XOR<Prisma.LocationUpdateWithoutVenuesInput, Prisma.LocationUncheckedUpdateWithoutVenuesInput>
-  create: Prisma.XOR<Prisma.LocationCreateWithoutVenuesInput, Prisma.LocationUncheckedCreateWithoutVenuesInput>
+export type LocationUpsertWithoutChildrenInput = {
+  update: Prisma.XOR<Prisma.LocationUpdateWithoutChildrenInput, Prisma.LocationUncheckedUpdateWithoutChildrenInput>
+  create: Prisma.XOR<Prisma.LocationCreateWithoutChildrenInput, Prisma.LocationUncheckedCreateWithoutChildrenInput>
   where?: Prisma.LocationWhereInput
 }
 
-export type LocationUpdateToOneWithWhereWithoutVenuesInput = {
+export type LocationUpdateToOneWithWhereWithoutChildrenInput = {
   where?: Prisma.LocationWhereInput
-  data: Prisma.XOR<Prisma.LocationUpdateWithoutVenuesInput, Prisma.LocationUncheckedUpdateWithoutVenuesInput>
+  data: Prisma.XOR<Prisma.LocationUpdateWithoutChildrenInput, Prisma.LocationUncheckedUpdateWithoutChildrenInput>
 }
 
-export type LocationUpdateWithoutVenuesInput = {
+export type LocationUpdateWithoutChildrenInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumLocationTypeFieldUpdateOperationsInput | $Enums.LocationType
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -830,14 +857,15 @@ export type LocationUpdateWithoutVenuesInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  parent?: Prisma.LocationUpdateOneWithoutVenuesNestedInput
+  parent?: Prisma.LocationUpdateOneWithoutChildrenNestedInput
   searchTerms?: Prisma.SearchTermUpdateManyWithoutLocationNestedInput
   events?: Prisma.EventUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutLocationNestedInput
 }
 
-export type LocationUncheckedUpdateWithoutVenuesInput = {
+export type LocationUncheckedUpdateWithoutChildrenInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   type?: Prisma.EnumLocationTypeFieldUpdateOperationsInput | $Enums.LocationType
   name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -856,6 +884,7 @@ export type LocationUncheckedUpdateWithoutVenuesInput = {
   events?: Prisma.EventUncheckedUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUncheckedUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationUpsertWithWhereUniqueWithoutParentInput = {
@@ -908,11 +937,12 @@ export type LocationCreateWithoutSearchTermsInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  parent?: Prisma.LocationCreateNestedOneWithoutVenuesInput
-  venues?: Prisma.LocationCreateNestedManyWithoutParentInput
+  parent?: Prisma.LocationCreateNestedOneWithoutChildrenInput
+  children?: Prisma.LocationCreateNestedManyWithoutParentInput
   events?: Prisma.EventCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceCreateNestedManyWithoutVenueInput
   venueEvents?: Prisma.EventCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteCreateNestedManyWithoutLocationInput
 }
 
 export type LocationUncheckedCreateWithoutSearchTermsInput = {
@@ -930,10 +960,11 @@ export type LocationUncheckedCreateWithoutSearchTermsInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  venues?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
+  children?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
   events?: Prisma.EventUncheckedCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedCreateNestedManyWithoutVenueInput
   venueEvents?: Prisma.EventUncheckedCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutLocationInput
 }
 
 export type LocationCreateOrConnectWithoutSearchTermsInput = {
@@ -966,11 +997,12 @@ export type LocationUpdateWithoutSearchTermsInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  parent?: Prisma.LocationUpdateOneWithoutVenuesNestedInput
-  venues?: Prisma.LocationUpdateManyWithoutParentNestedInput
+  parent?: Prisma.LocationUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.LocationUpdateManyWithoutParentNestedInput
   events?: Prisma.EventUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationUncheckedUpdateWithoutSearchTermsInput = {
@@ -988,10 +1020,11 @@ export type LocationUncheckedUpdateWithoutSearchTermsInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  venues?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
+  children?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
   events?: Prisma.EventUncheckedUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUncheckedUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationCreateWithoutEventsInput = {
@@ -1008,11 +1041,12 @@ export type LocationCreateWithoutEventsInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  parent?: Prisma.LocationCreateNestedOneWithoutVenuesInput
-  venues?: Prisma.LocationCreateNestedManyWithoutParentInput
+  parent?: Prisma.LocationCreateNestedOneWithoutChildrenInput
+  children?: Prisma.LocationCreateNestedManyWithoutParentInput
   searchTerms?: Prisma.SearchTermCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceCreateNestedManyWithoutVenueInput
   venueEvents?: Prisma.EventCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteCreateNestedManyWithoutLocationInput
 }
 
 export type LocationUncheckedCreateWithoutEventsInput = {
@@ -1030,10 +1064,11 @@ export type LocationUncheckedCreateWithoutEventsInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  venues?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
+  children?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
   searchTerms?: Prisma.SearchTermUncheckedCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedCreateNestedManyWithoutVenueInput
   venueEvents?: Prisma.EventUncheckedCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutLocationInput
 }
 
 export type LocationCreateOrConnectWithoutEventsInput = {
@@ -1055,11 +1090,12 @@ export type LocationCreateWithoutVenueEventsInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  parent?: Prisma.LocationCreateNestedOneWithoutVenuesInput
-  venues?: Prisma.LocationCreateNestedManyWithoutParentInput
+  parent?: Prisma.LocationCreateNestedOneWithoutChildrenInput
+  children?: Prisma.LocationCreateNestedManyWithoutParentInput
   searchTerms?: Prisma.SearchTermCreateNestedManyWithoutLocationInput
   events?: Prisma.EventCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteCreateNestedManyWithoutLocationInput
 }
 
 export type LocationUncheckedCreateWithoutVenueEventsInput = {
@@ -1077,10 +1113,11 @@ export type LocationUncheckedCreateWithoutVenueEventsInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  venues?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
+  children?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
   searchTerms?: Prisma.SearchTermUncheckedCreateNestedManyWithoutLocationInput
   events?: Prisma.EventUncheckedCreateNestedManyWithoutLocationInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutLocationInput
 }
 
 export type LocationCreateOrConnectWithoutVenueEventsInput = {
@@ -1113,11 +1150,12 @@ export type LocationUpdateWithoutEventsInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  parent?: Prisma.LocationUpdateOneWithoutVenuesNestedInput
-  venues?: Prisma.LocationUpdateManyWithoutParentNestedInput
+  parent?: Prisma.LocationUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.LocationUpdateManyWithoutParentNestedInput
   searchTerms?: Prisma.SearchTermUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationUncheckedUpdateWithoutEventsInput = {
@@ -1135,10 +1173,11 @@ export type LocationUncheckedUpdateWithoutEventsInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  venues?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
+  children?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
   searchTerms?: Prisma.SearchTermUncheckedUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUncheckedUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationUpsertWithoutVenueEventsInput = {
@@ -1166,11 +1205,12 @@ export type LocationUpdateWithoutVenueEventsInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  parent?: Prisma.LocationUpdateOneWithoutVenuesNestedInput
-  venues?: Prisma.LocationUpdateManyWithoutParentNestedInput
+  parent?: Prisma.LocationUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.LocationUpdateManyWithoutParentNestedInput
   searchTerms?: Prisma.SearchTermUpdateManyWithoutLocationNestedInput
   events?: Prisma.EventUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationUncheckedUpdateWithoutVenueEventsInput = {
@@ -1188,10 +1228,11 @@ export type LocationUncheckedUpdateWithoutVenueEventsInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  venues?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
+  children?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
   searchTerms?: Prisma.SearchTermUncheckedUpdateManyWithoutLocationNestedInput
   events?: Prisma.EventUncheckedUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationCreateWithoutVenueDirectorySourcesInput = {
@@ -1208,11 +1249,12 @@ export type LocationCreateWithoutVenueDirectorySourcesInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  parent?: Prisma.LocationCreateNestedOneWithoutVenuesInput
-  venues?: Prisma.LocationCreateNestedManyWithoutParentInput
+  parent?: Prisma.LocationCreateNestedOneWithoutChildrenInput
+  children?: Prisma.LocationCreateNestedManyWithoutParentInput
   searchTerms?: Prisma.SearchTermCreateNestedManyWithoutLocationInput
   events?: Prisma.EventCreateNestedManyWithoutLocationInput
   venueEvents?: Prisma.EventCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteCreateNestedManyWithoutLocationInput
 }
 
 export type LocationUncheckedCreateWithoutVenueDirectorySourcesInput = {
@@ -1230,10 +1272,11 @@ export type LocationUncheckedCreateWithoutVenueDirectorySourcesInput = {
   lastIngestedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  venues?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
+  children?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
   searchTerms?: Prisma.SearchTermUncheckedCreateNestedManyWithoutLocationInput
   events?: Prisma.EventUncheckedCreateNestedManyWithoutLocationInput
   venueEvents?: Prisma.EventUncheckedCreateNestedManyWithoutVenueInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutLocationInput
 }
 
 export type LocationCreateOrConnectWithoutVenueDirectorySourcesInput = {
@@ -1266,11 +1309,12 @@ export type LocationUpdateWithoutVenueDirectorySourcesInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  parent?: Prisma.LocationUpdateOneWithoutVenuesNestedInput
-  venues?: Prisma.LocationUpdateManyWithoutParentNestedInput
+  parent?: Prisma.LocationUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.LocationUpdateManyWithoutParentNestedInput
   searchTerms?: Prisma.SearchTermUpdateManyWithoutLocationNestedInput
   events?: Prisma.EventUpdateManyWithoutLocationNestedInput
   venueEvents?: Prisma.EventUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationUncheckedUpdateWithoutVenueDirectorySourcesInput = {
@@ -1288,9 +1332,114 @@ export type LocationUncheckedUpdateWithoutVenueDirectorySourcesInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  venues?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
+  children?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
   searchTerms?: Prisma.SearchTermUncheckedUpdateManyWithoutLocationNestedInput
   events?: Prisma.EventUncheckedUpdateManyWithoutLocationNestedInput
+  venueEvents?: Prisma.EventUncheckedUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutLocationNestedInput
+}
+
+export type LocationCreateWithoutNotesInput = {
+  id?: string
+  type: $Enums.LocationType
+  name: string
+  shortName?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  sourceUrl?: string | null
+  venueType?: $Enums.VenueType | null
+  active?: boolean
+  lastIngestedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  parent?: Prisma.LocationCreateNestedOneWithoutChildrenInput
+  children?: Prisma.LocationCreateNestedManyWithoutParentInput
+  searchTerms?: Prisma.SearchTermCreateNestedManyWithoutLocationInput
+  events?: Prisma.EventCreateNestedManyWithoutLocationInput
+  venueDirectorySources?: Prisma.VenueDirectorySourceCreateNestedManyWithoutVenueInput
+  venueEvents?: Prisma.EventCreateNestedManyWithoutVenueInput
+}
+
+export type LocationUncheckedCreateWithoutNotesInput = {
+  id?: string
+  type: $Enums.LocationType
+  name: string
+  shortName?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  parentId?: string | null
+  sourceUrl?: string | null
+  venueType?: $Enums.VenueType | null
+  active?: boolean
+  lastIngestedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  children?: Prisma.LocationUncheckedCreateNestedManyWithoutParentInput
+  searchTerms?: Prisma.SearchTermUncheckedCreateNestedManyWithoutLocationInput
+  events?: Prisma.EventUncheckedCreateNestedManyWithoutLocationInput
+  venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedCreateNestedManyWithoutVenueInput
+  venueEvents?: Prisma.EventUncheckedCreateNestedManyWithoutVenueInput
+}
+
+export type LocationCreateOrConnectWithoutNotesInput = {
+  where: Prisma.LocationWhereUniqueInput
+  create: Prisma.XOR<Prisma.LocationCreateWithoutNotesInput, Prisma.LocationUncheckedCreateWithoutNotesInput>
+}
+
+export type LocationUpsertWithoutNotesInput = {
+  update: Prisma.XOR<Prisma.LocationUpdateWithoutNotesInput, Prisma.LocationUncheckedUpdateWithoutNotesInput>
+  create: Prisma.XOR<Prisma.LocationCreateWithoutNotesInput, Prisma.LocationUncheckedCreateWithoutNotesInput>
+  where?: Prisma.LocationWhereInput
+}
+
+export type LocationUpdateToOneWithWhereWithoutNotesInput = {
+  where?: Prisma.LocationWhereInput
+  data: Prisma.XOR<Prisma.LocationUpdateWithoutNotesInput, Prisma.LocationUncheckedUpdateWithoutNotesInput>
+}
+
+export type LocationUpdateWithoutNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumLocationTypeFieldUpdateOperationsInput | $Enums.LocationType
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  shortName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  venueType?: Prisma.NullableEnumVenueTypeFieldUpdateOperationsInput | $Enums.VenueType | null
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  parent?: Prisma.LocationUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.LocationUpdateManyWithoutParentNestedInput
+  searchTerms?: Prisma.SearchTermUpdateManyWithoutLocationNestedInput
+  events?: Prisma.EventUpdateManyWithoutLocationNestedInput
+  venueDirectorySources?: Prisma.VenueDirectorySourceUpdateManyWithoutVenueNestedInput
+  venueEvents?: Prisma.EventUpdateManyWithoutVenueNestedInput
+}
+
+export type LocationUncheckedUpdateWithoutNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumLocationTypeFieldUpdateOperationsInput | $Enums.LocationType
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  shortName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  state?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  venueType?: Prisma.NullableEnumVenueTypeFieldUpdateOperationsInput | $Enums.VenueType | null
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  children?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
+  searchTerms?: Prisma.SearchTermUncheckedUpdateManyWithoutLocationNestedInput
+  events?: Prisma.EventUncheckedUpdateManyWithoutLocationNestedInput
+  venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUncheckedUpdateManyWithoutVenueNestedInput
 }
 
@@ -1324,11 +1473,12 @@ export type LocationUpdateWithoutParentInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  venues?: Prisma.LocationUpdateManyWithoutParentNestedInput
+  children?: Prisma.LocationUpdateManyWithoutParentNestedInput
   searchTerms?: Prisma.SearchTermUpdateManyWithoutLocationNestedInput
   events?: Prisma.EventUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationUncheckedUpdateWithoutParentInput = {
@@ -1345,11 +1495,12 @@ export type LocationUncheckedUpdateWithoutParentInput = {
   lastIngestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  venues?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
+  children?: Prisma.LocationUncheckedUpdateManyWithoutParentNestedInput
   searchTerms?: Prisma.SearchTermUncheckedUpdateManyWithoutLocationNestedInput
   events?: Prisma.EventUncheckedUpdateManyWithoutLocationNestedInput
   venueDirectorySources?: Prisma.VenueDirectorySourceUncheckedUpdateManyWithoutVenueNestedInput
   venueEvents?: Prisma.EventUncheckedUpdateManyWithoutVenueNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutLocationNestedInput
 }
 
 export type LocationUncheckedUpdateManyWithoutParentInput = {
@@ -1374,19 +1525,21 @@ export type LocationUncheckedUpdateManyWithoutParentInput = {
  */
 
 export type LocationCountOutputType = {
-  venues: number
+  children: number
   searchTerms: number
   events: number
   venueDirectorySources: number
   venueEvents: number
+  notes: number
 }
 
 export type LocationCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  venues?: boolean | LocationCountOutputTypeCountVenuesArgs
+  children?: boolean | LocationCountOutputTypeCountChildrenArgs
   searchTerms?: boolean | LocationCountOutputTypeCountSearchTermsArgs
   events?: boolean | LocationCountOutputTypeCountEventsArgs
   venueDirectorySources?: boolean | LocationCountOutputTypeCountVenueDirectorySourcesArgs
   venueEvents?: boolean | LocationCountOutputTypeCountVenueEventsArgs
+  notes?: boolean | LocationCountOutputTypeCountNotesArgs
 }
 
 /**
@@ -1402,7 +1555,7 @@ export type LocationCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Ext
 /**
  * LocationCountOutputType without action
  */
-export type LocationCountOutputTypeCountVenuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type LocationCountOutputTypeCountChildrenArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.LocationWhereInput
 }
 
@@ -1434,6 +1587,13 @@ export type LocationCountOutputTypeCountVenueEventsArgs<ExtArgs extends runtime.
   where?: Prisma.EventWhereInput
 }
 
+/**
+ * LocationCountOutputType without action
+ */
+export type LocationCountOutputTypeCountNotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteWhereInput
+}
+
 
 export type LocationSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1451,11 +1611,12 @@ export type LocationSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   createdAt?: boolean
   updatedAt?: boolean
   parent?: boolean | Prisma.Location$parentArgs<ExtArgs>
-  venues?: boolean | Prisma.Location$venuesArgs<ExtArgs>
+  children?: boolean | Prisma.Location$childrenArgs<ExtArgs>
   searchTerms?: boolean | Prisma.Location$searchTermsArgs<ExtArgs>
   events?: boolean | Prisma.Location$eventsArgs<ExtArgs>
   venueDirectorySources?: boolean | Prisma.Location$venueDirectorySourcesArgs<ExtArgs>
   venueEvents?: boolean | Prisma.Location$venueEventsArgs<ExtArgs>
+  notes?: boolean | Prisma.Location$notesArgs<ExtArgs>
   _count?: boolean | Prisma.LocationCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["location"]>
 
@@ -1515,11 +1676,12 @@ export type LocationSelectScalar = {
 export type LocationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "type" | "name" | "shortName" | "address" | "city" | "state" | "parentId" | "sourceUrl" | "venueType" | "active" | "lastIngestedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["location"]>
 export type LocationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   parent?: boolean | Prisma.Location$parentArgs<ExtArgs>
-  venues?: boolean | Prisma.Location$venuesArgs<ExtArgs>
+  children?: boolean | Prisma.Location$childrenArgs<ExtArgs>
   searchTerms?: boolean | Prisma.Location$searchTermsArgs<ExtArgs>
   events?: boolean | Prisma.Location$eventsArgs<ExtArgs>
   venueDirectorySources?: boolean | Prisma.Location$venueDirectorySourcesArgs<ExtArgs>
   venueEvents?: boolean | Prisma.Location$venueEventsArgs<ExtArgs>
+  notes?: boolean | Prisma.Location$notesArgs<ExtArgs>
   _count?: boolean | Prisma.LocationCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type LocationIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1533,11 +1695,12 @@ export type $LocationPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   name: "Location"
   objects: {
     parent: Prisma.$LocationPayload<ExtArgs> | null
-    venues: Prisma.$LocationPayload<ExtArgs>[]
+    children: Prisma.$LocationPayload<ExtArgs>[]
     searchTerms: Prisma.$SearchTermPayload<ExtArgs>[]
     events: Prisma.$EventPayload<ExtArgs>[]
     venueDirectorySources: Prisma.$VenueDirectorySourcePayload<ExtArgs>[]
     venueEvents: Prisma.$EventPayload<ExtArgs>[]
+    notes: Prisma.$NotePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1949,11 +2112,12 @@ readonly fields: LocationFieldRefs;
 export interface Prisma__LocationClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   parent<T extends Prisma.Location$parentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Location$parentArgs<ExtArgs>>): Prisma.Prisma__LocationClient<runtime.Types.Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  venues<T extends Prisma.Location$venuesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Location$venuesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  children<T extends Prisma.Location$childrenArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Location$childrenArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   searchTerms<T extends Prisma.Location$searchTermsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Location$searchTermsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SearchTermPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   events<T extends Prisma.Location$eventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Location$eventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   venueDirectorySources<T extends Prisma.Location$venueDirectorySourcesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Location$venueDirectorySourcesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VenueDirectorySourcePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   venueEvents<T extends Prisma.Location$venueEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Location$venueEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  notes<T extends Prisma.Location$notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Location$notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2417,9 +2581,9 @@ export type Location$parentArgs<ExtArgs extends runtime.Types.Extensions.Interna
 }
 
 /**
- * Location.venues
+ * Location.children
  */
-export type Location$venuesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Location$childrenArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the Location
    */
@@ -2534,6 +2698,30 @@ export type Location$venueEventsArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.EventScalarFieldEnum | Prisma.EventScalarFieldEnum[]
+}
+
+/**
+ * Location.notes
+ */
+export type Location$notesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Note
+   */
+  select?: Prisma.NoteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Note
+   */
+  omit?: Prisma.NoteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteInclude<ExtArgs> | null
+  where?: Prisma.NoteWhereInput
+  orderBy?: Prisma.NoteOrderByWithRelationInput | Prisma.NoteOrderByWithRelationInput[]
+  cursor?: Prisma.NoteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteScalarFieldEnum | Prisma.NoteScalarFieldEnum[]
 }
 
 /**

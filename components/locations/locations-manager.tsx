@@ -42,10 +42,11 @@ interface Location {
   state: string | null
   sourceUrl: string | null
   active: boolean
-  type: "CITY" | "VENUE"
+  type: "STATE" | "DISTRICT" | "CITY" | "VENUE"
   parentId: string | null
   lastIngestedAt: string | null
-  parent: { id: string; name: string } | null
+  parent: { id: string; name: string; type: string } | null
+  children: Location[]
   venues: NestedLocation[]
   searchTerms: SearchTerm[]
 }
@@ -54,7 +55,7 @@ const LOCATION_FORM_SECTIONS: FormSectionType[] = [
   {
     id: "details",
     title: "Location Details",
-    description: "Add a city or venue to track events at",
+    description: "Add a location to track events at",
     columns: 4,
     fields: [
       {
@@ -62,25 +63,27 @@ const LOCATION_FORM_SECTIONS: FormSectionType[] = [
         label: "Type",
         type: "select",
         options: [
-          { label: "Venue", value: "VENUE" },
+          { label: "State", value: "STATE" },
+          { label: "District", value: "DISTRICT" },
           { label: "City", value: "CITY" },
+          { label: "Venue", value: "VENUE" },
         ],
         required: true,
         colSpan: 2,
       },
       {
         name: "parentId",
-        label: "Parent City Name",
+        label: "Parent Location",
         type: "text",
-        placeholder: "e.g. Philadelphia",
+        placeholder: "e.g. Pennsylvania (for cities), Philadelphia (for venues)",
         colSpan: 2,
-        helperText: "For Venues only — type the name of the city this venue belongs to. Leave blank for Cities.",
+        helperText: "Required for Districts, Cities, and Venues. Leave blank for States.",
       },
       {
         name: "name",
         label: "Name",
         type: "text",
-        placeholder: "e.g. Philadelphia Marriott Downtown",
+        placeholder: "e.g. Pennsylvania, Southeast PA, Philadelphia, Philadelphia Marriott Downtown",
         required: true,
         colSpan: 4,
       },
@@ -88,22 +91,25 @@ const LOCATION_FORM_SECTIONS: FormSectionType[] = [
         name: "address",
         label: "Address",
         type: "text",
-        placeholder: "e.g. 1201 Market Street",
+        placeholder: "e.g. 1201 Market Street (venues only)",
         colSpan: 4,
+        helperText: "Only for venues.",
       },
       {
         name: "city",
-        label: "City",
+        label: "City (denormalized)",
         type: "text",
-        placeholder: "e.g. Philadelphia",
+        placeholder: "e.g. Philadelphia (for cities/venues)",
         colSpan: 2,
+        helperText: "For cities and venues only.",
       },
       {
         name: "state",
-        label: "State",
+        label: "State (denormalized)",
         type: "text",
-        placeholder: "e.g. PA",
+        placeholder: "e.g. PA, MD, DC (for cities/venues)",
         colSpan: 2,
+        helperText: "For cities and venues only.",
       },
       {
         name: "sourceUrl",
@@ -286,6 +292,8 @@ export function LocationsManager() {
     }
   }
 
+  const states = locations.filter((l) => l.type === "STATE")
+  const districts = locations.filter((l) => l.type === "DISTRICT")
   const cities = locations.filter((l) => l.type === "CITY")
   const venues = locations.filter((l) => l.type === "VENUE")
 
@@ -298,14 +306,19 @@ export function LocationsManager() {
         return (
           <div>
             <p className="font-medium text-sm">{loc.name}</p>
+            {loc.address && (
+              <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                {loc.address}
+              </p>
+            )}
             {loc.city && loc.state && (
               <p className="text-xs text-muted-foreground">
                 {loc.city}, {loc.state}
               </p>
             )}
-            {loc.type === "VENUE" && loc.parent && (
+            {loc.parent && (
               <p className="text-xs text-muted-foreground">
-                ← {loc.parent.name}
+                ← {loc.parent.name} ({loc.parent.type})
               </p>
             )}
           </div>
@@ -315,21 +328,33 @@ export function LocationsManager() {
     {
       id: "type",
       header: "Type",
-      cell: ({ row }) => (
-        <Badge variant={row.original.type === "CITY" ? "info" : "neutral"} size="sm">
-          {row.original.type === "CITY" ? "City" : "Venue"}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const type = row.original.type
+        const variant = type === "STATE" ? "success" as const 
+          : type === "DISTRICT" ? "warning" as const
+          : type === "CITY" ? "info" as const
+          : "neutral" as const
+        const label = type === "STATE" ? "State"
+          : type === "DISTRICT" ? "District"
+          : type === "CITY" ? "City"
+          : "Venue"
+        return (
+          <Badge variant={variant} size="sm">
+            {label}
+          </Badge>
+        )
+      },
     },
     {
-      id: "venues",
-      header: "Venues",
+      id: "children",
+      header: "Children",
       meta: { align: "center" },
       cell: ({ row }) => {
         const loc = row.original
-        if (loc.type !== "CITY") return <span className="text-xs text-muted-foreground">—</span>
+        const count = loc.children?.length || 0
+        if (count === 0) return <span className="text-xs text-muted-foreground">—</span>
         return (
-          <span className="text-sm">{loc.venues.length}</span>
+          <span className="text-sm">{count}</span>
         )
       },
     },
@@ -428,7 +453,7 @@ export function LocationsManager() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {cities.length} cit{cities.length === 1 ? "y" : "ies"} · {venues.length} venues
+          {states.length} state{states.length === 1 ? "" : "s"} · {districts.length} district{districts.length === 1 ? "" : "s"} · {cities.length} cit{cities.length === 1 ? "y" : "ies"} · {venues.length} venue{venues.length === 1 ? "" : "s"}
         </p>
         <div className="flex items-center gap-2">
           <Button
@@ -450,7 +475,7 @@ export function LocationsManager() {
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Add Location</DialogTitle>
-            <DialogDescription>Add a city or venue to start tracking events.</DialogDescription>
+            <DialogDescription>Add a state, district, city, or venue to start tracking events.</DialogDescription>
           </DialogHeader>
           <UniversalForm
             title=""

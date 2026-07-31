@@ -8,13 +8,21 @@ datasource db {
 }
 
 // ─── Location ─────────────────────────────────────────────────────────────────
-// Self-relation so a City can have many Venues under it. This lets you run
-// city-wide search phrases once per city, and venue-specific phrases once
-// per venue, while keeping venues queryable/groupable by their parent city.
+// Hierarchical location system: STATE → DISTRICT (optional) → CITY → VENUE
+// - STATE: Top-level (e.g., "Pennsylvania", "Maryland")
+// - DISTRICT: Optional regional grouping (e.g., "Southeast PA", "Capital Region")
+// - CITY: City-level (e.g., "Philadelphia", "Baltimore")
+// - VENUE: Specific venue (e.g., "Philadelphia Marriott Downtown")
+// Self-relation via parentId enables:
+//   - City-wide search phrases run once per city
+//   - Venue-specific phrases run once per venue
+//   - Venues queryable/groupable by parent city/district/state
 
 enum LocationType {
-  CITY
-  VENUE
+  STATE     // Top-level: "Pennsylvania", "Maryland"
+  DISTRICT  // Mid-level: "Southeast PA", "Capital Region" (optional)
+  CITY      // City-level: "Philadelphia", "Baltimore"
+  VENUE     // Bottom-level: "Philadelphia Marriott Downtown"
 }
 
 enum VenueType {
@@ -34,12 +42,12 @@ enum VenueType {
 model Location {
   id        String       @id @default(cuid())
   type      LocationType
-  name      String       // City: "Philadelphia" | Venue: "Philadelphia Marriott Downtown"
+  name      String       // State: "Pennsylvania" | District: "Southeast PA" | City: "Philadelphia" | Venue: "Philadelphia Marriott Downtown"
   shortName String?      // Venue only: "Marriott" (from "Tab Name (Short)")
   address   String?      // Venue only
-  city      String?      // denormalized for fast filtering, both types
-  state     String?
-  parentId  String?      // Venue -> its City. Null for CITY rows.
+  city      String?      // denormalized for fast filtering (city name for venues, null for state/district)
+  state     String?      // denormalized for fast filtering (state code for cities/venues, null for state rows)
+  parentId  String?      // Child -> parent (Venue->City, City->District, District->State). Null for STATE rows.
   sourceUrl String?
   venueType VenueType?   // Venue only — convention_center, hotel, arena, etc.
   active         Boolean    @default(true)
@@ -47,14 +55,17 @@ model Location {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
-  parent      Location?    @relation("CityVenues", fields: [parentId], references: [id], onDelete: Cascade)
-  venues      Location[]   @relation("CityVenues")
+  parent      Location?    @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Location[]   @relation("LocationHierarchy")
   searchTerms SearchTerm[]
   events      Event[]
   venueDirectorySources VenueDirectorySource[] @relation("VenueDirectorySources")
   venueEvents Event[]     @relation("VenueEvents")
+  notes       Note[]      @relation("LocationNotes")
 
   @@index([type, parentId])
+  @@index([state])
+  @@index([city])
   @@map("locations")
 }
 
@@ -138,6 +149,7 @@ model Event {
   contacts   EventContact[]
   seenBlock  SeenBlock?     @relation(fields: [seenBlockId], references: [id], onDelete: SetNull)
   detailPages EventDetailPage[]
+  notes      Note[]
 
   @@unique([locationId, eventName, eventDateStart])
   @@map("events")
@@ -328,6 +340,7 @@ model EventContact {
   updatedAt DateTime @updatedAt
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  notes Note[]
 
   @@map("event_contacts")
 }
@@ -454,4 +467,42 @@ model EventDetailSection {
 
   @@unique([eventDetailPageId, sectionName])
   @@map("event_detail_sections")
+}
+
+// ─── Notes ─────────────────────────────────────────────────────────────────────
+// Independent notes system to track what happened with dates.
+// Can be associated with Events, Locations, or EventContacts.
+
+enum NoteType {
+  general
+  contact_attempt
+  follow_up
+  status_change
+  venue_update
+  research
+  other
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  content     String   // what happened
+  noteType    NoteType @default(general)
+  notedAt     DateTime @default(now()) // when the event being noted occurred
+  createdAt   DateTime @default(now()) // when the note was created
+  updatedAt   DateTime @updatedAt
+
+  // Entity associations (one of these will be set)
+  eventId     String?
+  locationId  String?
+  contactId   String?
+
+  event     Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  location  Location?    @relation("LocationNotes", fields: [locationId], references: [id], onDelete: Cascade)
+  contact   EventContact? @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([locationId])
+  @@index([contactId])
+  @@index([notedAt])
+  @@map("notes")
 }

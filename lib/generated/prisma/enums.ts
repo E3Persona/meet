@@ -10,6 +10,8 @@
 */
 
 export const LocationType = {
+  STATE: 'STATE',
+  DISTRICT: 'DISTRICT',
   CITY: 'CITY',
   VENUE: 'VENUE'
 } as const
@@ -146,3 +148,16 @@ export const HealthStatus = {
 } as const
 
 export type HealthStatus = (typeof HealthStatus)[keyof typeof HealthStatus]
+
+
+export const NoteType = {
+  general: 'general',
+  contact_attempt: 'contact_attempt',
+  follow_up: 'follow_up',
+  status_change: 'status_change',
+  venue_update: 'venue_update',
+  research: 'research',
+  other: 'other'
+} as const
+
+export type NoteType = (typeof NoteType)[keyof typeof NoteType]

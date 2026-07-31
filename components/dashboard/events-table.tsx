@@ -86,7 +86,7 @@ interface EventRow {
   rawVenueText: string | null
   rawLocationText: string | null
   venueId: string | null
-  venue: { id: string; name: string; city: string | null; state: string | null } | null
+  venue: { id: string; name: string; city: string | null; state: string | null; address: string | null } | null
   organizerName: string | null
   organizerTitle: string | null
   organizerEmail: string | null
@@ -94,17 +94,19 @@ interface EventRow {
   contactNote: string | null
   status: "new" | "reviewed" | "contacted"
   dateAdded: string
-  location: { name: string; city: string | null; state: string | null }
+  location: { name: string; city: string | null; state: string | null; type: string }
   contacts: EventContact[]
+  notes?: { id: string; content: string; noteType: string; notedAt: string }[]
 }
 
 interface Location {
   id: string
   name: string
-  type: "CITY" | "VENUE"
+  type: "STATE" | "DISTRICT" | "CITY" | "VENUE"
   city: string | null
   state: string | null
   parentId: string | null
+  parent: { id: string; name: string; type: string } | null
 }
 
 // ─── Truncated Cell ────────────────────────────────────────────────────────────
@@ -312,6 +314,14 @@ export function EventsTable() {
   const [forceRefresh, setForceRefresh] = useState(false)
   const [progressRunId, setProgressRunId] = useState<string | null>(null)
   const [progressTitle, setProgressTitle] = useState("")
+  const [notesDialog, setNotesDialog] = useState<{
+    open: boolean
+    eventId: string
+    eventName: string
+  }>({ open: false, eventId: "", eventName: "" })
+  const [newNoteContent, setNewNoteContent] = useState("")
+  const [newNoteType, setNewNoteType] = useState("general")
+  const [addingNote, setAddingNote] = useState(false)
 
   const setCityFilter = (val: string) => {
     setFilterCity(val)
@@ -583,11 +593,10 @@ export function EventsTable() {
       {
         id: "location",
         header: "Location",
-        accessorFn: (row) => row.rawLocationText ?? row.location.name,
         cell: ({ row }) => {
           const ev = row.original
           const raw = ev.rawLocationText
-          const locText = raw ?? ev.location.name + (ev.location.city ? `, ${ev.location.city}` : "")
+          const locText = raw ?? `${ev.location.city || ev.location.name}${ev.location.state ? `, ${ev.location.state}` : ""}`
           return (
             <span className="text-sm">
               <TruncatedCell text={locText} />
@@ -607,21 +616,29 @@ export function EventsTable() {
           const ev = row.original
           const venueName = ev.venue?.name ?? ev.rawVenueText
           const venueCity = ev.venue?.city
+          const venueAddress = ev.venue?.address
           return (
-            <span className="text-sm">
+            <div className="max-w-[200px]">
               {venueName ? (
                 <>
-                  <span className="font-medium">
+                  <p className="text-sm font-medium">
                     <TruncatedCell text={venueName} />
-                  </span>
+                  </p>
                   {venueCity && (
-                    <span className="text-muted-foreground">, {venueCity}</span>
+                    <p className="text-xs text-muted-foreground">
+                      {venueCity}{ev.venue?.state ? `, ${ev.venue.state}` : ""}
+                    </p>
+                  )}
+                  {venueAddress && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {venueAddress}
+                    </p>
                   )}
                 </>
               ) : (
-                <span className="text-muted-foreground">—</span>
+                <span className="text-sm text-muted-foreground">—</span>
               )}
-            </span>
+            </div>
           )
         },
       },
@@ -651,11 +668,11 @@ export function EventsTable() {
                   </Badge>
                 )}
               </div>
-              {/* {(primary?.title ?? contacts[0].title) && (
+              {(primary?.title ?? contacts[0].title) && (
                 <p className="text-xs text-muted-foreground truncate">
                   {primary?.title ?? contacts[0].title}
                 </p>
-              )} */}
+              )}
               {(primary?.email ?? contacts[0].email) && (
                 <p className="truncate text-xs">
                   {primary?.email ?? contacts[0].email}
@@ -679,7 +696,7 @@ export function EventsTable() {
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             className="h-8 px-2"
           >
-            Date
+            Start Date
             <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
           </Button>
         ),
@@ -689,9 +706,6 @@ export function EventsTable() {
           if (!d)
             return <span className="text-sm text-muted-foreground">—</span>
           const start = new Date(d)
-          const end = row.original.eventDateEnd
-            ? new Date(row.original.eventDateEnd)
-            : null
           const fmt = (date: Date) =>
             date.toLocaleDateString("en-US", {
               month: "short",
@@ -700,7 +714,39 @@ export function EventsTable() {
             })
           return (
             <span className="text-sm whitespace-nowrap">
-              {end ? `${fmt(start)} – ${fmt(end)}` : fmt(start)}
+              {fmt(start)}
+            </span>
+          )
+        },
+      },
+      {
+        accessorKey: "eventDateEnd",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-8 px-2"
+          >
+            End Date
+            <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
+          </Button>
+        ),
+        sortingFn: "datetime",
+        cell: ({ row }) => {
+          const d = row.original.eventDateEnd
+          if (!d)
+            return <span className="text-sm text-muted-foreground">—</span>
+          const end = new Date(d)
+          const fmt = (date: Date) =>
+            date.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          return (
+            <span className="text-sm whitespace-nowrap">
+              {fmt(end)}
             </span>
           )
         },
@@ -733,16 +779,33 @@ export function EventsTable() {
         ),
       },
       {
-        id: "contactNote",
+        id: "notes",
         header: "Notes",
-        cell: ({ row }) => (
-          <InlineEditCell
-            value={row.original.contactNote}
-            eventId={row.original.id}
-            field="contactNote"
-            onSaved={fetchEvents}
-          />
-        ),
+        cell: ({ row }) => {
+          const event = row.original
+          const notesCount = event.notes?.length ?? 0
+          return (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                setNotesDialog({
+                  open: true,
+                  eventId: event.id,
+                  eventName: event.eventName,
+                })
+              }
+              className="h-7 w-7 p-0"
+            >
+              <StickyNote className="h-4 w-4" />
+              {notesCount > 0 && (
+                <Badge variant="info" size="sm" className="ml-1">
+                  {notesCount}
+                </Badge>
+              )}
+            </Button>
+          )
+        },
       },
       {
         id: "actions",
@@ -770,6 +833,18 @@ export function EventsTable() {
                 >
                   <Search className="mr-2 h-4 w-4" />
                   {contactCount > 0 ? "View Contacts" : "Find Contact"}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    setNotesDialog({
+                      open: true,
+                      eventId: event.id,
+                      eventName: event.eventName,
+                    })
+                  }
+                >
+                  <StickyNote className="mr-2 h-4 w-4" />
+                  View Notes
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1260,6 +1335,74 @@ export function EventsTable() {
         }
         onSaved={fetchEvents}
       />
+
+      {/* Notes Dialog */}
+      <Dialog open={notesDialog.open} onOpenChange={(open) => setNotesDialog({ ...notesDialog, open })}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Notes - {notesDialog.eventName}</DialogTitle>
+            <DialogDescription>Add and view notes for this event</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Add New Note</label>
+              <Textarea
+                placeholder="What happened? (e.g., Called organizer, left voicemail, sent follow-up email...)"
+                value={newNoteContent}
+                onChange={(e) => setNewNoteContent(e.target.value)}
+                rows={3}
+              />
+              <div className="flex items-center gap-2">
+                <Select value={newNoteType} onValueChange={setNewNoteType}>
+                  <SelectTrigger className="w-40" size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="contact_attempt">Contact Attempt</SelectItem>
+                    <SelectItem value="follow_up">Follow Up</SelectItem>
+                    <SelectItem value="status_change">Status Change</SelectItem>
+                    <SelectItem value="venue_update">Venue Update</SelectItem>
+                    <SelectItem value="research">Research</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    if (!newNoteContent.trim()) return
+                    setAddingNote(true)
+                    try {
+                      const res = await fetch(`/api/events/${notesDialog.eventId}/notes`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          content: newNoteContent,
+                          noteType: newNoteType,
+                          notedAt: new Date().toISOString(),
+                        }),
+                      })
+                      if (!res.ok) throw new Error("Failed to add note")
+                      toast.success("Note added")
+                      setNewNoteContent("")
+                      setNewNoteType("general")
+                      fetchEvents()
+                    } catch {
+                      toast.error("Failed to add note")
+                    } finally {
+                      setAddingNote(false)
+                    }
+                  }}
+                  disabled={!newNoteContent.trim() || addingNote}
+                >
+                  {addingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Note"}
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter showCloseButton />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

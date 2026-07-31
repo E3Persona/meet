@@ -367,6 +367,7 @@ export type EventWhereInput = {
   contacts?: Prisma.EventContactListRelationFilter
   seenBlock?: Prisma.XOR<Prisma.SeenBlockNullableScalarRelationFilter, Prisma.SeenBlockWhereInput> | null
   detailPages?: Prisma.EventDetailPageListRelationFilter
+  notes?: Prisma.NoteListRelationFilter
 }
 
 export type EventOrderByWithRelationInput = {
@@ -400,6 +401,7 @@ export type EventOrderByWithRelationInput = {
   contacts?: Prisma.EventContactOrderByRelationAggregateInput
   seenBlock?: Prisma.SeenBlockOrderByWithRelationInput
   detailPages?: Prisma.EventDetailPageOrderByRelationAggregateInput
+  notes?: Prisma.NoteOrderByRelationAggregateInput
 }
 
 export type EventWhereUniqueInput = Prisma.AtLeast<{
@@ -437,6 +439,7 @@ export type EventWhereUniqueInput = Prisma.AtLeast<{
   contacts?: Prisma.EventContactListRelationFilter
   seenBlock?: Prisma.XOR<Prisma.SeenBlockNullableScalarRelationFilter, Prisma.SeenBlockWhereInput> | null
   detailPages?: Prisma.EventDetailPageListRelationFilter
+  notes?: Prisma.NoteListRelationFilter
 }, "id" | "locationId_eventName_eventDateStart">
 
 export type EventOrderByWithAggregationInput = {
@@ -525,6 +528,7 @@ export type EventCreateInput = {
   contacts?: Prisma.EventContactCreateNestedManyWithoutEventInput
   seenBlock?: Prisma.SeenBlockCreateNestedOneWithoutEventsInput
   detailPages?: Prisma.EventDetailPageCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteCreateNestedManyWithoutEventInput
 }
 
 export type EventUncheckedCreateInput = {
@@ -553,6 +557,7 @@ export type EventUncheckedCreateInput = {
   extractionMethod?: $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type EventUpdateInput = {
@@ -581,6 +586,7 @@ export type EventUpdateInput = {
   contacts?: Prisma.EventContactUpdateManyWithoutEventNestedInput
   seenBlock?: Prisma.SeenBlockUpdateOneWithoutEventsNestedInput
   detailPages?: Prisma.EventDetailPageUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateInput = {
@@ -609,6 +615,7 @@ export type EventUncheckedUpdateInput = {
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type EventCreateManyInput = {
@@ -789,6 +796,11 @@ export type EventSumOrderByAggregateInput = {
 export type EventScalarRelationFilter = {
   is?: Prisma.EventWhereInput
   isNot?: Prisma.EventWhereInput
+}
+
+export type EventNullableScalarRelationFilter = {
+  is?: Prisma.EventWhereInput | null
+  isNot?: Prisma.EventWhereInput | null
 }
 
 export type EventCreateNestedManyWithoutLocationInput = {
@@ -1049,6 +1061,22 @@ export type EventUpdateOneRequiredWithoutDetailPagesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.EventUpdateToOneWithWhereWithoutDetailPagesInput, Prisma.EventUpdateWithoutDetailPagesInput>, Prisma.EventUncheckedUpdateWithoutDetailPagesInput>
 }
 
+export type EventCreateNestedOneWithoutNotesInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutNotesInput, Prisma.EventUncheckedCreateWithoutNotesInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutNotesInput
+  connect?: Prisma.EventWhereUniqueInput
+}
+
+export type EventUpdateOneWithoutNotesNestedInput = {
+  create?: Prisma.XOR<Prisma.EventCreateWithoutNotesInput, Prisma.EventUncheckedCreateWithoutNotesInput>
+  connectOrCreate?: Prisma.EventCreateOrConnectWithoutNotesInput
+  upsert?: Prisma.EventUpsertWithoutNotesInput
+  disconnect?: Prisma.EventWhereInput | boolean
+  delete?: Prisma.EventWhereInput | boolean
+  connect?: Prisma.EventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EventUpdateToOneWithWhereWithoutNotesInput, Prisma.EventUpdateWithoutNotesInput>, Prisma.EventUncheckedUpdateWithoutNotesInput>
+}
+
 export type EventCreateWithoutLocationInput = {
   id?: string
   eventName: string
@@ -1074,6 +1102,7 @@ export type EventCreateWithoutLocationInput = {
   contacts?: Prisma.EventContactCreateNestedManyWithoutEventInput
   seenBlock?: Prisma.SeenBlockCreateNestedOneWithoutEventsInput
   detailPages?: Prisma.EventDetailPageCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteCreateNestedManyWithoutEventInput
 }
 
 export type EventUncheckedCreateWithoutLocationInput = {
@@ -1101,6 +1130,7 @@ export type EventUncheckedCreateWithoutLocationInput = {
   extractionMethod?: $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type EventCreateOrConnectWithoutLocationInput = {
@@ -1138,6 +1168,7 @@ export type EventCreateWithoutVenueInput = {
   contacts?: Prisma.EventContactCreateNestedManyWithoutEventInput
   seenBlock?: Prisma.SeenBlockCreateNestedOneWithoutEventsInput
   detailPages?: Prisma.EventDetailPageCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteCreateNestedManyWithoutEventInput
 }
 
 export type EventUncheckedCreateWithoutVenueInput = {
@@ -1165,6 +1196,7 @@ export type EventUncheckedCreateWithoutVenueInput = {
   extractionMethod?: $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type EventCreateOrConnectWithoutVenueInput = {
@@ -1263,6 +1295,7 @@ export type EventCreateWithoutRunInput = {
   contacts?: Prisma.EventContactCreateNestedManyWithoutEventInput
   seenBlock?: Prisma.SeenBlockCreateNestedOneWithoutEventsInput
   detailPages?: Prisma.EventDetailPageCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteCreateNestedManyWithoutEventInput
 }
 
 export type EventUncheckedCreateWithoutRunInput = {
@@ -1290,6 +1323,7 @@ export type EventUncheckedCreateWithoutRunInput = {
   extractionMethod?: $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type EventCreateOrConnectWithoutRunInput = {
@@ -1343,6 +1377,7 @@ export type EventCreateWithoutSourceSiteInput = {
   contacts?: Prisma.EventContactCreateNestedManyWithoutEventInput
   seenBlock?: Prisma.SeenBlockCreateNestedOneWithoutEventsInput
   detailPages?: Prisma.EventDetailPageCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteCreateNestedManyWithoutEventInput
 }
 
 export type EventUncheckedCreateWithoutSourceSiteInput = {
@@ -1370,6 +1405,7 @@ export type EventUncheckedCreateWithoutSourceSiteInput = {
   extractionMethod?: $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type EventCreateOrConnectWithoutSourceSiteInput = {
@@ -1423,6 +1459,7 @@ export type EventCreateWithoutContactsInput = {
   sourceSite?: Prisma.SourceSiteCreateNestedOneWithoutEventsInput
   seenBlock?: Prisma.SeenBlockCreateNestedOneWithoutEventsInput
   detailPages?: Prisma.EventDetailPageCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteCreateNestedManyWithoutEventInput
 }
 
 export type EventUncheckedCreateWithoutContactsInput = {
@@ -1450,6 +1487,7 @@ export type EventUncheckedCreateWithoutContactsInput = {
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type EventCreateOrConnectWithoutContactsInput = {
@@ -1493,6 +1531,7 @@ export type EventUpdateWithoutContactsInput = {
   sourceSite?: Prisma.SourceSiteUpdateOneWithoutEventsNestedInput
   seenBlock?: Prisma.SeenBlockUpdateOneWithoutEventsNestedInput
   detailPages?: Prisma.EventDetailPageUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateWithoutContactsInput = {
@@ -1520,6 +1559,7 @@ export type EventUncheckedUpdateWithoutContactsInput = {
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type EventCreateWithoutSeenBlockInput = {
@@ -1547,6 +1587,7 @@ export type EventCreateWithoutSeenBlockInput = {
   sourceSite?: Prisma.SourceSiteCreateNestedOneWithoutEventsInput
   contacts?: Prisma.EventContactCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteCreateNestedManyWithoutEventInput
 }
 
 export type EventUncheckedCreateWithoutSeenBlockInput = {
@@ -1574,6 +1615,7 @@ export type EventUncheckedCreateWithoutSeenBlockInput = {
   extractionMethod?: $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type EventCreateOrConnectWithoutSeenBlockInput = {
@@ -1627,6 +1669,7 @@ export type EventCreateWithoutDetailPagesInput = {
   sourceSite?: Prisma.SourceSiteCreateNestedOneWithoutEventsInput
   contacts?: Prisma.EventContactCreateNestedManyWithoutEventInput
   seenBlock?: Prisma.SeenBlockCreateNestedOneWithoutEventsInput
+  notes?: Prisma.NoteCreateNestedManyWithoutEventInput
 }
 
 export type EventUncheckedCreateWithoutDetailPagesInput = {
@@ -1654,6 +1697,7 @@ export type EventUncheckedCreateWithoutDetailPagesInput = {
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type EventCreateOrConnectWithoutDetailPagesInput = {
@@ -1697,6 +1741,7 @@ export type EventUpdateWithoutDetailPagesInput = {
   sourceSite?: Prisma.SourceSiteUpdateOneWithoutEventsNestedInput
   contacts?: Prisma.EventContactUpdateManyWithoutEventNestedInput
   seenBlock?: Prisma.SeenBlockUpdateOneWithoutEventsNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateWithoutDetailPagesInput = {
@@ -1724,6 +1769,135 @@ export type EventUncheckedUpdateWithoutDetailPagesInput = {
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
+}
+
+export type EventCreateWithoutNotesInput = {
+  id?: string
+  eventName: string
+  eventDateStart?: Date | string | null
+  eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
+  sourceUrl?: string | null
+  organizerName?: string | null
+  organizerTitle?: string | null
+  organizerEmail?: string | null
+  organizerPhone?: string | null
+  contactNote?: string | null
+  status?: $Enums.EventStatus
+  dateAdded?: Date | string
+  matchType?: $Enums.EventMatchType | null
+  rawVenueText?: string | null
+  rawLocationText?: string | null
+  sourceUrlIsListingFallback?: boolean
+  extractionMethod?: $Enums.ExtractionMethod | null
+  location: Prisma.LocationCreateNestedOneWithoutEventsInput
+  venue?: Prisma.LocationCreateNestedOneWithoutVenueEventsInput
+  run?: Prisma.IngestionRunCreateNestedOneWithoutEventsInput
+  sourceSite?: Prisma.SourceSiteCreateNestedOneWithoutEventsInput
+  contacts?: Prisma.EventContactCreateNestedManyWithoutEventInput
+  seenBlock?: Prisma.SeenBlockCreateNestedOneWithoutEventsInput
+  detailPages?: Prisma.EventDetailPageCreateNestedManyWithoutEventInput
+}
+
+export type EventUncheckedCreateWithoutNotesInput = {
+  id?: string
+  locationId: string
+  eventName: string
+  eventDateStart?: Date | string | null
+  eventDateEnd?: Date | string | null
+  expectedAttendees?: number | null
+  sourceUrl?: string | null
+  sourceSiteId?: string | null
+  organizerName?: string | null
+  organizerTitle?: string | null
+  organizerEmail?: string | null
+  organizerPhone?: string | null
+  contactNote?: string | null
+  status?: $Enums.EventStatus
+  dateAdded?: Date | string
+  runId?: string | null
+  venueId?: string | null
+  matchType?: $Enums.EventMatchType | null
+  rawVenueText?: string | null
+  rawLocationText?: string | null
+  sourceUrlIsListingFallback?: boolean
+  seenBlockId?: string | null
+  extractionMethod?: $Enums.ExtractionMethod | null
+  contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
+  detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
+}
+
+export type EventCreateOrConnectWithoutNotesInput = {
+  where: Prisma.EventWhereUniqueInput
+  create: Prisma.XOR<Prisma.EventCreateWithoutNotesInput, Prisma.EventUncheckedCreateWithoutNotesInput>
+}
+
+export type EventUpsertWithoutNotesInput = {
+  update: Prisma.XOR<Prisma.EventUpdateWithoutNotesInput, Prisma.EventUncheckedUpdateWithoutNotesInput>
+  create: Prisma.XOR<Prisma.EventCreateWithoutNotesInput, Prisma.EventUncheckedCreateWithoutNotesInput>
+  where?: Prisma.EventWhereInput
+}
+
+export type EventUpdateToOneWithWhereWithoutNotesInput = {
+  where?: Prisma.EventWhereInput
+  data: Prisma.XOR<Prisma.EventUpdateWithoutNotesInput, Prisma.EventUncheckedUpdateWithoutNotesInput>
+}
+
+export type EventUpdateWithoutNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventName?: Prisma.StringFieldUpdateOperationsInput | string
+  eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
+  dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  matchType?: Prisma.NullableEnumEventMatchTypeFieldUpdateOperationsInput | $Enums.EventMatchType | null
+  rawVenueText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
+  venue?: Prisma.LocationUpdateOneWithoutVenueEventsNestedInput
+  run?: Prisma.IngestionRunUpdateOneWithoutEventsNestedInput
+  sourceSite?: Prisma.SourceSiteUpdateOneWithoutEventsNestedInput
+  contacts?: Prisma.EventContactUpdateManyWithoutEventNestedInput
+  seenBlock?: Prisma.SeenBlockUpdateOneWithoutEventsNestedInput
+  detailPages?: Prisma.EventDetailPageUpdateManyWithoutEventNestedInput
+}
+
+export type EventUncheckedUpdateWithoutNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  locationId?: Prisma.StringFieldUpdateOperationsInput | string
+  eventName?: Prisma.StringFieldUpdateOperationsInput | string
+  eventDateStart?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  eventDateEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  expectedAttendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceSiteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  organizerName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  organizerTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  organizerEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  organizerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumEventStatusFieldUpdateOperationsInput | $Enums.EventStatus
+  dateAdded?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  runId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  venueId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  matchType?: Prisma.NullableEnumEventMatchTypeFieldUpdateOperationsInput | $Enums.EventMatchType | null
+  rawVenueText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
+  detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type EventCreateManyLocationInput = {
@@ -1801,6 +1975,7 @@ export type EventUpdateWithoutLocationInput = {
   contacts?: Prisma.EventContactUpdateManyWithoutEventNestedInput
   seenBlock?: Prisma.SeenBlockUpdateOneWithoutEventsNestedInput
   detailPages?: Prisma.EventDetailPageUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateWithoutLocationInput = {
@@ -1828,6 +2003,7 @@ export type EventUncheckedUpdateWithoutLocationInput = {
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateManyWithoutLocationInput = {
@@ -1880,6 +2056,7 @@ export type EventUpdateWithoutVenueInput = {
   contacts?: Prisma.EventContactUpdateManyWithoutEventNestedInput
   seenBlock?: Prisma.SeenBlockUpdateOneWithoutEventsNestedInput
   detailPages?: Prisma.EventDetailPageUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateWithoutVenueInput = {
@@ -1907,6 +2084,7 @@ export type EventUncheckedUpdateWithoutVenueInput = {
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateManyWithoutVenueInput = {
@@ -1984,6 +2162,7 @@ export type EventUpdateWithoutRunInput = {
   contacts?: Prisma.EventContactUpdateManyWithoutEventNestedInput
   seenBlock?: Prisma.SeenBlockUpdateOneWithoutEventsNestedInput
   detailPages?: Prisma.EventDetailPageUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateWithoutRunInput = {
@@ -2011,6 +2190,7 @@ export type EventUncheckedUpdateWithoutRunInput = {
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateManyWithoutRunInput = {
@@ -2088,6 +2268,7 @@ export type EventUpdateWithoutSourceSiteInput = {
   contacts?: Prisma.EventContactUpdateManyWithoutEventNestedInput
   seenBlock?: Prisma.SeenBlockUpdateOneWithoutEventsNestedInput
   detailPages?: Prisma.EventDetailPageUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateWithoutSourceSiteInput = {
@@ -2115,6 +2296,7 @@ export type EventUncheckedUpdateWithoutSourceSiteInput = {
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateManyWithoutSourceSiteInput = {
@@ -2192,6 +2374,7 @@ export type EventUpdateWithoutSeenBlockInput = {
   sourceSite?: Prisma.SourceSiteUpdateOneWithoutEventsNestedInput
   contacts?: Prisma.EventContactUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateWithoutSeenBlockInput = {
@@ -2219,6 +2402,7 @@ export type EventUncheckedUpdateWithoutSeenBlockInput = {
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type EventUncheckedUpdateManyWithoutSeenBlockInput = {
@@ -2254,11 +2438,13 @@ export type EventUncheckedUpdateManyWithoutSeenBlockInput = {
 export type EventCountOutputType = {
   contacts: number
   detailPages: number
+  notes: number
 }
 
 export type EventCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   contacts?: boolean | EventCountOutputTypeCountContactsArgs
   detailPages?: boolean | EventCountOutputTypeCountDetailPagesArgs
+  notes?: boolean | EventCountOutputTypeCountNotesArgs
 }
 
 /**
@@ -2283,6 +2469,13 @@ export type EventCountOutputTypeCountContactsArgs<ExtArgs extends runtime.Types.
  */
 export type EventCountOutputTypeCountDetailPagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.EventDetailPageWhereInput
+}
+
+/**
+ * EventCountOutputType without action
+ */
+export type EventCountOutputTypeCountNotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteWhereInput
 }
 
 
@@ -2317,6 +2510,7 @@ export type EventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   contacts?: boolean | Prisma.Event$contactsArgs<ExtArgs>
   seenBlock?: boolean | Prisma.Event$seenBlockArgs<ExtArgs>
   detailPages?: boolean | Prisma.Event$detailPagesArgs<ExtArgs>
+  notes?: boolean | Prisma.Event$notesArgs<ExtArgs>
   _count?: boolean | Prisma.EventCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["event"]>
 
@@ -2417,6 +2611,7 @@ export type EventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   contacts?: boolean | Prisma.Event$contactsArgs<ExtArgs>
   seenBlock?: boolean | Prisma.Event$seenBlockArgs<ExtArgs>
   detailPages?: boolean | Prisma.Event$detailPagesArgs<ExtArgs>
+  notes?: boolean | Prisma.Event$notesArgs<ExtArgs>
   _count?: boolean | Prisma.EventCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type EventIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2444,6 +2639,7 @@ export type $EventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     contacts: Prisma.$EventContactPayload<ExtArgs>[]
     seenBlock: Prisma.$SeenBlockPayload<ExtArgs> | null
     detailPages: Prisma.$EventDetailPagePayload<ExtArgs>[]
+    notes: Prisma.$NotePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2870,6 +3066,7 @@ export interface Prisma__EventClient<T, Null = never, ExtArgs extends runtime.Ty
   contacts<T extends Prisma.Event$contactsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Event$contactsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EventContactPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   seenBlock<T extends Prisma.Event$seenBlockArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Event$seenBlockArgs<ExtArgs>>): Prisma.Prisma__SeenBlockClient<runtime.Types.Result.GetResult<Prisma.$SeenBlockPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   detailPages<T extends Prisma.Event$detailPagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Event$detailPagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EventDetailPagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  notes<T extends Prisma.Event$notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Event$notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3444,6 +3641,30 @@ export type Event$detailPagesArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   distinct?: Prisma.EventDetailPageScalarFieldEnum | Prisma.EventDetailPageScalarFieldEnum[]
+}
+
+/**
+ * Event.notes
+ */
+export type Event$notesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Note
+   */
+  select?: Prisma.NoteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Note
+   */
+  omit?: Prisma.NoteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteInclude<ExtArgs> | null
+  where?: Prisma.NoteWhereInput
+  orderBy?: Prisma.NoteOrderByWithRelationInput | Prisma.NoteOrderByWithRelationInput[]
+  cursor?: Prisma.NoteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteScalarFieldEnum | Prisma.NoteScalarFieldEnum[]
 }
 
 /**

@@ -16,6 +16,9 @@
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:seed": "pnpm exec tsx prisma/seed.ts",
+    "db:seed:baltimore": "pnpm exec tsx prisma/seed-baltimore-events.ts",
+    "db:seed:philly": "pnpm exec tsx prisma/seed-philly-events.ts",
+    "db:seed:hotels": "pnpm exec tsx prisma/seed-baltimore-hotels.ts",
     "ingest:aca": "pnpm exec tsx scripts/ingest-aca.ts",
     "ingest:asae": "pnpm exec tsx scripts/ingest-asae.ts",
     "ingest:bm": "pnpm exec tsx scripts/ingest-blackmeetings.ts"
@@ -37,6 +40,7 @@
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "csv-parse": "^7.0.1",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "lucide-react": "^1.21.0",

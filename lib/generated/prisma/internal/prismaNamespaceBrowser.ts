@@ -66,7 +66,8 @@ export const ModelName = {
   VenueDirectorySource: 'VenueDirectorySource',
   SeenBlock: 'SeenBlock',
   EventDetailPage: 'EventDetailPage',
-  EventDetailSection: 'EventDetailSection'
+  EventDetailSection: 'EventDetailSection',
+  Note: 'Note'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -358,6 +359,21 @@ export const EventDetailSectionScalarFieldEnum = {
 } as const
 
 export type EventDetailSectionScalarFieldEnum = (typeof EventDetailSectionScalarFieldEnum)[keyof typeof EventDetailSectionScalarFieldEnum]
+
+
+export const NoteScalarFieldEnum = {
+  id: 'id',
+  content: 'content',
+  noteType: 'noteType',
+  notedAt: 'notedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  eventId: 'eventId',
+  locationId: 'locationId',
+  contactId: 'contactId'
+} as const
+
+export type NoteScalarFieldEnum = (typeof NoteScalarFieldEnum)[keyof typeof NoteScalarFieldEnum]
 
 
 export const SortOrder = {

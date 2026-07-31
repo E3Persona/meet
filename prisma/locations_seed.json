@@ -3,6 +3,7 @@
     "cityName": "Chester",
     "state": "PA",
     "regionLabel": "Chester",
+    "district": "Southeast PA",
     "venues": [
       {
         "shortName": "Subaru Park",
@@ -15,6 +16,7 @@
     "cityName": "Philadelphia",
     "state": "PA",
     "regionLabel": "PHILADELPHIA",
+    "district": "Southeast PA",
     "venues": [
       {
         "shortName": "Philadelphia Convention Center",
@@ -182,6 +184,7 @@
     "cityName": "Oaks",
     "state": "PA",
     "regionLabel": "OAKS, PA",
+    "district": "Southeast PA",
     "venues": [
       {
         "shortName": "Oaks Expo Center",
@@ -194,6 +197,7 @@
     "cityName": "Washington DC",
     "state": "DC",
     "regionLabel": "WASHINGTON DC",
+    "district": null,
     "venues": [
       {
         "shortName": "DC Convention Center",
@@ -251,6 +255,7 @@
     "cityName": "Bethesda",
     "state": "MD",
     "regionLabel": "Bethesda, MD",
+    "district": "Capital Region",
     "venues": [
       {
         "shortName": "Bethesda",
@@ -273,6 +278,7 @@
     "cityName": "National Harbor",
     "state": "MD",
     "regionLabel": "NATIONAL HARBOR",
+    "district": "Capital Region",
     "venues": [
       {
         "shortName": "Gaylord",
@@ -295,6 +301,7 @@
     "cityName": "Atlantic City",
     "state": "NJ",
     "regionLabel": "New Jersey",
+    "district": "South Jersey",
     "venues": [
       {
         "shortName": "AC",
@@ -307,6 +314,7 @@
     "cityName": "Baltimore",
     "state": "MD",
     "regionLabel": "BALTIMORE",
+    "district": "Baltimore Metro",
     "venues": [
       {
         "shortName": "Baltimore Convention Center",
@@ -409,6 +417,7 @@
     "cityName": "Ellicott City",
     "state": "MD",
     "regionLabel": "BALTIMORE",
+    "district": "Baltimore Metro",
     "venues": [
       {
         "shortName": "Turf Valley",
@@ -421,6 +430,7 @@
     "cityName": "West Friendship",
     "state": "MD",
     "regionLabel": "BALTIMORE",
+    "district": "Baltimore Metro",
     "venues": [
       {
         "shortName": "H.C. Fairgrounds",
@@ -433,6 +443,7 @@
     "cityName": "Upper Marlboro",
     "state": "MD",
     "regionLabel": "Upper Marlboro, MD",
+    "district": "Capital Region",
     "venues": [
       {
         "shortName": "The Show Place Arena",
@@ -445,6 +456,7 @@
     "cityName": "Wilmington DE",
     "state": "DE",
     "regionLabel": "WILMINGTON DE",
+    "district": "Brandywine Valley",
     "venues": [
       {
         "shortName": "Chase Center on the Riverfront",

@@ -17,6 +17,7 @@ interface CitySeed {
   cityName: string
   state: string
   regionLabel: string
+  district: string | null
   venues: VenueSeed[]
 }
 
@@ -46,11 +47,130 @@ const dataSourcesSeed: DataSourceSeed[] = JSON.parse(
 )
 
 async function seedLocations() {
-  console.log("\n── Seeding locations (cities → venues) ──")
+  console.log("\n── Seeding locations (states → districts → cities → venues) ──")
+  let stateCount = 0
+  let districtCount = 0
   let cityCount = 0
   let venueCount = 0
 
+  // First, ensure all states exist
+  const stateNames: Record<string, string> = {
+    'PA': 'Pennsylvania',
+    'MD': 'Maryland',
+    'DC': 'District of Columbia',
+    'NJ': 'New Jersey',
+    'DE': 'Delaware'
+  }
+
+  const uniqueStates = new Set(locationsSeed.map(c => c.state))
+  for (const stateCode of uniqueStates) {
+    if (!stateCode) continue
+    
+    const stateName = stateNames[stateCode]
+    if (!stateName) {
+      console.log(`  skip unknown state code: ${stateCode}`)
+      continue
+    }
+
+    const existing = await prisma.location.findFirst({
+      where: { name: stateName, type: "STATE" },
+    })
+    if (existing) {
+      console.log(`  skip state: ${stateName} (already exists)`)
+      continue
+    }
+
+    await prisma.location.create({
+      data: {
+        type: "STATE",
+        name: stateName,
+        state: stateCode,
+      },
+    })
+    stateCount++
+    console.log(`  state: ${stateName} (${stateCode})`)
+  }
+
+  // Collect unique districts
+  const districtMap = new Map<string, { name: string; stateCode: string }>()
   for (const city of locationsSeed) {
+    if (city.district && city.state) {
+      const key = `${city.state}:${city.district}`
+      if (!districtMap.has(key)) {
+        districtMap.set(key, { name: city.district, stateCode: city.state })
+      }
+    }
+  }
+
+  // Seed districts
+  for (const [key, district] of districtMap) {
+    const stateName = stateNames[district.stateCode]
+    if (!stateName) {
+      console.log(`  skip district: ${district.name} (unknown state: ${district.stateCode})`)
+      continue
+    }
+
+    const state = await prisma.location.findFirst({
+      where: { name: stateName, type: "STATE" },
+    })
+    if (!state) {
+      console.log(`  skip district: ${district.name} (state not found: ${stateName})`)
+      continue
+    }
+
+    const existing = await prisma.location.findFirst({
+      where: { name: district.name, type: "DISTRICT" },
+    })
+    if (existing) {
+      console.log(`  skip district: ${district.name} (already exists)`)
+      continue
+    }
+
+    await prisma.location.create({
+      data: {
+        type: "DISTRICT",
+        name: district.name,
+        state: district.stateCode,
+        parentId: state.id,
+      },
+    })
+    districtCount++
+    console.log(`  district: ${district.name} → ${stateName}`)
+  }
+
+  // Then seed cities with parent district or state
+  for (const city of locationsSeed) {
+    const stateName = stateNames[city.state]
+    if (!stateName) {
+      console.log(`  skip city: ${city.cityName} (unknown state: ${city.state})`)
+      continue
+    }
+
+    let parentId: string
+    let parentLabel: string
+
+    if (city.district) {
+      const district = await prisma.location.findFirst({
+        where: { name: city.district, type: "DISTRICT" },
+      })
+      if (!district) {
+        console.log(`  skip city: ${city.cityName} (district not found: ${city.district})`)
+        continue
+      }
+      parentId = district.id
+      parentLabel = city.district
+    } else {
+      const state = await prisma.location.findFirst({
+        where: { name: stateName, type: "STATE" },
+      })
+      if (!state) {
+        console.log(`  skip city: ${city.cityName} (state not found: ${stateName})`)
+        continue
+      }
+      parentId = state.id
+      parentLabel = stateName
+    }
+
     const existing = await prisma.location.findFirst({
       where: { name: city.cityName, type: "CITY" },
     })
@@ -65,10 +185,11 @@ async function seedLocations() {
         name: city.cityName,
         city: city.cityName,
         state: city.state,
+        parentId: parentId,
       },
     })
     cityCount++
-    console.log(`  city: ${city.cityName}, ${city.state} → ${cityRecord.id}`)
+    console.log(`  city: ${city.cityName}, ${city.state} → ${parentLabel} → ${cityRecord.id}`)
 
     for (const venue of city.venues) {
       const venueName = venue.fullName ?? venue.shortName
@@ -100,7 +221,7 @@ async function seedLocations() {
     }
   }
 
-  console.log(`  → ${cityCount} cities, ${venueCount} venues created`)
+  console.log(`  → ${stateCount} states, ${districtCount} districts, ${cityCount} cities, ${venueCount} venues created`)
 }
 
 async function seedSearchTemplates() {

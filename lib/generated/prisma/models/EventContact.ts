@@ -231,6 +231,7 @@ export type EventContactWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"EventContact"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"EventContact"> | Date | string
   event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
+  notes?: Prisma.NoteListRelationFilter
 }
 
 export type EventContactOrderByWithRelationInput = {
@@ -246,6 +247,7 @@ export type EventContactOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   event?: Prisma.EventOrderByWithRelationInput
+  notes?: Prisma.NoteOrderByRelationAggregateInput
 }
 
 export type EventContactWhereUniqueInput = Prisma.AtLeast<{
@@ -264,6 +266,7 @@ export type EventContactWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"EventContact"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"EventContact"> | Date | string
   event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
+  notes?: Prisma.NoteListRelationFilter
 }, "id">
 
 export type EventContactOrderByWithAggregationInput = {
@@ -312,6 +315,7 @@ export type EventContactCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   event: Prisma.EventCreateNestedOneWithoutContactsInput
+  notes?: Prisma.NoteCreateNestedManyWithoutContactInput
 }
 
 export type EventContactUncheckedCreateInput = {
@@ -326,6 +330,7 @@ export type EventContactUncheckedCreateInput = {
   confidence?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutContactInput
 }
 
 export type EventContactUpdateInput = {
@@ -340,6 +345,7 @@ export type EventContactUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   event?: Prisma.EventUpdateOneRequiredWithoutContactsNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutContactNestedInput
 }
 
 export type EventContactUncheckedUpdateInput = {
@@ -354,6 +360,7 @@ export type EventContactUncheckedUpdateInput = {
   confidence?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutContactNestedInput
 }
 
 export type EventContactCreateManyInput = {
@@ -449,6 +456,11 @@ export type EventContactMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type EventContactNullableScalarRelationFilter = {
+  is?: Prisma.EventContactWhereInput | null
+  isNot?: Prisma.EventContactWhereInput | null
+}
+
 export type EventContactCreateNestedManyWithoutEventInput = {
   create?: Prisma.XOR<Prisma.EventContactCreateWithoutEventInput, Prisma.EventContactUncheckedCreateWithoutEventInput> | Prisma.EventContactCreateWithoutEventInput[] | Prisma.EventContactUncheckedCreateWithoutEventInput[]
   connectOrCreate?: Prisma.EventContactCreateOrConnectWithoutEventInput | Prisma.EventContactCreateOrConnectWithoutEventInput[]
@@ -491,6 +503,22 @@ export type EventContactUncheckedUpdateManyWithoutEventNestedInput = {
   deleteMany?: Prisma.EventContactScalarWhereInput | Prisma.EventContactScalarWhereInput[]
 }
 
+export type EventContactCreateNestedOneWithoutNotesInput = {
+  create?: Prisma.XOR<Prisma.EventContactCreateWithoutNotesInput, Prisma.EventContactUncheckedCreateWithoutNotesInput>
+  connectOrCreate?: Prisma.EventContactCreateOrConnectWithoutNotesInput
+  connect?: Prisma.EventContactWhereUniqueInput
+}
+
+export type EventContactUpdateOneWithoutNotesNestedInput = {
+  create?: Prisma.XOR<Prisma.EventContactCreateWithoutNotesInput, Prisma.EventContactUncheckedCreateWithoutNotesInput>
+  connectOrCreate?: Prisma.EventContactCreateOrConnectWithoutNotesInput
+  upsert?: Prisma.EventContactUpsertWithoutNotesInput
+  disconnect?: Prisma.EventContactWhereInput | boolean
+  delete?: Prisma.EventContactWhereInput | boolean
+  connect?: Prisma.EventContactWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EventContactUpdateToOneWithWhereWithoutNotesInput, Prisma.EventContactUpdateWithoutNotesInput>, Prisma.EventContactUncheckedUpdateWithoutNotesInput>
+}
+
 export type EventContactCreateWithoutEventInput = {
   id?: string
   name: string
@@ -502,6 +530,7 @@ export type EventContactCreateWithoutEventInput = {
   confidence?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  notes?: Prisma.NoteCreateNestedManyWithoutContactInput
 }
 
 export type EventContactUncheckedCreateWithoutEventInput = {
@@ -515,6 +544,7 @@ export type EventContactUncheckedCreateWithoutEventInput = {
   confidence?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutContactInput
 }
 
 export type EventContactCreateOrConnectWithoutEventInput = {
@@ -560,6 +590,78 @@ export type EventContactScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"EventContact"> | Date | string
 }
 
+export type EventContactCreateWithoutNotesInput = {
+  id?: string
+  name: string
+  title?: string | null
+  email?: string | null
+  phone?: string | null
+  isPrimary?: boolean
+  sourceUrl?: string | null
+  confidence?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  event: Prisma.EventCreateNestedOneWithoutContactsInput
+}
+
+export type EventContactUncheckedCreateWithoutNotesInput = {
+  id?: string
+  eventId: string
+  name: string
+  title?: string | null
+  email?: string | null
+  phone?: string | null
+  isPrimary?: boolean
+  sourceUrl?: string | null
+  confidence?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type EventContactCreateOrConnectWithoutNotesInput = {
+  where: Prisma.EventContactWhereUniqueInput
+  create: Prisma.XOR<Prisma.EventContactCreateWithoutNotesInput, Prisma.EventContactUncheckedCreateWithoutNotesInput>
+}
+
+export type EventContactUpsertWithoutNotesInput = {
+  update: Prisma.XOR<Prisma.EventContactUpdateWithoutNotesInput, Prisma.EventContactUncheckedUpdateWithoutNotesInput>
+  create: Prisma.XOR<Prisma.EventContactCreateWithoutNotesInput, Prisma.EventContactUncheckedCreateWithoutNotesInput>
+  where?: Prisma.EventContactWhereInput
+}
+
+export type EventContactUpdateToOneWithWhereWithoutNotesInput = {
+  where?: Prisma.EventContactWhereInput
+  data: Prisma.XOR<Prisma.EventContactUpdateWithoutNotesInput, Prisma.EventContactUncheckedUpdateWithoutNotesInput>
+}
+
+export type EventContactUpdateWithoutNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  confidence?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  event?: Prisma.EventUpdateOneRequiredWithoutContactsNestedInput
+}
+
+export type EventContactUncheckedUpdateWithoutNotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  eventId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sourceUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  confidence?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type EventContactCreateManyEventInput = {
   id?: string
   name: string
@@ -584,6 +686,7 @@ export type EventContactUpdateWithoutEventInput = {
   confidence?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  notes?: Prisma.NoteUpdateManyWithoutContactNestedInput
 }
 
 export type EventContactUncheckedUpdateWithoutEventInput = {
@@ -597,6 +700,7 @@ export type EventContactUncheckedUpdateWithoutEventInput = {
   confidence?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutContactNestedInput
 }
 
 export type EventContactUncheckedUpdateManyWithoutEventInput = {
@@ -613,6 +717,35 @@ export type EventContactUncheckedUpdateManyWithoutEventInput = {
 }
 
 
+/**
+ * Count Type EventContactCountOutputType
+ */
+
+export type EventContactCountOutputType = {
+  notes: number
+}
+
+export type EventContactCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  notes?: boolean | EventContactCountOutputTypeCountNotesArgs
+}
+
+/**
+ * EventContactCountOutputType without action
+ */
+export type EventContactCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the EventContactCountOutputType
+   */
+  select?: Prisma.EventContactCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * EventContactCountOutputType without action
+ */
+export type EventContactCountOutputTypeCountNotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteWhereInput
+}
+
 
 export type EventContactSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -627,6 +760,8 @@ export type EventContactSelect<ExtArgs extends runtime.Types.Extensions.Internal
   createdAt?: boolean
   updatedAt?: boolean
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
+  notes?: boolean | Prisma.EventContact$notesArgs<ExtArgs>
+  _count?: boolean | Prisma.EventContactCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["eventContact"]>
 
 export type EventContactSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -676,6 +811,8 @@ export type EventContactSelectScalar = {
 export type EventContactOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "eventId" | "name" | "title" | "email" | "phone" | "isPrimary" | "sourceUrl" | "confidence" | "createdAt" | "updatedAt", ExtArgs["result"]["eventContact"]>
 export type EventContactInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
+  notes?: boolean | Prisma.EventContact$notesArgs<ExtArgs>
+  _count?: boolean | Prisma.EventContactCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type EventContactIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   event?: boolean | Prisma.EventDefaultArgs<ExtArgs>
@@ -688,6 +825,7 @@ export type $EventContactPayload<ExtArgs extends runtime.Types.Extensions.Intern
   name: "EventContact"
   objects: {
     event: Prisma.$EventPayload<ExtArgs>
+    notes: Prisma.$NotePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1096,6 +1234,7 @@ readonly fields: EventContactFieldRefs;
 export interface Prisma__EventContactClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   event<T extends Prisma.EventDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EventDefaultArgs<ExtArgs>>): Prisma.Prisma__EventClient<runtime.Types.Result.GetResult<Prisma.$EventPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  notes<T extends Prisma.EventContact$notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.EventContact$notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1534,6 +1673,30 @@ export type EventContactDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.
    * Limit how many EventContacts to delete.
    */
   limit?: number
+}
+
+/**
+ * EventContact.notes
+ */
+export type EventContact$notesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Note
+   */
+  select?: Prisma.NoteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Note
+   */
+  omit?: Prisma.NoteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteInclude<ExtArgs> | null
+  where?: Prisma.NoteWhereInput
+  orderBy?: Prisma.NoteOrderByWithRelationInput | Prisma.NoteOrderByWithRelationInput[]
+  cursor?: Prisma.NoteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteScalarFieldEnum | Prisma.NoteScalarFieldEnum[]
 }
 
 /**
