@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { scrapeSgmpEvents } from "../lib/scrapers/sgmp"
+import { statesMatch } from "../lib/stateNormalize"
 
 
 const runId = process.env.RUN_ID ?? null
@@ -49,7 +50,7 @@ function matchLocation(
 
     if (ev.venueCity && ev.venueState && city && state) {
       const cityMatch = ev.venueCity.toLowerCase().includes(city) || city.includes(ev.venueCity.toLowerCase())
-      const stateMatch = ev.venueState.toLowerCase() === state
+      const stateMatch = statesMatch(ev.venueState, loc.state)
       if (cityMatch && stateMatch) return loc
     }
     if (city && state && searchText.includes(city) && searchText.includes(state)) return loc

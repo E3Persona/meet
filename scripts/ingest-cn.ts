@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { scrapeCN, cityToCnSlug } from "../lib/scrapers/conferencenext"
+import { locationKey } from "../lib/stateNormalize"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -83,7 +84,7 @@ async function main() {
   // Build cityKey -> location lookup for city matching
   const cityLocMap = new Map<string, typeof runLocations[number]>()
   for (const loc of runLocations) {
-    const key = `${loc.city ?? ""}|${loc.state ?? ""}`.toLowerCase()
+    const key = locationKey(loc.city, loc.state)
     cityLocMap.set(key, loc)
   }
 
@@ -114,7 +115,7 @@ async function main() {
       totalFound++
 
       // Match scraped city/state to our city locations
-      const locKey = `${ev.venueCity}|${ev.venueState ?? ""}`.toLowerCase()
+      const locKey = locationKey(ev.venueCity, ev.venueState)
       const cityLoc = cityLocMap.get(locKey)
       if (!cityLoc) {
         skippedNoLocation++

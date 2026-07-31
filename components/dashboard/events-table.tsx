@@ -783,11 +783,12 @@ export function EventsTable() {
         header: "Notes",
         cell: ({ row }) => {
           const event = row.original
-          const notesCount = event.notes?.length ?? 0
+          const notes = event.notes ?? []
+          const notesCount = notes.length
+          const lastNote = notesCount > 0 ? notes[notesCount - 1] : null
           return (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
+              type="button"
               onClick={() =>
                 setNotesDialog({
                   open: true,
@@ -795,15 +796,26 @@ export function EventsTable() {
                   eventName: event.eventName,
                 })
               }
-              className="h-7 w-7 p-0"
+              className="group -mx-1 flex cursor-pointer items-start gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/50"
             >
-              <StickyNote className="h-4 w-4" />
+              <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
+              <div className="min-w-0 flex-1">
+                {lastNote ? (
+                  <p className="text-xs leading-tight text-muted-foreground line-clamp-2">
+                    {lastNote.content}
+                  </p>
+                ) : (
+                  <p className="text-xs italic text-muted-foreground/50">
+                    No notes
+                  </p>
+                )}
+              </div>
               {notesCount > 0 && (
-                <Badge variant="info" size="sm" className="ml-1">
+                <Badge variant="info" size="sm" className="mt-0.5 shrink-0">
                   {notesCount}
                 </Badge>
               )}
-            </Button>
+            </button>
           )
         },
       },
@@ -1338,68 +1350,111 @@ export function EventsTable() {
 
       {/* Notes Dialog */}
       <Dialog open={notesDialog.open} onOpenChange={(open) => setNotesDialog({ ...notesDialog, open })}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Notes - {notesDialog.eventName}</DialogTitle>
-            <DialogDescription>Add and view notes for this event</DialogDescription>
+            <DialogDescription>
+              {(events.find((e) => e.id === notesDialog.eventId)?.notes?.length ?? 0)} note(s) recorded
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Add New Note</label>
-              <Textarea
-                placeholder="What happened? (e.g., Called organizer, left voicemail, sent follow-up email...)"
-                value={newNoteContent}
-                onChange={(e) => setNewNoteContent(e.target.value)}
-                rows={3}
-              />
-              <div className="flex items-center gap-2">
-                <Select value={newNoteType} onValueChange={setNewNoteType}>
-                  <SelectTrigger className="w-40" size="sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general">General</SelectItem>
-                    <SelectItem value="contact_attempt">Contact Attempt</SelectItem>
-                    <SelectItem value="follow_up">Follow Up</SelectItem>
-                    <SelectItem value="status_change">Status Change</SelectItem>
-                    <SelectItem value="venue_update">Venue Update</SelectItem>
-                    <SelectItem value="research">Research</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  onClick={async () => {
-                    if (!newNoteContent.trim()) return
-                    setAddingNote(true)
-                    try {
-                      const res = await fetch(`/api/events/${notesDialog.eventId}/notes`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          content: newNoteContent,
-                          noteType: newNoteType,
-                          notedAt: new Date().toISOString(),
-                        }),
-                      })
-                      if (!res.ok) throw new Error("Failed to add note")
-                      toast.success("Note added")
-                      setNewNoteContent("")
-                      setNewNoteType("general")
-                      fetchEvents()
-                    } catch {
-                      toast.error("Failed to add note")
-                    } finally {
-                      setAddingNote(false)
-                    }
-                  }}
-                  disabled={!newNoteContent.trim() || addingNote}
-                >
-                  {addingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Note"}
-                </Button>
+          {(() => {
+            const eventNotes = events.find((e) => e.id === notesDialog.eventId)?.notes ?? []
+            const NOTE_TYPE_LABELS: Record<string, string> = {
+              general: "General",
+              contact_attempt: "Contact Attempt",
+              follow_up: "Follow Up",
+              status_change: "Status Change",
+              venue_update: "Venue Update",
+              research: "Research",
+              other: "Other",
+            }
+            return (
+              <div className="flex-1 overflow-hidden flex flex-col gap-3 min-h-0">
+                {/* Notes list */}
+                <div className="flex-1 overflow-y-auto space-y-2 min-h-0 max-h-64">
+                  {eventNotes.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground italic">No notes yet</p>
+                  ) : (
+                    [...eventNotes].reverse().map((note) => (
+                      <div key={note.id} className="rounded-md border border-border/50 bg-muted/20 p-3 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge variant="neutral" size="sm">
+                            {NOTE_TYPE_LABELS[note.noteType] ?? note.noteType}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                            {new Date(note.notedAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{note.content}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+                {/* Add note */}
+                <div className="border-t border-border pt-3 space-y-2">
+                  <label className="text-sm font-medium">Add Note</label>
+                  <Textarea
+                    placeholder="What happened? (e.g., Called organizer, left voicemail, sent follow-up email...)"
+                    value={newNoteContent}
+                    onChange={(e) => setNewNoteContent(e.target.value)}
+                    rows={2}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Select value={newNoteType} onValueChange={setNewNoteType}>
+                      <SelectTrigger className="w-40" size="sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">General</SelectItem>
+                        <SelectItem value="contact_attempt">Contact Attempt</SelectItem>
+                        <SelectItem value="follow_up">Follow Up</SelectItem>
+                        <SelectItem value="status_change">Status Change</SelectItem>
+                        <SelectItem value="venue_update">Venue Update</SelectItem>
+                        <SelectItem value="research">Research</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        if (!newNoteContent.trim()) return
+                        setAddingNote(true)
+                        try {
+                          const res = await fetch(`/api/events/${notesDialog.eventId}/notes`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              content: newNoteContent,
+                              noteType: newNoteType,
+                              notedAt: new Date().toISOString(),
+                            }),
+                          })
+                          if (!res.ok) throw new Error("Failed to add note")
+                          toast.success("Note added")
+                          setNewNoteContent("")
+                          setNewNoteType("general")
+                          fetchEvents()
+                        } catch {
+                          toast.error("Failed to add note")
+                        } finally {
+                          setAddingNote(false)
+                        }
+                      }}
+                      disabled={!newNoteContent.trim() || addingNote}
+                    >
+                      {addingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Note"}
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )
+          })()}
           <DialogFooter showCloseButton />
         </DialogContent>
       </Dialog>

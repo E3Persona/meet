@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio"
+import { normalizeState } from "../stateNormalize"
 
 const BASE = "https://www.conventionplanit.com"
 const LISTING_URL = `${BASE}/conference_center_search2_nopop.php`
@@ -293,7 +294,7 @@ export async function scrapeConventionPlanit(
   }
 
   const cityNames = new Set(activeCities.map((l) => (l.city ?? "").toLowerCase()))
-  const stateNames = new Set(activeCities.map((l) => (l.state ?? "").toLowerCase()))
+  const stateNames = new Set(activeCities.map((l) => normalizeState(l.state) ?? (l.state ?? "").toLowerCase()))
 
   console.log(`[cp] Scraping listing...`)
   const allVenues = await scrapeListing()
@@ -301,7 +302,7 @@ export async function scrapeConventionPlanit(
 
   const matched = allVenues.filter((v) => {
     const vCity = v.city.toLowerCase()
-    const vState = v.state.toLowerCase()
+    const vState = normalizeState(v.state) ?? v.state.toLowerCase()
     return cityNames.has(vCity) && stateNames.has(vState)
   })
 

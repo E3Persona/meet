@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { createEventbriteBrowser, matchEventsToVenue, scrapeSearchPage } from "../lib/scrapers/eventbrite"
+import { locationKey } from "../lib/stateNormalize"
 
 const rawRunId = process.env.RUN_ID ?? null
 
@@ -46,7 +47,7 @@ async function main() {
   const cityGroups = new Map<string, typeof venues>()
   for (const v of venues) {
     if (!v.city || !v.state) continue
-    const key = `${v.city}|${v.state}`
+    const key = locationKey(v.city, v.state)
     if (!cityGroups.has(key)) cityGroups.set(key, [])
     cityGroups.get(key)!.push(v)
   }

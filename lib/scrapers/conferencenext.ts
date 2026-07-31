@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-extra"
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
+import { normalizeState } from "../stateNormalize"
 puppeteer.use(StealthPlugin())
 
 const BASE_URL = "https://conferencenext.com"
@@ -40,7 +41,8 @@ for (const [slug, meta] of Object.entries(TARGET_CITY_SLUGS)) {
 }
 
 export function cityToCnSlug(city: string, state: string): string | null {
-  const key = `${city}|${state}`.toLowerCase()
+  const normState = normalizeState(state) ?? state
+  const key = `${city}|${normState}`.toLowerCase()
   if (CITY_TO_CN_SLUG[key]) return CITY_TO_CN_SLUG[key]
   if (CITY_TO_CN_SLUG[`${city}|`]) return CITY_TO_CN_SLUG[`${city}|`]
   return null

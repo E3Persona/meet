@@ -1,4 +1,5 @@
 import { PrismaClient, Location, EventMatchType } from "@/lib/generated/prisma/client"
+import { normalizeState, statesMatch } from "@/lib/stateNormalize"
 
 export interface ResolvedVenue {
   locationId: string | null
@@ -32,7 +33,14 @@ export async function resolveVenue({
       const cityLoc = venue.parentId
         ? await prisma.location.findUnique({ where: { id: venue.parentId }, select: { id: true } })
         : await prisma.location.findFirst({
-            where: { type: "CITY", name: { equals: venue.city ?? "", mode: "insensitive" }, state: venue.state ?? undefined },
+            where: {
+              type: "CITY",
+              name: { equals: venue.city ?? "", mode: "insensitive" },
+              ...(venue.state ? { OR: [
+                { state: venue.state },
+                { state: normalizeState(venue.state) },
+              ] } : {}),
+            },
             select: { id: true },
           })
       const useCityId = venue.venueType === "ConventionCenter" || venue.venueType === "Arena" || venue.venueType === "Fairgrounds"
@@ -102,7 +110,14 @@ async function findFuzzyVenueMatch(
   const cityLoc = best.venue.parentId
     ? await prisma.location.findUnique({ where: { id: best.venue.parentId }, select: { id: true } })
     : await prisma.location.findFirst({
-        where: { type: "CITY", name: { equals: best.venue.city ?? "", mode: "insensitive" }, state: best.venue.state ?? undefined },
+        where: {
+          type: "CITY",
+          name: { equals: best.venue.city ?? "", mode: "insensitive" },
+          ...(best.venue.state ? { OR: [
+            { state: best.venue.state },
+            { state: normalizeState(best.venue.state) },
+          ] } : {}),
+        },
         select: { id: true },
       })
 
@@ -122,11 +137,16 @@ async function findCityLocation(
 ): Promise<{ id: string } | null> {
   if (!city) return null
 
+  const normState = normalizeState(state)
+
   const loc = await prisma.location.findFirst({
     where: {
       type: "CITY",
       name: { equals: city, mode: "insensitive" },
-      ...(state ? { state: { equals: state, mode: "insensitive" } } : {}),
+      ...(normState ? { OR: [
+        { state: normState },
+        { state: state },
+      ] } : {}),
     },
     select: { id: true },
   })

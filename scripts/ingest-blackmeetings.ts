@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { scrapeBMEvents, scrapeBMVenues } from "../lib/scrapers/blackmeetings"
+import { normalizeState } from "../lib/stateNormalize"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -291,7 +292,7 @@ function matchLocation(
   // 4. City + state both present in any text field
   for (const loc of locations) {
     const city = loc.city?.toLowerCase()
-    const state = loc.state?.toLowerCase()
+    const state = normalizeState(loc.state)?.toLowerCase()
     if (city && state && searchText.includes(city) && searchText.includes(state)) {
       debug(`  Location match (city+state): "${loc.name}"`)
       return loc

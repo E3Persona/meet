@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { scrapeASAE } from "../lib/scrapers/asae"
 import { prisma } from "../lib/prisma"
+import { normalizeState, statesMatch } from "../lib/stateNormalize"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -82,8 +83,7 @@ function matchLocation(
     if (!s) continue
     for (const loc of locations) {
       const lc = loc.city?.toLowerCase().trim()
-      const ls = loc.state?.toLowerCase().trim()
-      if (lc === c && ls === s) return loc
+      if (lc === c && statesMatch(loc.state, cs.state)) return loc
     }
   }
 
@@ -114,7 +114,7 @@ function matchLocation(
   for (const cs of citiesStates) {
     const s = cs.state.toLowerCase().trim()
     if (!s) continue
-    const stateLocs = locations.filter((l) => l.state?.toLowerCase().trim() === s)
+    const stateLocs = locations.filter((l) => statesMatch(l.state, cs.state))
     if (stateLocs.length === 1) {
       console.warn(`[ASAE/Ingest] State-only match: "${cs.state}" → single location "${stateLocs[0].name}"`)
       return stateLocs[0]

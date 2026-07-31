@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { scrapeECN, type ECNEvent } from "../lib/scrapers/thetradeshowcalendar"
+import { statesMatch } from "../lib/stateNormalize"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -173,12 +174,10 @@ function matchCityState(
   locations: { id: string; name: string; city: string | null; state: string | null }[]
 ): { id: string } | null {
   const c = city.toLowerCase().trim()
-  const s = (state ?? "").toLowerCase().trim()
 
   for (const loc of locations) {
     const lc = loc.city?.toLowerCase().trim()
-    const ls = loc.state?.toLowerCase().trim()
-    if (lc === c && (!s || !ls || ls === s)) return loc
+    if (lc === c && (!state || !loc.state || statesMatch(loc.state, state))) return loc
   }
 
   // fallback: location name contains the city
