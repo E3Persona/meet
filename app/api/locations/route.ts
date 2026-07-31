@@ -6,7 +6,7 @@ export async function GET() {
     prisma.location.findMany({
       include: {
         searchTerms: { orderBy: { keyword: "asc" } },
-        venues: { where: { active: true }, select: { id: true, name: true, shortName: true } },
+        children: { where: { type: "VENUE", active: true }, select: { id: true, name: true, shortName: true } },
         parent: { select: { id: true, name: true } },
       },
       orderBy: [{ type: "asc" }, { name: "asc" }],

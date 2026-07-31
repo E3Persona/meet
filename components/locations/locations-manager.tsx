@@ -28,12 +28,6 @@ interface SearchTerm {
   locationId: string | null
 }
 
-interface NestedLocation {
-  id: string
-  name: string
-  shortName: string | null
-}
-
 interface Location {
   id: string
   name: string
@@ -47,7 +41,6 @@ interface Location {
   lastIngestedAt: string | null
   parent: { id: string; name: string; type: string } | null
   children: Location[]
-  venues: NestedLocation[]
   searchTerms: SearchTerm[]
 }
 

@@ -153,7 +153,7 @@ async function seedBaltimoreEvents() {
       const contact = await prisma.eventContact.create({
         data: {
           eventId: event.id,
-          name: contactName || null,
+          name: contactName || "Unknown",
           title: null, // Not provided in CSV
           email: contactEmail || null,
           phone: contactPhone || null,
