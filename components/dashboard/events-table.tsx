@@ -111,6 +111,16 @@ interface Location {
 
 // ─── Truncated Cell ────────────────────────────────────────────────────────────
 
+const NOTE_TYPE_LABELS: Record<string, string> = {
+  general: "General",
+  contact_attempt: "Contact Attempt",
+  follow_up: "Follow Up",
+  status_change: "Status Change",
+  venue_update: "Venue Update",
+  research: "Research",
+  other: "Other",
+}
+
 function TruncatedCell({ text, maxChars = 40 }: { text: string; maxChars?: number }) {
   const [expanded, setExpanded] = useState(false)
   const needsTruncation = text.length > maxChars
@@ -319,9 +329,27 @@ export function EventsTable() {
     eventId: string
     eventName: string
   }>({ open: false, eventId: "", eventName: "" })
+  const [dialogNotes, setDialogNotes] = useState<{ id: string; content: string; noteType: string; notedAt: string }[]>([])
+  const [dialogNotesLoading, setDialogNotesLoading] = useState(false)
   const [newNoteContent, setNewNoteContent] = useState("")
   const [newNoteType, setNewNoteType] = useState("general")
   const [addingNote, setAddingNote] = useState(false)
+
+  const fetchDialogNotes = useCallback(async (eventId: string) => {
+    if (!eventId) return
+    setDialogNotesLoading(true)
+    try {
+      const res = await fetch(`/api/events/${eventId}/notes`)
+      if (res.ok) setDialogNotes(await res.json())
+    } catch { /* ignore */ } finally {
+      setDialogNotesLoading(false)
+    }
+  }, [])
+
+  const openNotes = useCallback((eventId: string, eventName: string) => {
+    setNotesDialog({ open: true, eventId, eventName })
+    fetchDialogNotes(eventId)
+  }, [fetchDialogNotes])
 
   const setCityFilter = (val: string) => {
     setFilterCity(val)
@@ -790,11 +818,7 @@ export function EventsTable() {
             <button
               type="button"
               onClick={() =>
-                setNotesDialog({
-                  open: true,
-                  eventId: event.id,
-                  eventName: event.eventName,
-                })
+                openNotes(event.id, event.eventName)
               }
               className="group -mx-1 flex cursor-pointer items-start gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/50"
             >
@@ -848,11 +872,7 @@ export function EventsTable() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
-                    setNotesDialog({
-                      open: true,
-                      eventId: event.id,
-                      eventName: event.eventName,
-                    })
+                    openNotes(event.id, event.eventName)
                   }
                 >
                   <StickyNote className="mr-2 h-4 w-4" />
@@ -1354,107 +1374,96 @@ export function EventsTable() {
           <DialogHeader>
             <DialogTitle>Notes - {notesDialog.eventName}</DialogTitle>
             <DialogDescription>
-              {(events.find((e) => e.id === notesDialog.eventId)?.notes?.length ?? 0)} note(s) recorded
+              {dialogNotes.length} note(s) recorded
             </DialogDescription>
           </DialogHeader>
-          {(() => {
-            const eventNotes = events.find((e) => e.id === notesDialog.eventId)?.notes ?? []
-            const NOTE_TYPE_LABELS: Record<string, string> = {
-              general: "General",
-              contact_attempt: "Contact Attempt",
-              follow_up: "Follow Up",
-              status_change: "Status Change",
-              venue_update: "Venue Update",
-              research: "Research",
-              other: "Other",
-            }
-            return (
-              <div className="flex-1 overflow-hidden flex flex-col gap-3 min-h-0">
-                {/* Notes list */}
-                <div className="flex-1 overflow-y-auto space-y-2 min-h-0 max-h-64">
-                  {eventNotes.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-muted-foreground italic">No notes yet</p>
-                  ) : (
-                    [...eventNotes].reverse().map((note) => (
-                      <div key={note.id} className="rounded-md border border-border/50 bg-muted/20 p-3 space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <Badge variant="neutral" size="sm">
-                            {NOTE_TYPE_LABELS[note.noteType] ?? note.noteType}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                            {new Date(note.notedAt).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                              hour: "numeric",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-                        <p className="text-sm text-foreground whitespace-pre-wrap">{note.content}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-                {/* Add note */}
-                <div className="border-t border-border pt-3 space-y-2">
-                  <label className="text-sm font-medium">Add Note</label>
-                  <Textarea
-                    placeholder="What happened? (e.g., Called organizer, left voicemail, sent follow-up email...)"
-                    value={newNoteContent}
-                    onChange={(e) => setNewNoteContent(e.target.value)}
-                    rows={2}
-                  />
-                  <div className="flex items-center gap-2">
-                    <Select value={newNoteType} onValueChange={setNewNoteType}>
-                      <SelectTrigger className="w-40" size="sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="general">General</SelectItem>
-                        <SelectItem value="contact_attempt">Contact Attempt</SelectItem>
-                        <SelectItem value="follow_up">Follow Up</SelectItem>
-                        <SelectItem value="status_change">Status Change</SelectItem>
-                        <SelectItem value="venue_update">Venue Update</SelectItem>
-                        <SelectItem value="research">Research</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        if (!newNoteContent.trim()) return
-                        setAddingNote(true)
-                        try {
-                          const res = await fetch(`/api/events/${notesDialog.eventId}/notes`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              content: newNoteContent,
-                              noteType: newNoteType,
-                              notedAt: new Date().toISOString(),
-                            }),
-                          })
-                          if (!res.ok) throw new Error("Failed to add note")
-                          toast.success("Note added")
-                          setNewNoteContent("")
-                          setNewNoteType("general")
-                          fetchEvents()
-                        } catch {
-                          toast.error("Failed to add note")
-                        } finally {
-                          setAddingNote(false)
-                        }
-                      }}
-                      disabled={!newNoteContent.trim() || addingNote}
-                    >
-                      {addingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Note"}
-                    </Button>
+          <div className="flex-1 overflow-hidden flex flex-col gap-3 min-h-0">
+            {/* Notes list */}
+            <div className="flex-1 overflow-y-auto space-y-2 min-h-0 max-h-64">
+              {dialogNotesLoading ? (
+                <div className="py-6 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>
+              ) : dialogNotes.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground italic">No notes yet</p>
+              ) : (
+                [...dialogNotes].reverse().map((note) => (
+                  <div key={note.id} className="rounded-md border border-border/50 bg-muted/20 p-3 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge variant="neutral" size="sm">
+                        {NOTE_TYPE_LABELS[note.noteType] ?? note.noteType}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                        {new Date(note.notedAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{note.content}</p>
                   </div>
-                </div>
+                ))
+              )}
+            </div>
+            {/* Add note */}
+            <div className="border-t border-border pt-3 space-y-2">
+              <label className="text-sm font-medium">Add Note</label>
+              <Textarea
+                placeholder="What happened? (e.g., Called organizer, left voicemail, sent follow-up email...)"
+                value={newNoteContent}
+                onChange={(e) => setNewNoteContent(e.target.value)}
+                rows={2}
+              />
+              <div className="flex items-center gap-2">
+                <Select value={newNoteType} onValueChange={setNewNoteType}>
+                  <SelectTrigger className="w-40" size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="contact_attempt">Contact Attempt</SelectItem>
+                    <SelectItem value="follow_up">Follow Up</SelectItem>
+                    <SelectItem value="status_change">Status Change</SelectItem>
+                    <SelectItem value="venue_update">Venue Update</SelectItem>
+                    <SelectItem value="research">Research</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  onClick={async () => {
+                    if (!newNoteContent.trim()) return
+                    setAddingNote(true)
+                    try {
+                      const res = await fetch(`/api/events/${notesDialog.eventId}/notes`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          content: newNoteContent,
+                          noteType: newNoteType,
+                          notedAt: new Date().toISOString(),
+                        }),
+                      })
+                      if (!res.ok) throw new Error("Failed to add note")
+                      toast.success("Note added")
+                      setNewNoteContent("")
+                      setNewNoteType("general")
+                      fetchDialogNotes(notesDialog.eventId)
+                      fetchEvents()
+                    } catch {
+                      toast.error("Failed to add note")
+                    } finally {
+                      setAddingNote(false)
+                    }
+                  }}
+                  disabled={!newNoteContent.trim() || addingNote}
+                >
+                  {addingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Note"}
+                </Button>
               </div>
-            )
-          })()}
+            </div>
+          </div>
           <DialogFooter showCloseButton />
         </DialogContent>
       </Dialog>

@@ -97,6 +97,10 @@ export async function GET(request: Request) {
             select: { id: true, name: true, isPrimary: true, email: true, phone: true, title: true },
             orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
           },
+          notes: {
+            select: { id: true, content: true, noteType: true, notedAt: true },
+            orderBy: { notedAt: "asc" },
+          },
         },
         orderBy: { eventDateStart: "asc" },
         skip: (page - 1) * pageSize,
