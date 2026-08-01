@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     prisma.venueDirectorySource.findMany({
       where,
       include: {
-        venue: { select: { id: true, name: true, city: true, state: true } },
+        venue: { select: { id: true, name: true, city: true, state: true, address: true } },
         directory: { select: { id: true, baseUrl: true, name: true } },
       },
       orderBy: { updatedAt: "desc" },

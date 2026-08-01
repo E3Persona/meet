@@ -68,7 +68,7 @@ interface VenueSourceRow {
   lastScrapedAt: string | null
   batchSize: number
   batchDelayMs: number
-  venue: { id: string; name: string; city: string | null; state: string | null }
+  venue: { id: string; name: string; city: string | null; state: string | null; address: string | null }
   directory: { id: string; baseUrl: string; name: string }
 }
 
@@ -157,6 +157,9 @@ export function VenueDirectoriesManager() {
           <div>
             <p className="font-medium text-sm">{v.name}</p>
             <p className="text-xs text-muted-foreground">{[v.city, v.state].filter(Boolean).join(", ")}</p>
+            {v.address && (
+              <p className="text-xs text-muted-foreground/70">{v.address}</p>
+            )}
           </div>
         )
       },

@@ -60,6 +60,8 @@ import {
   MoreHorizontal,
   FileText,
   StickyNote,
+  Mail,
+  Phone,
 } from "lucide-react"
 import { toast } from "sonner"
 import { ContactFinderModal } from "./contact-finder-modal"
@@ -587,7 +589,16 @@ export function EventsTable() {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
+  const currentYear = new Date().getFullYear()
+
+  const isOldYear = (row: EventRow) => {
+    const d = row.eventDateStart
+    if (!d) return false
+    return new Date(d).getFullYear() < currentYear
+  }
+
   const isPast = (row: EventRow) => {
+    if (isOldYear(row)) return true
     const d = row.eventDateEnd ?? row.eventDateStart
     if (!d) return false
     return new Date(d) < new Date()
@@ -595,296 +606,321 @@ export function EventsTable() {
 
   // ── Columns ───────────────────────────────────────────────────────────────
 
+  const maxContacts = useMemo(
+    () => Math.max(0, ...events.map((e) => (e.contacts?.length ?? 0))),
+    [events]
+  )
+
   const columns: ColumnDef<EventRow, unknown>[] = useMemo(
-    () => [
-      {
-        accessorKey: "eventName",
-        header: "Event Name",
-        cell: ({ row }) => (
-          <div className="max-w-[300px]">
-            <p className="truncate text-sm font-medium">
-              {row.original.eventName}
-            </p>
-            {row.original.sourceUrl && (
-              <a
-                href={row.original.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block truncate text-xs text-muted-foreground hover:underline"
-              >
-                {row.original.sourceUrl}
-              </a>
-            )}
-          </div>
-        ),
-      },
-      {
-        id: "location",
-        header: "Location",
-        cell: ({ row }) => {
-          const ev = row.original
-          const raw = ev.rawLocationText
-          const locText = raw ?? `${ev.location.city || ev.location.name}${ev.location.state ? `, ${ev.location.state}` : ""}`
-          return (
-            <span className="text-sm">
-              <TruncatedCell text={locText} />
-              {raw && (
-                <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
-                  raw
-                </span>
-              )}
-            </span>
-          )
-        },
-      },
-      {
-        accessorKey: "rawVenueText",
-        header: "Venue",
-        cell: ({ row }) => {
-          const ev = row.original
-          const venueName = ev.venue?.name ?? ev.rawVenueText
-          const venueCity = ev.venue?.city
-          const venueAddress = ev.venue?.address
-          return (
-            <div className="max-w-[200px]">
-              {venueName ? (
-                <>
-                  <p className="text-sm font-medium">
-                    <TruncatedCell text={venueName} />
-                  </p>
-                  {venueCity && (
-                    <p className="text-xs text-muted-foreground">
-                      {venueCity}{ev.venue?.state ? `, ${ev.venue.state}` : ""}
-                    </p>
-                  )}
-                  {venueAddress && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {venueAddress}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <span className="text-sm text-muted-foreground">—</span>
+    () => {
+      const baseColumns: ColumnDef<EventRow, unknown>[] = [
+        {
+          accessorKey: "eventName",
+          header: "Event Name",
+          cell: ({ row }) => (
+            <div className="max-w-[300px]">
+              <p className="truncate text-sm font-medium">
+                {row.original.eventName}
+              </p>
+              {row.original.sourceUrl && (
+                <a
+                  href={row.original.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block truncate text-xs text-muted-foreground hover:underline"
+                >
+                  {row.original.sourceUrl}
+                </a>
               )}
             </div>
-          )
+          ),
         },
-      },
-      {
-        id: "contacts",
-        header: "Contacts",
-        cell: ({ row }) => {
-          const event = row.original
-          const contacts = event.contacts ?? []
-          const primary = contacts.find((c) => c.isPrimary)
-          if (contacts.length === 0) {
+        {
+          id: "location",
+          header: "Location",
+          cell: ({ row }) => {
+            const ev = row.original
+            const raw = ev.rawLocationText
+            const locText = raw ?? `${ev.location.city || ev.location.name}${ev.location.state ? `, ${ev.location.state}` : ""}`
             return (
-              <span className="text-xs text-muted-foreground italic">
-                No contacts
+              <span className="text-sm">
+                <TruncatedCell text={locText} />
+                {raw && (
+                  <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
+                    raw
+                  </span>
+                )}
               </span>
             )
-          }
-          return (
-            <div className="max-w-[280px]">
-              <div className="flex items-center gap-1.5">
-                <span className="truncate text-sm font-medium">
-                  {primary?.name ?? contacts[0].name}
-                </span>
-                {contacts.length > 1 && (
-                  <Badge variant="neutral" size="sm">
-                    +{contacts.length - 1}
+          },
+        },
+        {
+          accessorKey: "rawVenueText",
+          header: "Venue",
+          cell: ({ row }) => {
+            const ev = row.original
+            const venueName = ev.venue?.name ?? ev.rawVenueText
+            const venueCity = ev.venue?.city
+            const venueAddress = ev.venue?.address
+            return (
+              <div className="max-w-[200px]">
+                {venueName ? (
+                  <>
+                    <p className="text-sm font-medium">
+                      <TruncatedCell text={venueName} />
+                    </p>
+                    {venueCity && (
+                      <p className="text-xs text-muted-foreground">
+                        {venueCity}{ev.venue?.state ? `, ${ev.venue.state}` : ""}
+                      </p>
+                    )}
+                    {venueAddress && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {venueAddress}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">—</span>
+                )}
+              </div>
+            )
+          },
+        },
+      ]
+
+      // Dynamic contact columns: Contact 1 Name, Contact 1 Email, Contact 1 Phone, ...
+      for (let i = 0; i < maxContacts; i++) {
+        const idx = i
+        baseColumns.push({
+          id: `contact_${idx}_name`,
+          header: `C${idx + 1} Name`,
+          cell: ({ row }) => {
+            const c = row.original.contacts?.[idx]
+            if (!c) return <span className="text-muted-foreground">—</span>
+            return (
+              <span className="text-xs font-medium truncate block max-w-[140px]" title={c.name}>
+                {c.name}
+              </span>
+            )
+          },
+        })
+        baseColumns.push({
+          id: `contact_${idx}_email`,
+          header: `C${idx + 1} Email`,
+          cell: ({ row }) => {
+            const c = row.original.contacts?.[idx]
+            if (!c?.email) return <span className="text-muted-foreground">—</span>
+            return (
+              <a
+                href={`mailto:${c.email}`}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:text-primary max-w-[160px]"
+                title={c.email}
+              >
+                <Mail className="h-3 w-3 shrink-0" />
+                <span className="truncate">{c.email}</span>
+              </a>
+            )
+          },
+        })
+        baseColumns.push({
+          id: `contact_${idx}_phone`,
+          header: `C${idx + 1} Phone`,
+          cell: ({ row }) => {
+            const c = row.original.contacts?.[idx]
+            if (!c?.phone) return <span className="text-muted-foreground">—</span>
+            return (
+              <a
+                href={`tel:${c.phone}`}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                title={c.phone}
+              >
+                <Phone className="h-3 w-3 shrink-0" />
+                <span className="truncate">{c.phone}</span>
+              </a>
+            )
+          },
+        })
+      }
+
+      baseColumns.push(
+        {
+          accessorKey: "eventDateStart",
+          header: ({ column }) => (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+              className="h-8 px-2"
+            >
+              Start Date
+              <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
+            </Button>
+          ),
+          sortingFn: "datetime",
+          cell: ({ row }) => {
+            if (isOldYear(row.original))
+              return <span className="text-sm text-muted-foreground">—</span>
+            const d = row.original.eventDateStart
+            if (!d)
+              return <span className="text-sm text-muted-foreground">—</span>
+            const start = new Date(d)
+            const fmt = (date: Date) =>
+              date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            return (
+              <span className="text-sm whitespace-nowrap">
+                {fmt(start)}
+              </span>
+            )
+          },
+        },
+        {
+          accessorKey: "eventDateEnd",
+          header: ({ column }) => (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+              className="h-8 px-2"
+            >
+              End Date
+              <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
+            </Button>
+          ),
+          sortingFn: "datetime",
+          cell: ({ row }) => {
+            if (isOldYear(row.original))
+              return <span className="text-sm text-muted-foreground">—</span>
+            const d = row.original.eventDateEnd
+            if (!d)
+              return <span className="text-sm text-muted-foreground">—</span>
+            const end = new Date(d)
+            const fmt = (date: Date) =>
+              date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            return (
+              <span className="text-sm whitespace-nowrap">
+                {fmt(end)}
+              </span>
+            )
+          },
+        },
+        {
+          accessorKey: "expectedAttendees",
+          header: "Attendees",
+          cell: ({ row }) => {
+            const val = row.original.expectedAttendees
+            return (
+              <span className="text-sm">
+                {val != null ? (
+                  val.toLocaleString()
+                ) : (
+                  <span className="text-muted-foreground italic">—</span>
+                )}
+              </span>
+            )
+          },
+        },
+        {
+          accessorKey: "status",
+          header: "Status",
+          cell: ({ row }) => (
+            <StatusBadge
+              status={row.original.status}
+              eventId={row.original.id}
+              onSaved={fetchEvents}
+            />
+          ),
+        },
+        {
+          id: "notes",
+          header: "Notes",
+          cell: ({ row }) => {
+            const event = row.original
+            const notes = event.notes ?? []
+            const notesCount = notes.length
+            const lastNote = notesCount > 0 ? notes[notesCount - 1] : null
+            return (
+              <button
+                type="button"
+                onClick={() =>
+                  openNotes(event.id, event.eventName)
+                }
+                className="group -mx-1 flex cursor-pointer items-start gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/50"
+              >
+                <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
+                <div className="min-w-0 flex-1">
+                  {lastNote ? (
+                    <p className="text-xs leading-tight text-muted-foreground line-clamp-2">
+                      {lastNote.content}
+                    </p>
+                  ) : (
+                    <p className="text-xs italic text-muted-foreground/50">
+                      No notes
+                    </p>
+                  )}
+                </div>
+                {notesCount > 0 && (
+                  <Badge variant="info" size="sm" className="mt-0.5 shrink-0">
+                    {notesCount}
                   </Badge>
                 )}
-              </div>
-              {(primary?.title ?? contacts[0].title) && (
-                <p className="text-xs text-muted-foreground truncate">
-                  {primary?.title ?? contacts[0].title}
-                </p>
-              )}
-              {(primary?.email ?? contacts[0].email) && (
-                <p className="truncate text-xs">
-                  {primary?.email ?? contacts[0].email}
-                </p>
-              )}
-              {(primary?.phone ?? contacts[0].phone) && (
-                <p className="truncate text-xs text-muted-foreground">
-                  {primary?.phone ?? contacts[0].phone}
-                </p>
-              )}
-            </div>
-          )
+              </button>
+            )
+          },
         },
-      },
-      {
-        accessorKey: "eventDateStart",
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-8 px-2"
-          >
-            Start Date
-            <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
-          </Button>
-        ),
-        sortingFn: "datetime",
-        cell: ({ row }) => {
-          const d = row.original.eventDateStart
-          if (!d)
-            return <span className="text-sm text-muted-foreground">—</span>
-          const start = new Date(d)
-          const fmt = (date: Date) =>
-            date.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })
-          return (
-            <span className="text-sm whitespace-nowrap">
-              {fmt(start)}
-            </span>
-          )
+        {
+          id: "actions",
+          header: "",
+          meta: { align: "center" },
+          cell: ({ row }) => {
+            const event = row.original
+            const contactCount = event.contacts?.length ?? 0
+            return (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-40">
+                  <DropdownMenuItem
+                    onClick={() =>
+                      setContactModal({
+                        open: true,
+                        eventId: event.id,
+                        eventName: event.eventName,
+                      })
+                    }
+                  >
+                    <Search className="mr-2 h-4 w-4" />
+                    {contactCount > 0 ? "View Contacts" : "Find Contact"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      openNotes(event.id, event.eventName)
+                    }
+                  >
+                    <StickyNote className="mr-2 h-4 w-4" />
+                    View Notes
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          },
         },
-      },
-      {
-        accessorKey: "eventDateEnd",
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-8 px-2"
-          >
-            End Date
-            <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
-          </Button>
-        ),
-        sortingFn: "datetime",
-        cell: ({ row }) => {
-          const d = row.original.eventDateEnd
-          if (!d)
-            return <span className="text-sm text-muted-foreground">—</span>
-          const end = new Date(d)
-          const fmt = (date: Date) =>
-            date.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })
-          return (
-            <span className="text-sm whitespace-nowrap">
-              {fmt(end)}
-            </span>
-          )
-        },
-      },
-      {
-        accessorKey: "expectedAttendees",
-        header: "Attendees",
-        cell: ({ row }) => {
-          const val = row.original.expectedAttendees
-          return (
-            <span className="text-sm">
-              {val != null ? (
-                val.toLocaleString()
-              ) : (
-                <span className="text-muted-foreground italic">—</span>
-              )}
-            </span>
-          )
-        },
-      },
-      {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }) => (
-          <StatusBadge
-            status={row.original.status}
-            eventId={row.original.id}
-            onSaved={fetchEvents}
-          />
-        ),
-      },
-      {
-        id: "notes",
-        header: "Notes",
-        cell: ({ row }) => {
-          const event = row.original
-          const notes = event.notes ?? []
-          const notesCount = notes.length
-          const lastNote = notesCount > 0 ? notes[notesCount - 1] : null
-          return (
-            <button
-              type="button"
-              onClick={() =>
-                openNotes(event.id, event.eventName)
-              }
-              className="group -mx-1 flex cursor-pointer items-start gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/50"
-            >
-              <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
-              <div className="min-w-0 flex-1">
-                {lastNote ? (
-                  <p className="text-xs leading-tight text-muted-foreground line-clamp-2">
-                    {lastNote.content}
-                  </p>
-                ) : (
-                  <p className="text-xs italic text-muted-foreground/50">
-                    No notes
-                  </p>
-                )}
-              </div>
-              {notesCount > 0 && (
-                <Badge variant="info" size="sm" className="mt-0.5 shrink-0">
-                  {notesCount}
-                </Badge>
-              )}
-            </button>
-          )
-        },
-      },
-      {
-        id: "actions",
-        header: "",
-        meta: { align: "center" },
-        cell: ({ row }) => {
-          const event = row.original
-          const contactCount = event.contacts?.length ?? 0
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-40">
-                <DropdownMenuItem
-                  onClick={() =>
-                    setContactModal({
-                      open: true,
-                      eventId: event.id,
-                      eventName: event.eventName,
-                    })
-                  }
-                >
-                  <Search className="mr-2 h-4 w-4" />
-                  {contactCount > 0 ? "View Contacts" : "Find Contact"}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    openNotes(event.id, event.eventName)
-                  }
-                >
-                  <StickyNote className="mr-2 h-4 w-4" />
-                  View Notes
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )
-        },
-      },
-    ],
-    [fetchEvents]
+      )
+
+      return baseColumns
+    },
+    [fetchEvents, maxContacts]
   )
 
   // ── Table ─────────────────────────────────────────────────────────────────
