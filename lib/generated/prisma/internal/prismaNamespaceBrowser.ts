@@ -153,7 +153,9 @@ export const EventScalarFieldEnum = {
   rawLocationText: 'rawLocationText',
   sourceUrlIsListingFallback: 'sourceUrlIsListingFallback',
   seenBlockId: 'seenBlockId',
-  extractionMethod: 'extractionMethod'
+  extractionMethod: 'extractionMethod',
+  metadata: 'metadata',
+  metadataUpdatedAt: 'metadataUpdatedAt'
 } as const
 
 export type EventScalarFieldEnum = (typeof EventScalarFieldEnum)[keyof typeof EventScalarFieldEnum]
@@ -382,6 +384,13 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const NullableJsonNullValueInput = {

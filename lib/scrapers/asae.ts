@@ -30,6 +30,12 @@ export interface ASAEEvent extends ASAEEventCard {
   contact: ASAEContact
   expectedAttendees: number | null
   sourceSite: "asaecenter.org"
+  fullDescription: string | null
+}
+
+export interface ASAEDetailResult {
+  contact: ASAEContact
+  fullDescription: string | null
 }
 
 // ---------- Phase 1: Puppeteer against the PheedLoop iframe ----------
@@ -95,7 +101,7 @@ function parseCardsFromHtml(html: string): ASAEEventCard[] {
     const $card = $name
       .closest("div.flex.flex-col.items-start, div.flex.w-full")
       .parent()
-    const $root = $card.length ? $card : $name.closest("div").parent()
+    const $root = $card.length ? $card.parent() : $name.closest("div").parent().parent()
 
     const eventName = $name.text().trim()
     const eventMonth = $root.find(".pl-event-month").first().text().trim()
@@ -214,10 +220,93 @@ function extractContactFromMarkdown(markdown: string): ASAEContact {
   return { organizerEmail: email, organizerPhone: phone }
 }
 
+function extractFullDescription(html: string): string | null {
+  const $ = cheerio.load(html)
+
+  // Remove scripts, styles, nav, footer, header — keep only main content
+  $("script, style, nav, footer, header, .nav, .footer, .header, .sidebar").remove()
+
+  // Try common content selectors first
+  const contentSelectors = [
+    "article",
+    ".event-details",
+    ".event-content",
+    ".event-description",
+    "[class*='description']",
+    "[class*='content']",
+    "main",
+    "#content",
+    ".pl-event-details",
+  ]
+
+  for (const sel of contentSelectors) {
+    const el = $(sel).first()
+    if (el.length > 0) {
+      const text = el.text().replace(/\s+/g, " ").trim()
+      if (text.length > 50) return text
+    }
+  }
+
+  // Fallback: grab the body text, trimmed
+  const bodyText = $("body").text().replace(/\s+/g, " ").trim()
+  return bodyText.length > 50 ? bodyText : null
+}
+
+function buildOrganizedDescription(html: string): string | null {
+  const $ = cheerio.load(html)
+  const sections: string[] = []
+
+  // Title
+  const title = $("h1").first().text().trim()
+  if (title) sections.push(`Event: ${title}`)
+
+  // Date/time
+  const dateEl = $("[class*='date'], [class*='time'], time").first()
+  if (dateEl.length) {
+    const dateText = dateEl.text().trim()
+    if (dateText) sections.push(`Date: ${dateText}`)
+  }
+
+  // Location/venue
+  const venueEl = $("[class*='venue'], [class*='location'], [class*='address']").first()
+  if (venueEl.length) {
+    const venueText = venueEl.text().trim()
+    if (venueText) sections.push(`Location: ${venueText}`)
+  }
+
+  // Description / overview
+  const descEl = $("[class*='description'], [class*='overview'], [class*='about'], article").first()
+  if (descEl.length) {
+    const descText = descEl.text().replace(/\s+/g, " ").trim()
+    if (descText) sections.push(`Description: ${descText}`)
+  }
+
+  // Contact info
+  const contactEl = $("[class*='contact'], p.eventcontact").first()
+  if (contactEl.length) {
+    const contactText = contactEl.text().replace(/\s+/g, " ").trim()
+    if (contactText) sections.push(`Contact: ${contactText}`)
+  }
+
+  // Speakers / agenda
+  const speakersEl = $("[class*='speaker'], [class*='agenda'], [class*='program']")
+  speakersEl.each((_, el) => {
+    const text = $(el).text().replace(/\s+/g, " ").trim()
+    if (text) sections.push(text)
+  })
+
+  return sections.length > 0 ? sections.join("\n\n") : null
+}
+
 export async function scrapeEventContact(
   detailUrl: string,
   browser?: any
-): Promise<ASAEContact> {
+): Promise<ASAEDetailResult> {
+  const empty: ASAEDetailResult = {
+    contact: { organizerEmail: null, organizerPhone: null },
+    fullDescription: null,
+  }
+
   // Strategy 1: Puppeteer — ASAE loads contacts via JS, so DOM is the reliable source
   const closeBrowser = !browser
   const pupBrowser = browser ?? await import("puppeteer-core").then((m) =>
@@ -227,6 +316,9 @@ export async function scrapeEventContact(
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     })
   )
+
+  let fullDescription: string | null = null
+  let contact: ASAEContact = { organizerEmail: null, organizerPhone: null }
 
   try {
     const page = await pupBrowser.newPage()
@@ -242,7 +334,10 @@ export async function scrapeEventContact(
     const html = await page.content()
     await page.close()
 
-    // Parse with cheerio
+    // Build organized description from structured HTML
+    fullDescription = buildOrganizedDescription(html)
+
+    // Parse with cheerio for contact info
     const $ = cheerio.load(html)
 
     // Look for .eventcontact or similar patterns
@@ -266,32 +361,30 @@ export async function scrapeEventContact(
       const phoneMatch = contactText.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)
       if (phoneMatch) phone = phoneMatch[0].trim()
 
+      contact = { organizerEmail: email, organizerPhone: phone }
       console.log(`[ASAE/Puppeteer] Found contact: email="${email}" phone="${phone}"`)
-      return { organizerEmail: email, organizerPhone: phone }
-    }
-
-    // Broader search: any mailto link on the page, plus nearby phone
-    const anyMailto = $("a[href^='mailto:']").first()
-    if (anyMailto.length > 0) {
-      const email = (anyMailto.attr("href") ?? "").replace(/^mailto:/i, "").split("?")[0].trim()
-      // Try to find a phone number near the mailto link
-      let phone: string | null = null
-      const parent = anyMailto.closest("p, div, section, td")
-      if (parent.length > 0) {
-        const phoneMatch = parent.text().match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)
-        if (phoneMatch) phone = phoneMatch[0].trim()
+    } else {
+      // Broader search: any mailto link on the page, plus nearby phone
+      const anyMailto = $("a[href^='mailto:']").first()
+      if (anyMailto.length > 0) {
+        const email = (anyMailto.attr("href") ?? "").replace(/^mailto:/i, "").split("?")[0].trim()
+        let phone: string | null = null
+        const parent = anyMailto.closest("p, div, section, td")
+        if (parent.length > 0) {
+          const phoneMatch = parent.text().match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)
+          if (phoneMatch) phone = phoneMatch[0].trim()
+        }
+        if (!phone) {
+          const allText = $.text()
+          const phoneMatch = allText.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)
+          if (phoneMatch) phone = phoneMatch[0].trim()
+        }
+        contact = { organizerEmail: email, organizerPhone: phone }
+        console.log(`[ASAE/Puppeteer] Found contact: email="${email}" phone="${phone}"`)
+      } else {
+        console.log(`[ASAE/Puppeteer] No contact info found on ${detailUrl}`)
       }
-      if (!phone) {
-        // Search broader area around the mailto
-        const allText = $.text()
-        const phoneMatch = allText.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/)
-        if (phoneMatch) phone = phoneMatch[0].trim()
-      }
-      console.log(`[ASAE/Puppeteer] Found contact: email="${email}" phone="${phone}"`)
-      return { organizerEmail: email, organizerPhone: phone }
     }
-
-    console.log(`[ASAE/Puppeteer] No contact info found on ${detailUrl}`)
   } catch (err) {
     console.error(`[ASAE]   Puppeteer failed for ${detailUrl}:`, err instanceof Error ? err.message : err)
   } finally {
@@ -299,21 +392,39 @@ export async function scrapeEventContact(
   }
 
   // Strategy 2: Jina fallback (may catch static content Puppeteer missed)
-  try {
-    const jina = createJinaProvider()
-    const result = await jina.scrape(detailUrl, { timeout: 20000 })
-    if (result.markdown) {
-      const contact = extractContactFromMarkdown(result.markdown)
-      if (contact.organizerEmail || contact.organizerPhone) {
-        console.log(`[ASAE/Jina] Found contact: email="${contact.organizerEmail}" phone="${contact.organizerPhone}"`)
-        return contact
+  if (!contact.organizerEmail && !contact.organizerPhone) {
+    try {
+      const jina = createJinaProvider()
+      const result = await jina.scrape(detailUrl, { timeout: 20000 })
+      if (result.markdown) {
+        contact = extractContactFromMarkdown(result.markdown)
+        // Use Jina markdown as fullDescription if Puppeteer didn't get one
+        if (!fullDescription && result.markdown.length > 50) {
+          fullDescription = result.markdown
+        }
+        if (contact.organizerEmail || contact.organizerPhone) {
+          console.log(`[ASAE/Jina] Found contact: email="${contact.organizerEmail}" phone="${contact.organizerPhone}"`)
+        }
       }
+    } catch {
+      // ignore
     }
-  } catch {
-    // ignore
   }
 
-  return { organizerEmail: null, organizerPhone: null }
+  // If still no description, try Jina even if we have contact
+  if (!fullDescription) {
+    try {
+      const jina = createJinaProvider()
+      const result = await jina.scrape(detailUrl, { timeout: 20000 })
+      if (result.markdown && result.markdown.length > 50) {
+        fullDescription = result.markdown
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return { contact, fullDescription }
 }
 
 // ---------- Orchestration ----------
@@ -357,11 +468,14 @@ export async function scrapeASAE(options?: {
   let lookups = 0
 
   for (const card of cards) {
-    let contact: ASAEContact = { organizerEmail: null, organizerPhone: null }
+    let detail: ASAEDetailResult = {
+      contact: { organizerEmail: null, organizerPhone: null },
+      fullDescription: null,
+    }
 
     if (!skipContacts && lookups < maxContactLookups) {
       try {
-        contact = await scrapeEventContact(card.detailUrl, browser)
+        detail = await scrapeEventContact(card.detailUrl, browser)
       } catch (err) {
         console.error(`[ASAE] Contact lookup error for ${card.detailUrl}:`, err)
       }
@@ -371,9 +485,10 @@ export async function scrapeASAE(options?: {
 
     results.push({
       ...card,
-      contact,
+      contact: detail.contact,
       expectedAttendees: null,
       sourceSite: "asaecenter.org",
+      fullDescription: detail.fullDescription,
     })
   }
 

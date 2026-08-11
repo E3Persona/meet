@@ -171,6 +171,7 @@ async function main() {
         organizerPhone: ev.contactPhone ?? null,
         rawLocationText: ev.venueCity && ev.venueState ? `${ev.venueCity}, ${ev.venueState}` : null,
         rawVenueText: ev.venueName ?? null,
+        metadata: ev.description ? { fullDescription: ev.description } : undefined,
       },
     })
     totalNew++

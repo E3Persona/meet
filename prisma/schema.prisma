@@ -150,6 +150,8 @@ model Event {
   seenBlock  SeenBlock?     @relation(fields: [seenBlockId], references: [id], onDelete: SetNull)
   detailPages EventDetailPage[]
   notes      Note[]
+  metadata          Json      @default("{}")
+  metadataUpdatedAt DateTime?
 
   @@unique([locationId, eventName, eventDateStart])
   @@map("events")

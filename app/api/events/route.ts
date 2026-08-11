@@ -81,6 +81,8 @@ export async function GET(request: Request) {
           eventDateEnd: true,
           expectedAttendees: true,
           sourceUrl: true,
+          metadata: true,
+          metadataUpdatedAt: true,
           organizerName: true,
           organizerTitle: true,
           organizerEmail: true,

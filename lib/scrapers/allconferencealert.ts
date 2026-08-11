@@ -1,5 +1,8 @@
-import puppeteer from "puppeteer-core"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import * as cheerio from "cheerio"
+
+puppeteer.use(StealthPlugin())
 
 const BASE_URL = "https://allconferencealert.net"
 
@@ -30,7 +33,11 @@ async function getBrowser() {
   return puppeteer.launch({
     executablePath: "/usr/bin/google-chrome",
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-blink-features=AutomationControlled",
+    ],
   })
 }
 

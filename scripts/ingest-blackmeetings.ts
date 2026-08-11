@@ -204,6 +204,7 @@ async function main() {
         organizerName: primaryContact?.name ?? null,
         organizerPhone: primaryContact?.phone ?? null,
         organizerEmail: primaryContact?.email ?? null,
+        metadata: ev.bodyText ? { fullDescription: ev.bodyText } : undefined,
       },
     })
     totalNew++

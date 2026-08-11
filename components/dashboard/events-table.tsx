@@ -69,6 +69,8 @@ import { ProgressDialog } from "@/components/ui/progress-dialog"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type EventMetadata = Record<string, unknown>
+
 interface EventContact {
   id: string
   name: string
@@ -85,6 +87,8 @@ interface EventRow {
   eventDateEnd: string | null
   expectedAttendees: number | null
   sourceUrl: string | null
+  metadata: EventMetadata
+  metadataUpdatedAt: string | null
   rawVenueText: string | null
   rawLocationText: string | null
   venueId: string | null
@@ -140,6 +144,48 @@ function TruncatedCell({ text, maxChars = 40 }: { text: string; maxChars?: numbe
         </button>
       )}
     </>
+  )
+}
+
+// ─── Description Preview ──────────────────────────────────────────────────────
+
+function DescriptionPreview({
+  text,
+  maxChars = 80,
+  onOpen,
+}: {
+  text: string
+  maxChars?: number
+  onOpen: () => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const needsTruncation = text.length > maxChars
+
+  return (
+    <div className="max-w-[280px]">
+      <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
+        {expanded ? text : text.slice(0, maxChars)}
+        {needsTruncation && !expanded && "…"}
+      </p>
+      <div className="mt-1 flex items-center gap-2">
+        {needsTruncation && (
+          <button
+            type="button"
+            onClick={() => setExpanded((p) => !p)}
+            className="text-[10px] text-primary hover:underline"
+          >
+            {expanded ? "show less" : "read full"}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onOpen}
+          className="text-[10px] text-muted-foreground hover:text-foreground hover:underline"
+        >
+          edit
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -336,6 +382,13 @@ export function EventsTable() {
   const [newNoteContent, setNewNoteContent] = useState("")
   const [newNoteType, setNewNoteType] = useState("general")
   const [addingNote, setAddingNote] = useState(false)
+  const [metadataDialog, setMetadataDialog] = useState<{
+    open: boolean
+    eventId: string
+    eventName: string
+  }>({ open: false, eventId: "", eventName: "" })
+  const [metadataDraft, setMetadataDraft] = useState("{}")
+  const [savingMetadata, setSavingMetadata] = useState(false)
 
   const fetchDialogNotes = useCallback(async (eventId: string) => {
     if (!eventId) return
@@ -353,35 +406,14 @@ export function EventsTable() {
     fetchDialogNotes(eventId)
   }, [fetchDialogNotes])
 
-  const setCityFilter = (val: string) => {
-    setFilterCity(val)
-    setFilterLocation("all")
-    setPage(1)
-  }
-  const setLocationFilter = (val: string) => {
-    setFilterLocation(val)
-    setPage(1)
-  }
-  const setStatusFilter = (val: string) => {
-    setFilterStatus(val)
-    setPage(1)
-  }
-  const setSearchFilter = (val: string) => {
-    setSearch(val)
-    setPage(1)
-  }
-  const setHasContactFilter = (val: string) => {
-    setFilterHasContact(val)
-    setPage(1)
-  }
-  const setDateFromFilter = (val: string) => {
-    setFilterDateFrom(val)
-    setPage(1)
-  }
-  const setDateToFilter = (val: string) => {
-    setFilterDateTo(val)
-    setPage(1)
-  }
+  const openMetadata = useCallback((event: EventRow) => {
+    setMetadataDialog({
+      open: true,
+      eventId: event.id,
+      eventName: event.eventName,
+    })
+    setMetadataDraft(JSON.stringify(event.metadata ?? {}, null, 2))
+  }, [])
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -418,6 +450,67 @@ export function EventsTable() {
     page,
     pageSize,
   ])
+
+  const saveMetadata = useCallback(async () => {
+    let metadata: EventMetadata
+    try {
+      const parsed: unknown = JSON.parse(metadataDraft)
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+        throw new Error("Metadata must be a JSON object")
+      }
+      metadata = parsed as EventMetadata
+    } catch {
+      toast.error("Metadata must be a valid JSON object")
+      return
+    }
+
+    setSavingMetadata(true)
+    try {
+      const res = await fetch(`/api/events/${metadataDialog.eventId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ metadata }),
+      })
+      if (!res.ok) throw new Error("Failed to update metadata")
+      toast.success("Event metadata saved")
+      setMetadataDialog((current) => ({ ...current, open: false }))
+      fetchEvents()
+    } catch {
+      toast.error("Failed to save event metadata")
+    } finally {
+      setSavingMetadata(false)
+    }
+  }, [fetchEvents, metadataDialog.eventId, metadataDraft])
+
+  const setCityFilter = (val: string) => {
+    setFilterCity(val)
+    setFilterLocation("all")
+    setPage(1)
+  }
+  const setLocationFilter = (val: string) => {
+    setFilterLocation(val)
+    setPage(1)
+  }
+  const setStatusFilter = (val: string) => {
+    setFilterStatus(val)
+    setPage(1)
+  }
+  const setSearchFilter = (val: string) => {
+    setSearch(val)
+    setPage(1)
+  }
+  const setHasContactFilter = (val: string) => {
+    setFilterHasContact(val)
+    setPage(1)
+  }
+  const setDateFromFilter = (val: string) => {
+    setFilterDateFrom(val)
+    setPage(1)
+  }
+  const setDateToFilter = (val: string) => {
+    setFilterDateTo(val)
+    setPage(1)
+  }
 
   const fetchLocations = useCallback(async () => {
     const res = await fetch("/api/locations")
@@ -829,6 +922,33 @@ export function EventsTable() {
           },
         },
         {
+          id: "metadata",
+          header: "Description",
+          cell: ({ row }) => {
+            const metadata = row.original.metadata ?? {}
+            const fullDesc = (metadata as Record<string, unknown>).fullDescription
+            if (typeof fullDesc !== "string" || !fullDesc) {
+              return (
+                <button
+                  type="button"
+                  onClick={() => openMetadata(row.original)}
+                  className="group -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 text-sm hover:bg-muted/50"
+                >
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
+                  <span className="text-muted-foreground italic">Add details</span>
+                  <Pencil className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                </button>
+              )
+            }
+            return (
+              <DescriptionPreview
+                text={fullDesc}
+                onOpen={() => openMetadata(row.original)}
+              />
+            )
+          },
+        },
+        {
           accessorKey: "status",
           header: "Status",
           cell: ({ row }) => (
@@ -920,7 +1040,7 @@ export function EventsTable() {
 
       return baseColumns
     },
-    [fetchEvents, maxContacts]
+    [fetchEvents, maxContacts, openMetadata]
   )
 
   // ── Table ─────────────────────────────────────────────────────────────────
@@ -1501,6 +1621,45 @@ export function EventsTable() {
             </div>
           </div>
           <DialogFooter showCloseButton />
+        </DialogContent>
+      </Dialog>
+
+      {/* Event metadata dialog */}
+      <Dialog
+        open={metadataDialog.open}
+        onOpenChange={(open) =>
+          setMetadataDialog((current) => ({ ...current, open }))
+        }
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Event Metadata — {metadataDialog.eventName}</DialogTitle>
+            <DialogDescription>
+              Add any structured event details as a JSON object. These details are entered manually.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            aria-label="Event metadata JSON"
+            value={metadataDraft}
+            onChange={(event) => setMetadataDraft(event.target.value)}
+            rows={16}
+            className="font-mono text-xs"
+            spellCheck={false}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setMetadataDialog((current) => ({ ...current, open: false }))
+              }
+              disabled={savingMetadata}
+            >
+              Cancel
+            </Button>
+            <Button onClick={saveMetadata} loading={savingMetadata}>
+              Save metadata
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

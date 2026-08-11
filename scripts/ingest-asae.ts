@@ -52,10 +52,27 @@ function extractCitiesAndStates(
   const results: { city: string; state: string }[] = []
   const parts = locationText.split("/").map((s) => s.trim())
   for (const part of parts) {
-    // Try "City, ST" pattern
-    const m = part.match(/([A-Za-z\s.]+),\s*([A-Z]{2})\b/)
+    // Try full address: "Venue, Street, City, ST ZIP" — non-greedy grab before ", ST ZIP"
+    const addrMatch = part.match(/(.+?),\s*([A-Z]{2})\s+\d{5}/)
+    if (addrMatch) {
+      // Extract just the city name: last segment before ", ST ZIP"
+      const beforeState = addrMatch[1].trim()
+      const cityCandidate = beforeState.split(",").pop()?.trim() ?? beforeState
+      if (cityCandidate.length > 1) {
+        results.push({ city: cityCandidate, state: addrMatch[2] })
+        continue
+      }
+    }
+    // Try simple "City, ST" pattern (non-greedy — stops at first comma)
+    const m = part.match(/([A-Za-z\s.]+?),\s*([A-Z]{2})\b/)
     if (m) {
       results.push({ city: m[1].trim(), state: m[2] })
+      continue
+    }
+    // Try state-only: extract just a 2-letter state abbreviation
+    const stateOnly = part.match(/\b([A-Z]{2})\b/)
+    if (stateOnly) {
+      results.push({ city: "", state: stateOnly[1] })
       continue
     }
     // Try just "City" (no state)
@@ -259,6 +276,9 @@ async function main() {
         rawVenueText: citiesStates.length > 0 ? citiesStates[0].city : null,
         organizerEmail: contact?.organizerEmail ?? null,
         organizerPhone: contact?.organizerPhone ?? null,
+        metadata: ev.fullDescription
+          ? { fullDescription: ev.fullDescription }
+          : undefined,
       },
     })
     totalNew++

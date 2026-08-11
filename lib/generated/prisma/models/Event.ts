@@ -58,6 +58,7 @@ export type EventMinAggregateOutputType = {
   sourceUrlIsListingFallback: boolean | null
   seenBlockId: string | null
   extractionMethod: $Enums.ExtractionMethod | null
+  metadataUpdatedAt: Date | null
 }
 
 export type EventMaxAggregateOutputType = {
@@ -84,6 +85,7 @@ export type EventMaxAggregateOutputType = {
   sourceUrlIsListingFallback: boolean | null
   seenBlockId: string | null
   extractionMethod: $Enums.ExtractionMethod | null
+  metadataUpdatedAt: Date | null
 }
 
 export type EventCountAggregateOutputType = {
@@ -110,6 +112,8 @@ export type EventCountAggregateOutputType = {
   sourceUrlIsListingFallback: number
   seenBlockId: number
   extractionMethod: number
+  metadata: number
+  metadataUpdatedAt: number
   _all: number
 }
 
@@ -146,6 +150,7 @@ export type EventMinAggregateInputType = {
   sourceUrlIsListingFallback?: true
   seenBlockId?: true
   extractionMethod?: true
+  metadataUpdatedAt?: true
 }
 
 export type EventMaxAggregateInputType = {
@@ -172,6 +177,7 @@ export type EventMaxAggregateInputType = {
   sourceUrlIsListingFallback?: true
   seenBlockId?: true
   extractionMethod?: true
+  metadataUpdatedAt?: true
 }
 
 export type EventCountAggregateInputType = {
@@ -198,6 +204,8 @@ export type EventCountAggregateInputType = {
   sourceUrlIsListingFallback?: true
   seenBlockId?: true
   extractionMethod?: true
+  metadata?: true
+  metadataUpdatedAt?: true
   _all?: true
 }
 
@@ -311,6 +319,8 @@ export type EventGroupByOutputType = {
   sourceUrlIsListingFallback: boolean
   seenBlockId: string | null
   extractionMethod: $Enums.ExtractionMethod | null
+  metadata: runtime.JsonValue
+  metadataUpdatedAt: Date | null
   _count: EventCountAggregateOutputType | null
   _avg: EventAvgAggregateOutputType | null
   _sum: EventSumAggregateOutputType | null
@@ -360,6 +370,8 @@ export type EventWhereInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFilter<"Event"> | boolean
   seenBlockId?: Prisma.StringNullableFilter<"Event"> | string | null
   extractionMethod?: Prisma.EnumExtractionMethodNullableFilter<"Event"> | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonFilter<"Event">
+  metadataUpdatedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   location?: Prisma.XOR<Prisma.LocationScalarRelationFilter, Prisma.LocationWhereInput>
   venue?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
   run?: Prisma.XOR<Prisma.IngestionRunNullableScalarRelationFilter, Prisma.IngestionRunWhereInput> | null
@@ -394,6 +406,8 @@ export type EventOrderByWithRelationInput = {
   sourceUrlIsListingFallback?: Prisma.SortOrder
   seenBlockId?: Prisma.SortOrderInput | Prisma.SortOrder
   extractionMethod?: Prisma.SortOrderInput | Prisma.SortOrder
+  metadata?: Prisma.SortOrder
+  metadataUpdatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   location?: Prisma.LocationOrderByWithRelationInput
   venue?: Prisma.LocationOrderByWithRelationInput
   run?: Prisma.IngestionRunOrderByWithRelationInput
@@ -432,6 +446,8 @@ export type EventWhereUniqueInput = Prisma.AtLeast<{
   sourceUrlIsListingFallback?: Prisma.BoolFilter<"Event"> | boolean
   seenBlockId?: Prisma.StringNullableFilter<"Event"> | string | null
   extractionMethod?: Prisma.EnumExtractionMethodNullableFilter<"Event"> | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonFilter<"Event">
+  metadataUpdatedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
   location?: Prisma.XOR<Prisma.LocationScalarRelationFilter, Prisma.LocationWhereInput>
   venue?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
   run?: Prisma.XOR<Prisma.IngestionRunNullableScalarRelationFilter, Prisma.IngestionRunWhereInput> | null
@@ -466,6 +482,8 @@ export type EventOrderByWithAggregationInput = {
   sourceUrlIsListingFallback?: Prisma.SortOrder
   seenBlockId?: Prisma.SortOrderInput | Prisma.SortOrder
   extractionMethod?: Prisma.SortOrderInput | Prisma.SortOrder
+  metadata?: Prisma.SortOrder
+  metadataUpdatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.EventCountOrderByAggregateInput
   _avg?: Prisma.EventAvgOrderByAggregateInput
   _max?: Prisma.EventMaxOrderByAggregateInput
@@ -500,6 +518,8 @@ export type EventScalarWhereWithAggregatesInput = {
   sourceUrlIsListingFallback?: Prisma.BoolWithAggregatesFilter<"Event"> | boolean
   seenBlockId?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   extractionMethod?: Prisma.EnumExtractionMethodNullableWithAggregatesFilter<"Event"> | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonWithAggregatesFilter<"Event">
+  metadataUpdatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Event"> | Date | string | null
 }
 
 export type EventCreateInput = {
@@ -521,6 +541,8 @@ export type EventCreateInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
   venue?: Prisma.LocationCreateNestedOneWithoutVenueEventsInput
   run?: Prisma.IngestionRunCreateNestedOneWithoutEventsInput
@@ -555,6 +577,8 @@ export type EventUncheckedCreateInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
@@ -579,6 +603,8 @@ export type EventUpdateInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
   venue?: Prisma.LocationUpdateOneWithoutVenueEventsNestedInput
   run?: Prisma.IngestionRunUpdateOneWithoutEventsNestedInput
@@ -613,6 +639,8 @@ export type EventUncheckedUpdateInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
@@ -642,6 +670,8 @@ export type EventCreateManyInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
 }
 
 export type EventUpdateManyMutationInput = {
@@ -663,6 +693,8 @@ export type EventUpdateManyMutationInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type EventUncheckedUpdateManyInput = {
@@ -689,6 +721,8 @@ export type EventUncheckedUpdateManyInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type EventListRelationFilter = {
@@ -731,6 +765,8 @@ export type EventCountOrderByAggregateInput = {
   sourceUrlIsListingFallback?: Prisma.SortOrder
   seenBlockId?: Prisma.SortOrder
   extractionMethod?: Prisma.SortOrder
+  metadata?: Prisma.SortOrder
+  metadataUpdatedAt?: Prisma.SortOrder
 }
 
 export type EventAvgOrderByAggregateInput = {
@@ -761,6 +797,7 @@ export type EventMaxOrderByAggregateInput = {
   sourceUrlIsListingFallback?: Prisma.SortOrder
   seenBlockId?: Prisma.SortOrder
   extractionMethod?: Prisma.SortOrder
+  metadataUpdatedAt?: Prisma.SortOrder
 }
 
 export type EventMinOrderByAggregateInput = {
@@ -787,6 +824,7 @@ export type EventMinOrderByAggregateInput = {
   sourceUrlIsListingFallback?: Prisma.SortOrder
   seenBlockId?: Prisma.SortOrder
   extractionMethod?: Prisma.SortOrder
+  metadataUpdatedAt?: Prisma.SortOrder
 }
 
 export type EventSumOrderByAggregateInput = {
@@ -1096,6 +1134,8 @@ export type EventCreateWithoutLocationInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   venue?: Prisma.LocationCreateNestedOneWithoutVenueEventsInput
   run?: Prisma.IngestionRunCreateNestedOneWithoutEventsInput
   sourceSite?: Prisma.SourceSiteCreateNestedOneWithoutEventsInput
@@ -1128,6 +1168,8 @@ export type EventUncheckedCreateWithoutLocationInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
@@ -1162,6 +1204,8 @@ export type EventCreateWithoutVenueInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
   run?: Prisma.IngestionRunCreateNestedOneWithoutEventsInput
   sourceSite?: Prisma.SourceSiteCreateNestedOneWithoutEventsInput
@@ -1194,6 +1238,8 @@ export type EventUncheckedCreateWithoutVenueInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
@@ -1252,6 +1298,8 @@ export type EventScalarWhereInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFilter<"Event"> | boolean
   seenBlockId?: Prisma.StringNullableFilter<"Event"> | string | null
   extractionMethod?: Prisma.EnumExtractionMethodNullableFilter<"Event"> | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonFilter<"Event">
+  metadataUpdatedAt?: Prisma.DateTimeNullableFilter<"Event"> | Date | string | null
 }
 
 export type EventUpsertWithWhereUniqueWithoutVenueInput = {
@@ -1289,6 +1337,8 @@ export type EventCreateWithoutRunInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
   venue?: Prisma.LocationCreateNestedOneWithoutVenueEventsInput
   sourceSite?: Prisma.SourceSiteCreateNestedOneWithoutEventsInput
@@ -1321,6 +1371,8 @@ export type EventUncheckedCreateWithoutRunInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
@@ -1371,6 +1423,8 @@ export type EventCreateWithoutSourceSiteInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
   venue?: Prisma.LocationCreateNestedOneWithoutVenueEventsInput
   run?: Prisma.IngestionRunCreateNestedOneWithoutEventsInput
@@ -1403,6 +1457,8 @@ export type EventUncheckedCreateWithoutSourceSiteInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
@@ -1453,6 +1509,8 @@ export type EventCreateWithoutContactsInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
   venue?: Prisma.LocationCreateNestedOneWithoutVenueEventsInput
   run?: Prisma.IngestionRunCreateNestedOneWithoutEventsInput
@@ -1486,6 +1544,8 @@ export type EventUncheckedCreateWithoutContactsInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
 }
@@ -1525,6 +1585,8 @@ export type EventUpdateWithoutContactsInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
   venue?: Prisma.LocationUpdateOneWithoutVenueEventsNestedInput
   run?: Prisma.IngestionRunUpdateOneWithoutEventsNestedInput
@@ -1558,6 +1620,8 @@ export type EventUncheckedUpdateWithoutContactsInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
 }
@@ -1581,6 +1645,8 @@ export type EventCreateWithoutSeenBlockInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
   venue?: Prisma.LocationCreateNestedOneWithoutVenueEventsInput
   run?: Prisma.IngestionRunCreateNestedOneWithoutEventsInput
@@ -1613,6 +1679,8 @@ export type EventUncheckedCreateWithoutSeenBlockInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
@@ -1663,6 +1731,8 @@ export type EventCreateWithoutDetailPagesInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
   venue?: Prisma.LocationCreateNestedOneWithoutVenueEventsInput
   run?: Prisma.IngestionRunCreateNestedOneWithoutEventsInput
@@ -1696,6 +1766,8 @@ export type EventUncheckedCreateWithoutDetailPagesInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutEventInput
 }
@@ -1735,6 +1807,8 @@ export type EventUpdateWithoutDetailPagesInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
   venue?: Prisma.LocationUpdateOneWithoutVenueEventsNestedInput
   run?: Prisma.IngestionRunUpdateOneWithoutEventsNestedInput
@@ -1768,6 +1842,8 @@ export type EventUncheckedUpdateWithoutDetailPagesInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
 }
@@ -1791,6 +1867,8 @@ export type EventCreateWithoutNotesInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   location: Prisma.LocationCreateNestedOneWithoutEventsInput
   venue?: Prisma.LocationCreateNestedOneWithoutVenueEventsInput
   run?: Prisma.IngestionRunCreateNestedOneWithoutEventsInput
@@ -1824,6 +1902,8 @@ export type EventUncheckedCreateWithoutNotesInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
   contacts?: Prisma.EventContactUncheckedCreateNestedManyWithoutEventInput
   detailPages?: Prisma.EventDetailPageUncheckedCreateNestedManyWithoutEventInput
 }
@@ -1863,6 +1943,8 @@ export type EventUpdateWithoutNotesInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
   venue?: Prisma.LocationUpdateOneWithoutVenueEventsNestedInput
   run?: Prisma.IngestionRunUpdateOneWithoutEventsNestedInput
@@ -1896,6 +1978,8 @@ export type EventUncheckedUpdateWithoutNotesInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
 }
@@ -1923,6 +2007,8 @@ export type EventCreateManyLocationInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
 }
 
 export type EventCreateManyVenueInput = {
@@ -1948,6 +2034,8 @@ export type EventCreateManyVenueInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
 }
 
 export type EventUpdateWithoutLocationInput = {
@@ -1969,6 +2057,8 @@ export type EventUpdateWithoutLocationInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   venue?: Prisma.LocationUpdateOneWithoutVenueEventsNestedInput
   run?: Prisma.IngestionRunUpdateOneWithoutEventsNestedInput
   sourceSite?: Prisma.SourceSiteUpdateOneWithoutEventsNestedInput
@@ -2001,6 +2091,8 @@ export type EventUncheckedUpdateWithoutLocationInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
@@ -2029,6 +2121,8 @@ export type EventUncheckedUpdateManyWithoutLocationInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type EventUpdateWithoutVenueInput = {
@@ -2050,6 +2144,8 @@ export type EventUpdateWithoutVenueInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
   run?: Prisma.IngestionRunUpdateOneWithoutEventsNestedInput
   sourceSite?: Prisma.SourceSiteUpdateOneWithoutEventsNestedInput
@@ -2082,6 +2178,8 @@ export type EventUncheckedUpdateWithoutVenueInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
@@ -2110,6 +2208,8 @@ export type EventUncheckedUpdateManyWithoutVenueInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type EventCreateManyRunInput = {
@@ -2135,6 +2235,8 @@ export type EventCreateManyRunInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
 }
 
 export type EventUpdateWithoutRunInput = {
@@ -2156,6 +2258,8 @@ export type EventUpdateWithoutRunInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
   venue?: Prisma.LocationUpdateOneWithoutVenueEventsNestedInput
   sourceSite?: Prisma.SourceSiteUpdateOneWithoutEventsNestedInput
@@ -2188,6 +2292,8 @@ export type EventUncheckedUpdateWithoutRunInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
@@ -2216,6 +2322,8 @@ export type EventUncheckedUpdateManyWithoutRunInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type EventCreateManySourceSiteInput = {
@@ -2241,6 +2349,8 @@ export type EventCreateManySourceSiteInput = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: string | null
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
 }
 
 export type EventUpdateWithoutSourceSiteInput = {
@@ -2262,6 +2372,8 @@ export type EventUpdateWithoutSourceSiteInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
   venue?: Prisma.LocationUpdateOneWithoutVenueEventsNestedInput
   run?: Prisma.IngestionRunUpdateOneWithoutEventsNestedInput
@@ -2294,6 +2406,8 @@ export type EventUncheckedUpdateWithoutSourceSiteInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
@@ -2322,6 +2436,8 @@ export type EventUncheckedUpdateManyWithoutSourceSiteInput = {
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   seenBlockId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type EventCreateManySeenBlockInput = {
@@ -2347,6 +2463,8 @@ export type EventCreateManySeenBlockInput = {
   rawLocationText?: string | null
   sourceUrlIsListingFallback?: boolean
   extractionMethod?: $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Date | string | null
 }
 
 export type EventUpdateWithoutSeenBlockInput = {
@@ -2368,6 +2486,8 @@ export type EventUpdateWithoutSeenBlockInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   location?: Prisma.LocationUpdateOneRequiredWithoutEventsNestedInput
   venue?: Prisma.LocationUpdateOneWithoutVenueEventsNestedInput
   run?: Prisma.IngestionRunUpdateOneWithoutEventsNestedInput
@@ -2400,6 +2520,8 @@ export type EventUncheckedUpdateWithoutSeenBlockInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   contacts?: Prisma.EventContactUncheckedUpdateManyWithoutEventNestedInput
   detailPages?: Prisma.EventDetailPageUncheckedUpdateManyWithoutEventNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutEventNestedInput
@@ -2428,6 +2550,8 @@ export type EventUncheckedUpdateManyWithoutSeenBlockInput = {
   rawLocationText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceUrlIsListingFallback?: Prisma.BoolFieldUpdateOperationsInput | boolean
   extractionMethod?: Prisma.NullableEnumExtractionMethodFieldUpdateOperationsInput | $Enums.ExtractionMethod | null
+  metadata?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  metadataUpdatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 
@@ -2503,6 +2627,8 @@ export type EventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: boolean
   extractionMethod?: boolean
+  metadata?: boolean
+  metadataUpdatedAt?: boolean
   location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
   venue?: boolean | Prisma.Event$venueArgs<ExtArgs>
   run?: boolean | Prisma.Event$runArgs<ExtArgs>
@@ -2538,6 +2664,8 @@ export type EventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: boolean
   extractionMethod?: boolean
+  metadata?: boolean
+  metadataUpdatedAt?: boolean
   location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
   venue?: boolean | Prisma.Event$venueArgs<ExtArgs>
   run?: boolean | Prisma.Event$runArgs<ExtArgs>
@@ -2569,6 +2697,8 @@ export type EventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: boolean
   extractionMethod?: boolean
+  metadata?: boolean
+  metadataUpdatedAt?: boolean
   location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
   venue?: boolean | Prisma.Event$venueArgs<ExtArgs>
   run?: boolean | Prisma.Event$runArgs<ExtArgs>
@@ -2600,9 +2730,11 @@ export type EventSelectScalar = {
   sourceUrlIsListingFallback?: boolean
   seenBlockId?: boolean
   extractionMethod?: boolean
+  metadata?: boolean
+  metadataUpdatedAt?: boolean
 }
 
-export type EventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "locationId" | "eventName" | "eventDateStart" | "eventDateEnd" | "expectedAttendees" | "sourceUrl" | "sourceSiteId" | "organizerName" | "organizerTitle" | "organizerEmail" | "organizerPhone" | "contactNote" | "status" | "dateAdded" | "runId" | "venueId" | "matchType" | "rawVenueText" | "rawLocationText" | "sourceUrlIsListingFallback" | "seenBlockId" | "extractionMethod", ExtArgs["result"]["event"]>
+export type EventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "locationId" | "eventName" | "eventDateStart" | "eventDateEnd" | "expectedAttendees" | "sourceUrl" | "sourceSiteId" | "organizerName" | "organizerTitle" | "organizerEmail" | "organizerPhone" | "contactNote" | "status" | "dateAdded" | "runId" | "venueId" | "matchType" | "rawVenueText" | "rawLocationText" | "sourceUrlIsListingFallback" | "seenBlockId" | "extractionMethod" | "metadata" | "metadataUpdatedAt", ExtArgs["result"]["event"]>
 export type EventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   location?: boolean | Prisma.LocationDefaultArgs<ExtArgs>
   venue?: boolean | Prisma.Event$venueArgs<ExtArgs>
@@ -2665,6 +2797,8 @@ export type $EventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     sourceUrlIsListingFallback: boolean
     seenBlockId: string | null
     extractionMethod: $Enums.ExtractionMethod | null
+    metadata: runtime.JsonValue
+    metadataUpdatedAt: Date | null
   }, ExtArgs["result"]["event"]>
   composites: {}
 }
@@ -3119,6 +3253,8 @@ export interface EventFieldRefs {
   readonly sourceUrlIsListingFallback: Prisma.FieldRef<"Event", 'Boolean'>
   readonly seenBlockId: Prisma.FieldRef<"Event", 'String'>
   readonly extractionMethod: Prisma.FieldRef<"Event", 'ExtractionMethod'>
+  readonly metadata: Prisma.FieldRef<"Event", 'Json'>
+  readonly metadataUpdatedAt: Prisma.FieldRef<"Event", 'DateTime'>
 }
     
 

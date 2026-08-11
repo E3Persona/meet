@@ -231,6 +231,7 @@ async function main() {
           organizerName: contactPerson ?? null,
           organizerTitle: organizedBy ?? null,
           organizerEmail: inquiryEmail ?? null,
+          metadata: ev.objective ? { fullDescription: ev.objective } : undefined,
         },
       })
       totalNew++
