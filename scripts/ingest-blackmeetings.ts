@@ -2,6 +2,7 @@ import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { scrapeBMEvents, scrapeBMVenues } from "../lib/scrapers/blackmeetings"
 import { normalizeState } from "../lib/stateNormalize"
+import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -103,11 +104,7 @@ async function main() {
   console.log(`[BM/Ingest] Refreshed to ${allLocations.length} total locations, ${allVenues.length} total venues`)
 
   // Rebuild venue map with refreshed venues
-  const refreshedVenueMap = new Map<string, typeof allVenues[number]>()
-  for (const venue of allVenues) {
-    const key = venue.name.toLowerCase()
-    refreshedVenueMap.set(key, venue)
-  }
+  const refreshedVenueMap = buildVenueMap(allVenues)
 
   // ─── Step 2: Scrape Current Events ───
   console.log("[BM/Ingest] Scraping current events...")
@@ -158,16 +155,9 @@ async function main() {
     }
 
     // Match venue name if provided
-    let venueId: string | null = null
-    let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
-    if (ev.venueName) {
-      const venueKey = ev.venueName.toLowerCase()
-      const matchedVenue = refreshedVenueMap.get(venueKey)
-      if (matchedVenue) {
-        venueId = matchedVenue.id
-        matchType = "venue_matched"
-      }
-    }
+    const venueMatch = matchVenue(ev.venueName, ev.venueLocation, refreshedVenueMap, allVenues)
+    let venueId: string | null = venueMatch.venueId
+    let matchType: import("../lib/generated/prisma/client").EventMatchType = venueMatch.matchType
 
     const existing = await prisma.event.findFirst({
       where: {

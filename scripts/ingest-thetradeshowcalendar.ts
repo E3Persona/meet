@@ -2,6 +2,7 @@ import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { scrapeECN, type ECNEvent } from "../lib/scrapers/thetradeshowcalendar"
 import { statesMatch } from "../lib/stateNormalize"
+import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -74,11 +75,7 @@ async function main() {
   const sourceSiteId = sourceSite?.id ?? null
 
   // Build venue name lookup for venue matching
-  const venueMap = new Map<string, typeof venues[number]>()
-  for (const venue of venues) {
-    const key = venue.name.toLowerCase()
-    venueMap.set(key, venue)
-  }
+  const venueMap = buildVenueMap(venues)
 
   let totalFound = 0
   let totalNew = 0
@@ -102,16 +99,9 @@ async function main() {
       if (dateFrom && start && start < dateFrom) continue
       if (dateTo && start && start > dateTo) continue
       // Match venue name if provided
-      let venueId: string | null = null
-      let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
-      if (ev.venueName) {
-        const venueKey = ev.venueName.toLowerCase()
-        const matchedVenue = venueMap.get(venueKey)
-        if (matchedVenue) {
-          venueId = matchedVenue.id
-          matchType = "venue_matched"
-        }
-      }
+      const venueMatch = matchVenue(ev.venueName, ev.venueCity, venueMap, venues)
+      let venueId: string | null = venueMatch.venueId
+      let matchType: import("../lib/generated/prisma/client").EventMatchType = venueMatch.matchType
 
       const contact = ev.contacts?.[0] ?? null
       const hasContact = contact && (contact.organizerName || contact.organizerEmail)

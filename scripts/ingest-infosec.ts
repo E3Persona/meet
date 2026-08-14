@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { scrapeInfosecConferences } from "../lib/scrapers/infosec-conferences"
+import { buildVenueMap } from "../lib/venueResolution"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -85,11 +86,7 @@ async function main() {
   }
 
   // Build venue name lookup for venue matching
-  const venueMap = new Map<string, typeof venues[number]>()
-  for (const venue of venues) {
-    const key = venue.name.toLowerCase()
-    venueMap.set(key, venue)
-  }
+  const venueMap = buildVenueMap(venues)
 
   // Ensure the source site exists
   let sourceSiteId = sourceSite?.id ?? null

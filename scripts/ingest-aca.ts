@@ -2,6 +2,7 @@ import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { scrapeACA } from "../lib/scrapers/allconferencealert"
 import { fetchPageMarkdown } from "../lib/contact-finder"
+import { buildVenueMap } from "../lib/venueResolution"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -70,11 +71,7 @@ async function main() {
   const sourceSiteId = sourceSite?.id ?? null
 
   // Build venue name lookup for venue matching
-  const venueMap = new Map<string, typeof venues[number]>()
-  for (const venue of venues) {
-    const key = venue.name.toLowerCase()
-    venueMap.set(key, venue)
-  }
+  const venueMap = buildVenueMap(venues)
 
   const cityGroups = new Map<string, typeof locations>()
   const skippedNoCity: typeof locations = []

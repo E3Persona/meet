@@ -207,3 +207,105 @@ function levenshtein(a: string, b: string): number {
   }
   return dp[a.length][b.length]
 }
+
+// ─── Ingest Script Venue Matching ───────────────────────────────────────────
+// Centralized function for ingest scripts to match venues with normalization
+// and optional city-scoping. Replaces the ad-hoc venueMap.get() pattern.
+
+export interface VenueMatchResult {
+  venueId: string | null
+  matchType: "venue_matched" | "location_matched"
+}
+
+/**
+ * Match a venue name to an existing VENUE location.
+ *
+ * Strategy:
+ * 1. Exact case-insensitive match (fast path via Map)
+ * 2. Normalized match (strip abbreviations, common words, special chars)
+ * 3. Fuzzy match with similarity >= 0.75
+ *
+ * If cityHint is provided, prefers venues in that city.
+ */
+export function matchVenue(
+  venueName: string | null | undefined,
+  cityHint: string | null | undefined,
+  venueMap: Map<string, { id: string; name: string; city: string | null }>,
+  allVenues?: { id: string; name: string; city: string | null }[],
+): VenueMatchResult {
+  if (!venueName?.trim()) {
+    return { venueId: null, matchType: "location_matched" }
+  }
+
+  const raw = venueName.trim()
+
+  // 1. Exact case-insensitive match (fast path)
+  const exactMatch = venueMap.get(raw.toLowerCase())
+  if (exactMatch) {
+    return { venueId: exactMatch.id, matchType: "venue_matched" }
+  }
+
+  // 2. Normalized match
+  const norm = normalizeIngestVenueName(raw)
+  for (const [key, venue] of venueMap) {
+    if (normalizeIngestVenueName(venue.name) === norm) {
+      // Prefer city-scoped match if hint provided
+      if (cityHint && venue.city && venue.city.toLowerCase().includes(cityHint.toLowerCase())) {
+        return { venueId: venue.id, matchType: "venue_matched" }
+      }
+      return { venueId: venue.id, matchType: "venue_matched" }
+    }
+  }
+
+  // 3. Fuzzy match (only if allVenues provided)
+  if (allVenues && allVenues.length > 0) {
+    let best: { id: string; score: number } | null = null
+    for (const venue of allVenues) {
+      const score = similarity(norm, normalizeIngestVenueName(venue.name))
+      if (score >= 0.75 && (!best || score > best.score)) {
+        // Prefer city-scoped match
+        if (cityHint && venue.city && venue.city.toLowerCase().includes(cityHint.toLowerCase())) {
+          best = { id: venue.id, score }
+        } else if (!cityHint || !best) {
+          best = { id: venue.id, score }
+        }
+      }
+    }
+    if (best) {
+      return { venueId: best.id, matchType: "venue_matched" }
+    }
+  }
+
+  return { venueId: null, matchType: "location_matched" }
+}
+
+/**
+ * Normalize a venue name for ingest matching.
+ * Strips abbreviations, common venue type words, special chars.
+ */
+function normalizeIngestVenueName(name: string): string {
+  return name
+    .toLowerCase()
+    // Strip common abbreviations
+    .replace(/\b(st|ave|blvd|dr|rd|ln|ct|pl|pkwy|hwy)\b\.?/g, "")
+    // Strip venue type words
+    .replace(/\b(hotel|convention center|resort|arena|casino|fairgrounds|museum|stadium|expo|center|centre)\b/g, "")
+    // Strip non-alphanumeric
+    .replace(/[^a-z0-9\s]/g, "")
+    // Collapse whitespace
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+/**
+ * Build a venue Map from an array of venues for use with matchVenue().
+ */
+export function buildVenueMap(
+  venues: { id: string; name: string; city: string | null }[],
+): Map<string, { id: string; name: string; city: string | null }> {
+  const map = new Map<string, { id: string; name: string; city: string | null }>()
+  for (const v of venues) {
+    map.set(v.name.toLowerCase(), v)
+  }
+  return map
+}

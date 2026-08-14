@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { scrapeShowsbee } from "../lib/scrapers/showsbee"
 import { prisma } from "../lib/prisma"
+import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -54,11 +55,7 @@ async function main() {
   const locationCities = new Set(locations.map((l) => l.city?.toLowerCase().trim()))
 
   // Build venue name lookup for venue matching
-  const venueMap = new Map<string, typeof venues[number]>()
-  for (const venue of venues) {
-    const key = venue.name.toLowerCase()
-    venueMap.set(key, venue)
-  }
+  const venueMap = buildVenueMap(venues)
 
   // ── Pass 1: listing only ───────────────────────────────────────────────
   console.log(`[Showsbee/Ingest] Pass 1: listing only (${locationCities.size} target cities)`)
@@ -145,16 +142,9 @@ async function main() {
     const detail = detailMap.get(ev.detailUrl)
     const venueName = detail?.venues?.[0]?.name ?? ev.venueName
     // Match venue name if provided
-    let venueId: string | null = null
-    let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
-    if (venueName) {
-      const venueKey = venueName.toLowerCase()
-      const matchedVenue = venueMap.get(venueKey)
-      if (matchedVenue) {
-        venueId = matchedVenue.id
-        matchType = "venue_matched"
-      }
-    }
+    const venueMatch = matchVenue(venueName, loc.city, venueMap, venues)
+    let venueId: string | null = venueMatch.venueId
+    let matchType: import("../lib/generated/prisma/client").EventMatchType = venueMatch.matchType
 
     const org = detail?.organizerContact ?? ev.organizerContact
     const hasContact = org && (org.name || org.email)

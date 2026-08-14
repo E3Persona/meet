@@ -2,6 +2,7 @@ import "dotenv/config"
 
 import { prisma } from "../lib/prisma"
 import { scrapeTradeFairDatesEvents, enrichTradeFairDateEvent } from "../lib/scrapers/tradefairdates"
+import { buildVenueMap } from "../lib/venueResolution"
 
 
 const rawRunId = process.env.RUN_ID ?? null
@@ -64,11 +65,7 @@ async function main() {
   }
 
   // Build venue name lookup for venue matching
-  const venueMap = new Map<string, typeof venues[number]>()
-  for (const venue of venues) {
-    const key = venue.name.toLowerCase()
-    venueMap.set(key, venue)
-  }
+  const venueMap = buildVenueMap(venues)
 
   // Also try matching by location name (some locations are venues named after a city area)
   const nameMap = new Map<string, string[]>()

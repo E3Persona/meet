@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { scrapeEventseye } from "../lib/scrapers/eventseye"
 import { prisma } from "../lib/prisma"
+import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -58,11 +59,7 @@ async function main() {
   }
 
   // Build venue name lookup for venue matching
-  const venueMap = new Map<string, typeof venues[number]>()
-  for (const venue of venues) {
-    const key = venue.name.toLowerCase()
-    venueMap.set(key, venue)
-  }
+  const venueMap = buildVenueMap(venues)
 
   // ── Single pass: fetch WITH details (listing page has no city data) ──
   const targetCities = [...new Set(locations.map((l) => l.city?.toLowerCase().trim()).filter(Boolean))] as string[]
@@ -124,20 +121,17 @@ async function main() {
     const hasContact = org && (org.name || org.email)
 
     // Match venue name if provided (Eventseye uses 'venues' array of objects)
+    let rawVenueText: string | null = null
     let venueId: string | null = null
     let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
-    let rawVenueText: string | null = null
     if (ev.venues && ev.venues.length > 0) {
       // venues is an array of objects, extract the name
       const venueName = typeof ev.venues[0] === 'string' ? ev.venues[0] : (ev.venues[0] as any).name
       if (venueName) {
-        const venueKey = venueName.toLowerCase()
-        const matchedVenue = venueMap.get(venueKey)
-        if (matchedVenue) {
-          venueId = matchedVenue.id
-          matchType = "venue_matched"
-        }
         rawVenueText = venueName
+        const venueMatch = matchVenue(venueName, loc.city, venueMap, venues)
+        venueId = venueMatch.venueId
+        matchType = venueMatch.matchType
       }
     }
 

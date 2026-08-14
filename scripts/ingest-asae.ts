@@ -2,6 +2,7 @@ import "dotenv/config"
 import { scrapeASAE } from "../lib/scrapers/asae"
 import { prisma } from "../lib/prisma"
 import { normalizeState, statesMatch } from "../lib/stateNormalize"
+import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -175,11 +176,7 @@ async function main() {
   const sourceSiteId = sourceSite?.id ?? null
 
   // Build venue name lookup for venue matching
-  const venueMap = new Map<string, typeof venues[number]>()
-  for (const venue of venues) {
-    const key = venue.name.toLowerCase()
-    venueMap.set(key, venue)
-  }
+  const venueMap = buildVenueMap(venues)
 
   const allEvents = await scrapeASAE({
     skipContacts: false,
@@ -238,11 +235,10 @@ async function main() {
     let venueId: string | null = null
     let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
     for (const cs of citiesStates) {
-      const venueKey = cs.city.toLowerCase()
-      const matchedVenue = venueMap.get(venueKey)
-      if (matchedVenue) {
-        venueId = matchedVenue.id
-        matchType = "venue_matched"
+      const venueMatch = matchVenue(cs.city, cs.city, venueMap, venues)
+      if (venueMatch.venueId) {
+        venueId = venueMatch.venueId
+        matchType = venueMatch.matchType
         break
       }
     }

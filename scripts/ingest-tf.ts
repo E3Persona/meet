@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { scrapeTF } from "../lib/scrapers/tradefest"
+import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
 
 const runId = process.env.RUN_ID ?? null
@@ -54,11 +55,7 @@ async function main() {
   const locationCities = new Set(locations.map((l) => l.city?.toLowerCase().trim()))
 
   // Build venue name lookup for venue matching
-  const venueMap = new Map<string, typeof venues[number]>()
-  for (const venue of venues) {
-    const key = venue.name.toLowerCase()
-    venueMap.set(key, venue)
-  }
+  const venueMap = buildVenueMap(venues)
 
   // ── Pass 1: listing only (no slow detail page fetches) ─────────────────
   console.log(`[TF/Ingest] Pass 1: listing only (${locationCities.size} target cities)`)
@@ -129,16 +126,9 @@ async function main() {
   for (const { ev, loc, eventDateStart } of newCandidates) {
     const detail = detailMap.get(ev.eventUrl)
     // Match venue name if provided
-    let venueId: string | null = null
-    let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
-    if (ev.venue.name) {
-      const venueKey = ev.venue.name.toLowerCase()
-      const matchedVenue = venueMap.get(venueKey)
-      if (matchedVenue) {
-        venueId = matchedVenue.id
-        matchType = "venue_matched"
-      }
-    }
+    const venueMatch = matchVenue(ev.venue.name, ev.venue.city, venueMap, venues)
+    let venueId: string | null = venueMatch.venueId
+    let matchType: import("../lib/generated/prisma/client").EventMatchType = venueMatch.matchType
 
     const org = detail?.organizer ?? ev.organizer
     const hasOrg = org.name || org.officialWebsite

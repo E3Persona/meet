@@ -2,6 +2,7 @@ import "dotenv/config"
 import { prisma } from "../lib/prisma"
 import { scrapeICA, cityToIcaSlug } from "../lib/scrapers/ica"
 import { locationKey } from "../lib/stateNormalize"
+import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
 const runId = process.env.RUN_ID ?? null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
@@ -79,11 +80,7 @@ async function main() {
   }
 
   // Build venue name lookup for venue matching
-  const venueMap = new Map<string, typeof venues[number]>()
-  for (const venue of venues) {
-    const key = venue.name.toLowerCase()
-    venueMap.set(key, venue)
-  }
+  const venueMap = buildVenueMap(venues)
 
   const slugsToScrape = runLocations
     .map((loc) => cityToIcaSlug(loc.city ?? "", loc.state ?? ""))
@@ -134,16 +131,9 @@ async function main() {
       }
 
       // Match venue name if provided
-      let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
-      let venueId: string | null = null
-      if (ev.venueFullName) {
-        const venueKey = ev.venueFullName.toLowerCase()
-        const matchedVenue = venueMap.get(venueKey)
-        if (matchedVenue) {
-          matchType = "venue_matched"
-          venueId = matchedVenue.id
-        }
-      }
+      const venueMatch = matchVenue(ev.venueFullName, ev.venueCity, venueMap, venues)
+      let matchType: import("../lib/generated/prisma/client").EventMatchType = venueMatch.matchType
+      let venueId: string | null = venueMatch.venueId
 
       const existing = await prisma.event.findFirst({
         where: {
