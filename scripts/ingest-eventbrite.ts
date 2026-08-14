@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { createEventbriteBrowser, matchEventsToVenue, scrapeSearchPage } from "../lib/scrapers/eventbrite"
 import { locationKey } from "../lib/stateNormalize"
 
@@ -65,6 +65,8 @@ async function main() {
   let skippedDuplicate = 0
   let groupIndex = 0
 
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
+
   try {
     for (const [key, cityVenues] of cityGroups) {
       groupIndex++
@@ -91,17 +93,17 @@ async function main() {
         for (const ev of matched) {
           totalFound++
 
-          const existing = await prisma.event.findFirst({
+          const existing = await withRetry(() => prisma.event.findFirst({
             where: {
               eventName: { equals: ev.eventName, mode: "insensitive" },
             },
-          })
+          }))
           if (existing) {
             skippedDuplicate++
             continue
           }
 
-          await prisma.event.create({
+          await withRetry(() => prisma.event.create({
             data: {
               locationId: v.id,
               eventName: ev.eventName,
@@ -113,7 +115,7 @@ async function main() {
               rawVenueText: ev.venueName,
               rawLocationText: ev.venueCity && ev.venueState ? `${ev.venueCity}, ${ev.venueState}` : null,
             },
-          })
+          }))
           totalNew++
         }
       }

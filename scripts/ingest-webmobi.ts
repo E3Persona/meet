@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { fetchWebmobiEvents } from "../lib/scrapers/webmobi"
 
 const rawRunId = process.env.RUN_ID ?? null
@@ -73,6 +73,7 @@ async function main() {
     if (nameKey) cityLocMap.set(nameKey, loc)
   }
 
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
   console.log(`[Webmobi/Ingest] Fetching events from API...`)
   let events: Awaited<ReturnType<typeof fetchWebmobiEvents>>
   try {
@@ -116,29 +117,33 @@ async function main() {
       if (!isNaN(d.getTime())) eventDateEnd = d
     }
 
-    const existing = await prisma.event.findFirst({
-      where: {
-        eventName: { equals: ev.name, mode: "insensitive" },
-      },
-    })
+    const existing = await withRetry(() =>
+      prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.name, mode: "insensitive" },
+        },
+      })
+    )
     if (existing) {
       skippedDuplicate++
       continue
     }
 
-    await prisma.event.create({
-      data: {
-        locationId: loc.id,
-        eventName: ev.name,
-        eventDateStart,
-        eventDateEnd,
-        sourceUrl: ev.website_url ?? `https://www.webmobi.com/events/${ev.id}`,
-        sourceSiteId,
-        runId: runId ?? undefined,
-        rawLocationText: rawCity,
-        rawVenueText: null,
-      },
-    })
+    await withRetry(() =>
+      prisma.event.create({
+        data: {
+          locationId: loc.id,
+          eventName: ev.name,
+          eventDateStart,
+          eventDateEnd,
+          sourceUrl: ev.website_url ?? `https://www.webmobi.com/events/${ev.id}`,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          rawLocationText: rawCity,
+          rawVenueText: null,
+        },
+      })
+    )
     totalNew++
   }
 

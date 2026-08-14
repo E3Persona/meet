@@ -1,6 +1,6 @@
 import "dotenv/config"
 import { scrapeEventseye } from "../lib/scrapers/eventseye"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
 const runId = process.env.RUN_ID ?? null
@@ -61,6 +61,9 @@ async function main() {
   // Build venue name lookup for venue matching
   const venueMap = buildVenueMap(venues)
 
+  // Keepalive ping to prevent Neon P1017 connection drops during long scrapes
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
+
   // ── Single pass: fetch WITH details (listing page has no city data) ──
   const targetCities = [...new Set(locations.map((l) => l.city?.toLowerCase().trim()).filter(Boolean))] as string[]
   console.log(`[Eventseye/Ingest] Scraping with details (targeting ${targetCities.length} cities)...`)
@@ -84,19 +87,23 @@ async function main() {
     const c = cityMatch.city?.toLowerCase().trim()!
     const loc = cityLocMap.get(c)!
 
-    const existing = await prisma.event.findFirst({
-      where: {
-        eventName: { equals: ev.title, mode: "insensitive" },
-      },
-    })
+    const existing = await withRetry(() =>
+      prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.title, mode: "insensitive" },
+        },
+      })
+    )
     if (existing) {
       const newDesc = ev.description ?? null
       const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
       if (newDesc && !existingMeta.fullDescription) {
-        await prisma.event.update({
-          where: { id: existing.id },
-          data: { metadata: { ...existingMeta, fullDescription: newDesc } },
-        })
+        await withRetry(() =>
+          prisma.event.update({
+            where: { id: existing.id },
+            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+          })
+        )
       }
       continue
     }
@@ -135,41 +142,45 @@ async function main() {
       }
     }
 
-    const event = await prisma.event.create({
-      data: {
-        locationId: loc.id,
+    const event = await withRetry(() =>
+      prisma.event.create({
+        data: {
+          locationId: loc.id,
           venueId: venueId ?? undefined,
-        matchType,
-        eventName: ev.title,
-        eventDateStart,
-        eventDateEnd,
-        sourceUrl: ev.detailUrl ?? null,
-        sourceSiteId,
-        runId: runId ?? undefined,
-        expectedAttendees: null,
-        rawLocationText: cityMatch.city ?? null,
-        rawVenueText,
-        organizerName: org?.name ?? null,
-        organizerEmail: org?.email ?? null,
-        organizerPhone: org?.phone ?? null,
-        metadata: ev.description ? { fullDescription: ev.description } : undefined,
-      },
-    })
+          matchType,
+          eventName: ev.title,
+          eventDateStart,
+          eventDateEnd,
+          sourceUrl: ev.detailUrl ?? null,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          expectedAttendees: null,
+          rawLocationText: cityMatch.city ?? null,
+          rawVenueText,
+          organizerName: org?.name ?? null,
+          organizerEmail: org?.email ?? null,
+          organizerPhone: org?.phone ?? null,
+          metadata: ev.description ? { fullDescription: ev.description } : undefined,
+        },
+      })
+    )
     totalNew++
 
     if (hasContact) {
-      await prisma.eventContact.create({
-        data: {
-          eventId: event.id,
-          name: org!.name ?? "",
-          title: null,
-          email: org!.email,
-          phone: org!.phone,
-          isPrimary: true,
-          sourceUrl: ev.detailUrl ?? null,
-          confidence: "medium",
-        },
-      })
+      await withRetry(() =>
+        prisma.eventContact.create({
+          data: {
+            eventId: event.id,
+            name: org!.name ?? "",
+            title: null,
+            email: org!.email,
+            phone: org!.phone,
+            isPrimary: true,
+            sourceUrl: ev.detailUrl ?? null,
+            confidence: "medium",
+          },
+        })
+      )
       console.log(`[Eventseye/Ingest] Saved contact for "${ev.title}"`)
     }
   }

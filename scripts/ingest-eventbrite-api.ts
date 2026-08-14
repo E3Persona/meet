@@ -2,7 +2,7 @@ import "dotenv/config"
 
 import { createEventbriteBrowser, scrapeSearchPage } from "../lib/scrapers/eventbrite"
 import { discoverEvents, type EventbriteApiEvent } from "../lib/scrapers/eventbrite-api"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 
 const rawRunId = process.env.RUN_ID ?? null
 
@@ -74,6 +74,8 @@ async function main() {
   for (const loc of locations) {
     if (loc.city && loc.state) searchCities.add(`${loc.city}|${loc.state}`)
   }
+
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
 
   console.log(`[EventbriteAPI/Ingest] Step 1: Searching ${searchCities.size} city/state groups for seed event IDs...`)
 
@@ -169,11 +171,11 @@ async function main() {
       if (!isNaN(d.getTime())) eventDateEnd = d
     }
 
-    const existing = await prisma.event.findFirst({
+    const existing = await withRetry(() => prisma.event.findFirst({
       where: {
         eventName: { equals: ev.name, mode: "insensitive" },
       },
-    })
+    }))
     if (existing) {
       skippedDuplicate++
       continue
@@ -183,7 +185,7 @@ async function main() {
       ? `${ev.venue.city}, ${ev.venue.region}`
       : ev.venue.city ?? null
 
-    await prisma.event.create({
+    await withRetry(() => prisma.event.create({
       data: {
         locationId: loc.id,
         eventName: ev.name,
@@ -195,7 +197,7 @@ async function main() {
         rawVenueText: ev.venue.name,
         rawLocationText,
       },
-    })
+    }))
     totalNew++
   }
 

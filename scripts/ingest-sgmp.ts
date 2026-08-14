@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapeSgmpEvents } from "../lib/scrapers/sgmp"
 import { statesMatch } from "../lib/stateNormalize"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
@@ -103,6 +103,8 @@ async function main() {
   // Build venue name lookup for venue matching
   const venueMap = buildVenueMap(venues)
 
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
+
   const allEvents = await scrapeSgmpEvents({ maxMonths: config.maxMonths })
   console.log(`[SGMP/Ingest] ${allEvents.length} events scraped`)
 
@@ -118,19 +120,23 @@ async function main() {
     if (dateFrom && ev.eventDateStart && new Date(ev.eventDateStart) < dateFrom) continue
     if (dateTo && ev.eventDateStart && new Date(ev.eventDateStart) > dateTo) continue
 
-    const existing = await prisma.event.findFirst({
-      where: {
-        eventName: { equals: ev.eventName, mode: "insensitive" },
-      },
-    })
+    const existing = await withRetry(() =>
+      prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.eventName, mode: "insensitive" },
+        },
+      })
+    )
     if (existing) {
       const newDesc = ev.description ?? null
       const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
       if (newDesc && !existingMeta.fullDescription) {
-        await prisma.event.update({
-          where: { id: existing.id },
-          data: { metadata: { ...existingMeta, fullDescription: newDesc } },
-        })
+        await withRetry(() =>
+          prisma.event.update({
+            where: { id: existing.id },
+            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+          })
+        )
       }
       continue
     }
@@ -155,40 +161,44 @@ async function main() {
 
     const hasContact = ev.contactName || ev.contactEmail
 
-    const event = await prisma.event.create({
-      data: {
-        locationId: loc.id,
+    const event = await withRetry(() =>
+      prisma.event.create({
+        data: {
+          locationId: loc.id,
           venueId: venueId ?? undefined,
-        matchType,
-        eventName: ev.eventName,
-        eventDateStart,
-        eventDateEnd,
-        sourceUrl: ev.sourceUrl,
-        sourceSiteId,
-        runId: runId ?? undefined,
-        expectedAttendees: null,
-        organizerName: ev.contactName ?? null,
-        organizerEmail: ev.contactEmail ?? null,
-        organizerPhone: ev.contactPhone ?? null,
-        rawLocationText: ev.venueCity && ev.venueState ? `${ev.venueCity}, ${ev.venueState}` : null,
-        rawVenueText: ev.venueName ?? null,
-        metadata: ev.description ? { fullDescription: ev.description } : undefined,
-      },
-    })
+          matchType,
+          eventName: ev.eventName,
+          eventDateStart,
+          eventDateEnd,
+          sourceUrl: ev.sourceUrl,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          expectedAttendees: null,
+          organizerName: ev.contactName ?? null,
+          organizerEmail: ev.contactEmail ?? null,
+          organizerPhone: ev.contactPhone ?? null,
+          rawLocationText: ev.venueCity && ev.venueState ? `${ev.venueCity}, ${ev.venueState}` : null,
+          rawVenueText: ev.venueName ?? null,
+          metadata: ev.description ? { fullDescription: ev.description } : undefined,
+        },
+      })
+    )
     totalNew++
 
     if (hasContact) {
-      await prisma.eventContact.create({
-        data: {
-          eventId: event.id,
-          name: ev.contactName ?? "",
-          email: ev.contactEmail,
-          phone: ev.contactPhone,
-          isPrimary: true,
-          sourceUrl: ev.sourceUrl,
-          confidence: "medium",
-        },
-      })
+      await withRetry(() =>
+        prisma.eventContact.create({
+          data: {
+            eventId: event.id,
+            name: ev.contactName ?? "",
+            email: ev.contactEmail,
+            phone: ev.contactPhone,
+            isPrimary: true,
+            sourceUrl: ev.sourceUrl,
+            confidence: "medium",
+          },
+        })
+      )
       console.log(`[SGMP/Ingest] Saved contact for "${ev.eventName}"`)
     }
   }

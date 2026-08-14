@@ -1,6 +1,6 @@
 import "dotenv/config"
 
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapeTradeFairDatesEvents, enrichTradeFairDateEvent } from "../lib/scrapers/tradefairdates"
 import { buildVenueMap } from "../lib/venueResolution"
 
@@ -112,6 +112,7 @@ async function main() {
 
   try {
     console.log(`[TradeFairDates/Ingest] Starting scrape...`)
+    await withRetry(() => prisma.$queryRaw`SELECT 1`)
     const scrapeStart = Date.now()
 
     // Phase 1: scrape listing only (no detail pages yet)
@@ -151,42 +152,48 @@ async function main() {
       let matchType: import("../lib/generated/prisma/client").EventMatchType = "location_matched"
 
       // Deduplicate
-      const existing = await prisma.event.findFirst({
-        where: {
-          eventName: { equals: ev.eventName, mode: "insensitive" },
-        },
-      })
+      const existing = await withRetry(() =>
+        prisma.event.findFirst({
+          where: {
+            eventName: { equals: ev.eventName, mode: "insensitive" },
+          },
+        })
+      )
       if (existing) {
         skippedDuplicate++
         console.log(`[TradeFairDates/Ingest] Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
         const newDesc = ev.description ?? null
         const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
         if (newDesc && !existingMeta.fullDescription) {
-          await prisma.event.update({
-            where: { id: existing.id },
-            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
-          })
+          await withRetry(() =>
+            prisma.event.update({
+              where: { id: existing.id },
+              data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+            })
+          )
         }
         continue
       }
 
-      await prisma.event.create({
-        data: {
-          locationId: locId,
-          matchType,
-          eventName: ev.eventName,
-          eventDateStart: ev.eventDateStart,
-          eventDateEnd: ev.eventDateEnd,
-          sourceUrl: ev.detailUrl,
-          organizerEmail: ev.contactEmail,
-          organizerName: ev.websiteUrl,
-          sourceSiteId,
-          runId: runId ?? undefined,
-          rawLocationText: ev.city,
-          rawVenueText: ev.venueName ?? null,
-          metadata: ev.description ? { fullDescription: ev.description } : undefined,
-        },
-      })
+      await withRetry(() =>
+        prisma.event.create({
+          data: {
+            locationId: locId,
+            matchType,
+            eventName: ev.eventName,
+            eventDateStart: ev.eventDateStart,
+            eventDateEnd: ev.eventDateEnd,
+            sourceUrl: ev.detailUrl,
+            organizerEmail: ev.contactEmail,
+            organizerName: ev.websiteUrl,
+            sourceSiteId,
+            runId: runId ?? undefined,
+            rawLocationText: ev.city,
+            rawVenueText: ev.venueName ?? null,
+            metadata: ev.description ? { fullDescription: ev.description } : undefined,
+          },
+        })
+      )
       totalNew++
       console.log(
         `[TradeFairDates/Ingest] ✓ Saved "${ev.eventName}"` +

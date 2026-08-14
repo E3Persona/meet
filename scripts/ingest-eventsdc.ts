@@ -1,6 +1,6 @@
 import "dotenv/config"
 import { scrapeEventsDcEvents } from "../lib/scrapers/eventsdc"
-import { prisma } from "@/lib/prisma"
+import { prisma, withRetry } from "@/lib/prisma"
 
 
 const rawRunId = process.env.RUN_ID ?? null
@@ -77,6 +77,7 @@ async function main() {
 
   try {
     console.log(`[EventsDc/Ingest] Starting scrape...`)
+    await withRetry(() => prisma.$queryRaw`SELECT 1`)
     const scrapeStart = Date.now()
     const events = await scrapeEventsDcEvents(18)
     const scrapeDuration = ((Date.now() - scrapeStart) / 1000).toFixed(1)
@@ -85,30 +86,34 @@ async function main() {
     for (const ev of events) {
       totalFound++
 
-      const existing = await prisma.event.findFirst({
-        where: {
-          eventName: { equals: ev.eventName, mode: "insensitive" },
-        },
-      })
+      const existing = await withRetry(() =>
+        prisma.event.findFirst({
+          where: {
+            eventName: { equals: ev.eventName, mode: "insensitive" },
+          },
+        })
+      )
       if (existing) {
         skippedDuplicate++
         console.log(`[EventsDc/Ingest] Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
         continue
       }
 
-      await prisma.event.create({
-        data: {
-          locationId: venueLocation.id,
-          eventName: ev.eventName,
-          eventDateStart: ev.eventDateStart,
-          eventDateEnd: ev.eventDateEnd,
-          sourceUrl: ev.sourceUrl,
-          sourceSiteId,
-          runId: runId ?? undefined,
-          rawVenueText: ev.venue ?? null,
-          rawLocationText: "Washington, DC",
-        },
-      })
+      await withRetry(() =>
+        prisma.event.create({
+          data: {
+            locationId: venueLocation.id,
+            eventName: ev.eventName,
+            eventDateStart: ev.eventDateStart,
+            eventDateEnd: ev.eventDateEnd,
+            sourceUrl: ev.sourceUrl,
+            sourceSiteId,
+            runId: runId ?? undefined,
+            rawVenueText: ev.venue ?? null,
+            rawLocationText: "Washington, DC",
+          },
+        })
+      )
       totalNew++
       console.log(
         `[EventsDc/Ingest] ✓ Saved "${ev.eventName}"` +

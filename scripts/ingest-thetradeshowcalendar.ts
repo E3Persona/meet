@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapeECN, type ECNEvent } from "../lib/scrapers/thetradeshowcalendar"
 import { statesMatch } from "../lib/stateNormalize"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
@@ -80,6 +80,9 @@ async function main() {
   let totalFound = 0
   let totalNew = 0
 
+  // Keep DB connection alive during long scrape
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
+
   async function processBatch(events: ECNEvent[]) {
     for (const ev of events) {
       totalFound++
@@ -87,11 +90,13 @@ async function main() {
       const loc = matchCityState(ev.venueCity, ev.venueState, locations)
       if (!loc) continue
 
-      const existing = await prisma.event.findFirst({
-        where: {
-          eventName: { equals: ev.eventName, mode: "insensitive" },
-        },
-      })
+      const existing = await withRetry(() =>
+        prisma.event.findFirst({
+          where: {
+            eventName: { equals: ev.eventName, mode: "insensitive" },
+          },
+        })
+      )
       if (existing) continue
 
       const { start, end } = parseRange(ev.eventDateStart, ev.eventDateEnd)
@@ -106,39 +111,43 @@ async function main() {
       const contact = ev.contacts?.[0] ?? null
       const hasContact = contact && (contact.organizerName || contact.organizerEmail)
 
-      const event = await prisma.event.create({
-        data: {
-          locationId: loc.id,
-          venueId: venueId ?? undefined,
-          matchType,
-          eventName: ev.eventName,
-          eventDateStart: start ?? undefined,
-          eventDateEnd: end ?? undefined,
-          sourceUrl: ev.officialWebsite || null,
-          sourceSiteId,
-          runId: runId ?? undefined,
-          expectedAttendees: ev.attendees ?? null,
-          organizerName: contact?.organizerName ?? null,
-          organizerEmail: contact?.organizerEmail ?? null,
-          organizerPhone: contact?.organizerPhone ?? null,
-          rawLocationText: ev.venueCity && ev.venueState ? `${ev.venueCity}, ${ev.venueState}` : null,
-          rawVenueText: ev.venueName ?? null,
-        },
-      })
+      const event = await withRetry(() =>
+        prisma.event.create({
+          data: {
+            locationId: loc.id,
+            venueId: venueId ?? undefined,
+            matchType,
+            eventName: ev.eventName,
+            eventDateStart: start ?? undefined,
+            eventDateEnd: end ?? undefined,
+            sourceUrl: ev.officialWebsite || null,
+            sourceSiteId,
+            runId: runId ?? undefined,
+            expectedAttendees: ev.attendees ?? null,
+            organizerName: contact?.organizerName ?? null,
+            organizerEmail: contact?.organizerEmail ?? null,
+            organizerPhone: contact?.organizerPhone ?? null,
+            rawLocationText: ev.venueCity && ev.venueState ? `${ev.venueCity}, ${ev.venueState}` : null,
+            rawVenueText: ev.venueName ?? null,
+          },
+        })
+      )
       totalNew++
 
       if (hasContact) {
-        await prisma.eventContact.create({
-          data: {
-            eventId: event.id,
-            name: contact!.organizerName ?? "",
-            email: contact!.organizerEmail,
-            phone: contact!.organizerPhone,
-            isPrimary: true,
-            sourceUrl: ev.officialWebsite ?? null,
-            confidence: "medium",
-          },
-        })
+        await withRetry(() =>
+          prisma.eventContact.create({
+            data: {
+              eventId: event.id,
+              name: contact!.organizerName ?? "",
+              email: contact!.organizerEmail,
+              phone: contact!.organizerPhone,
+              isPrimary: true,
+              sourceUrl: ev.officialWebsite ?? null,
+              confidence: "medium",
+            },
+          })
+        )
       }
     }
   }

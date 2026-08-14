@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapeInfosecConferences } from "../lib/scrapers/infosec-conferences"
 import { buildVenueMap } from "../lib/venueResolution"
 
@@ -134,6 +134,7 @@ async function main() {
 
   try {
     console.log(`[Infosec/Ingest] Starting scrape...`)
+    await withRetry(() => prisma.$queryRaw`SELECT 1`)
     const scrapeStart = Date.now()
 
     const events = await scrapeInfosecConferences({
@@ -194,21 +195,25 @@ async function main() {
       }
 
       // Deduplicate: check by eventName + locationId + eventDateStart
-      const existing = await prisma.event.findFirst({
-        where: {
-          eventName: { equals: ev.eventName, mode: "insensitive" },
-        },
-      })
+      const existing = await withRetry(() =>
+        prisma.event.findFirst({
+          where: {
+            eventName: { equals: ev.eventName, mode: "insensitive" },
+          },
+        })
+      )
       if (existing) {
         skippedDuplicate++
         debug(`Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
         const newDesc = ev.description ?? null
         const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
         if (newDesc && !existingMeta.fullDescription) {
-          await prisma.event.update({
-            where: { id: existing.id },
-            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
-          })
+          await withRetry(() =>
+            prisma.event.update({
+              where: { id: existing.id },
+              data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+            })
+          )
         }
         continue
       }
@@ -227,25 +232,27 @@ async function main() {
       // Build contactNote with event type and focus info
       const notes = [ev.eventType, ev.focus].filter(Boolean).join(" | ")
 
-      const event = await prisma.event.create({
-        data: {
-          locationId: locId,
-          matchType,
-          eventName: ev.eventName,
-          eventDateStart: eventDate,
-          eventDateEnd: ev.eventDateEnd ? new Date(ev.eventDateEnd) : null,
-          expectedAttendees: ev.expectedAttendees,
-          sourceUrl: ev.sourceUrl,
-          sourceSiteId,
-          runId: runId ?? undefined,
-          organizerName: ev.organizerName ?? null,
-          organizerTitle: ev.focus ?? null,
-          contactNote: notes || null,
-          rawLocationText: `${ev.city}, ${ev.state}`,
-          rawVenueText: null,
-          metadata: ev.description ? { fullDescription: ev.description } : undefined,
-        },
-      })
+      const event = await withRetry(() =>
+        prisma.event.create({
+          data: {
+            locationId: locId,
+            matchType,
+            eventName: ev.eventName,
+            eventDateStart: eventDate,
+            eventDateEnd: ev.eventDateEnd ? new Date(ev.eventDateEnd) : null,
+            expectedAttendees: ev.expectedAttendees,
+            sourceUrl: ev.sourceUrl,
+            sourceSiteId,
+            runId: runId ?? undefined,
+            organizerName: ev.organizerName ?? null,
+            organizerTitle: ev.focus ?? null,
+            contactNote: notes || null,
+            rawLocationText: `${ev.city}, ${ev.state}`,
+            rawVenueText: null,
+            metadata: ev.description ? { fullDescription: ev.description } : undefined,
+          },
+        })
+      )
       totalNew++
 
       console.log(

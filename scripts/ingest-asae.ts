@@ -1,6 +1,6 @@
 import "dotenv/config"
 import { scrapeASAE } from "../lib/scrapers/asae"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { normalizeState, statesMatch } from "../lib/stateNormalize"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
@@ -178,6 +178,8 @@ async function main() {
   // Build venue name lookup for venue matching
   const venueMap = buildVenueMap(venues)
 
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
+
   const allEvents = await scrapeASAE({
     skipContacts: false,
     maxContactLookups: 50,
@@ -246,19 +248,23 @@ async function main() {
     // Dedup includes eventDateStart so a recurring annual event (same name,
     // same venue, different year) is treated as a new record rather than
     // silently skipped forever after its first sync.
-    const existing = await prisma.event.findFirst({
-      where: {
-        eventName: { equals: ev.eventName, mode: "insensitive" },
-      },
-    })
+    const existing = await withRetry(() =>
+      prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.eventName, mode: "insensitive" },
+        },
+      })
+    )
     if (existing) {
       const newDesc = ev.fullDescription ?? null
       const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
       if (newDesc && !existingMeta.fullDescription) {
-        await prisma.event.update({
-          where: { id: existing.id },
-          data: { metadata: { ...existingMeta, fullDescription: newDesc } },
-        })
+        await withRetry(() =>
+          prisma.event.update({
+            where: { id: existing.id },
+            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+          })
+        )
       }
       continue
     }
@@ -267,40 +273,44 @@ async function main() {
     const hasContact =
       contact && (contact.organizerEmail || contact.organizerPhone)
 
-    const event = await prisma.event.create({
-      data: {
-        locationId: cityLoc.id,
-          venueId: venueId ?? undefined,
-        matchType,
-        eventName: ev.eventName,
-        eventDateStart: eventDateStart ?? undefined,
-        sourceUrl: ev.detailUrl,
-        sourceSiteId,
-        runId: runId ?? undefined,
-        expectedAttendees: null,
-        rawLocationText: ev.locationText,
-        rawVenueText: citiesStates.length > 0 ? citiesStates[0].city : null,
-        organizerEmail: contact?.organizerEmail ?? null,
-        organizerPhone: contact?.organizerPhone ?? null,
-        metadata: ev.fullDescription
-          ? { fullDescription: ev.fullDescription }
-          : undefined,
-      },
-    })
+    const event = await withRetry(() =>
+      prisma.event.create({
+        data: {
+          locationId: cityLoc.id,
+            venueId: venueId ?? undefined,
+          matchType,
+          eventName: ev.eventName,
+          eventDateStart: eventDateStart ?? undefined,
+          sourceUrl: ev.detailUrl,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          expectedAttendees: null,
+          rawLocationText: ev.locationText,
+          rawVenueText: citiesStates.length > 0 ? citiesStates[0].city : null,
+          organizerEmail: contact?.organizerEmail ?? null,
+          organizerPhone: contact?.organizerPhone ?? null,
+          metadata: ev.fullDescription
+            ? { fullDescription: ev.fullDescription }
+            : undefined,
+        },
+      })
+    )
     totalNew++
 
     if (hasContact) {
-      await prisma.eventContact.create({
-        data: {
-          eventId: event.id,
-          name: "",
-          email: contact!.organizerEmail,
-          phone: contact!.organizerPhone,
-          isPrimary: true,
-          sourceUrl: ev.detailUrl,
-          confidence: "medium",
-        },
-      })
+      await withRetry(() =>
+        prisma.eventContact.create({
+          data: {
+            eventId: event.id,
+            name: "",
+            email: contact!.organizerEmail,
+            phone: contact!.organizerPhone,
+            isPrimary: true,
+            sourceUrl: ev.detailUrl,
+            confidence: "medium",
+          },
+        })
+      )
       console.log(`[ASAE/Ingest] Saved contact for "${ev.eventName}"`)
     }
   }

@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapeICA, cityToIcaSlug } from "../lib/scrapers/ica"
 import { locationKey } from "../lib/stateNormalize"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
@@ -135,20 +135,24 @@ async function main() {
       let matchType: import("../lib/generated/prisma/client").EventMatchType = venueMatch.matchType
       let venueId: string | null = venueMatch.venueId
 
-      const existing = await prisma.event.findFirst({
-        where: {
-          eventName: { equals: ev.eventName, mode: "insensitive" },
-        },
-      })
+      const existing = await withRetry(() =>
+        prisma.event.findFirst({
+          where: {
+            eventName: { equals: ev.eventName, mode: "insensitive" },
+          },
+        })
+      )
       if (existing) {
         skippedDuplicate++
         const newDesc = ev.description ?? null
         const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
         if (newDesc && !existingMeta.fullDescription) {
-          await prisma.event.update({
-            where: { id: existing.id },
-            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
-          })
+          await withRetry(() =>
+            prisma.event.update({
+              where: { id: existing.id },
+              data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+            })
+          )
         }
         continue
       }
@@ -156,44 +160,48 @@ async function main() {
       const contacts = ev.contacts ?? []
       const primaryContact = contacts[0]
 
-      const event = await prisma.event.create({
-        data: {
-          locationId: cityLoc.id,
-          venueId,
-          matchType,
-          eventName: ev.eventName,
-          eventDateStart,
-          eventDateEnd,
-          sourceUrl: ev.eventUrl,
-          sourceSiteId,
-          runId: runId ?? undefined,
-          expectedAttendees: null,
-          rawVenueText: ev.venueFullName ?? null,
-          rawLocationText: `${ev.venueCity}, ${ev.venueState ?? ""}`.trim(),
-          organizerName: primaryContact?.organizerName ?? null,
-          organizerTitle: primaryContact?.organizerOrg ?? null,
-          organizerEmail: primaryContact?.organizerEmail ?? null,
-          metadata: ev.description ? { fullDescription: ev.description } : undefined,
-        },
-      })
+      const event = await withRetry(() =>
+        prisma.event.create({
+          data: {
+            locationId: cityLoc.id,
+            venueId,
+            matchType,
+            eventName: ev.eventName,
+            eventDateStart,
+            eventDateEnd,
+            sourceUrl: ev.eventUrl,
+            sourceSiteId,
+            runId: runId ?? undefined,
+            expectedAttendees: null,
+            rawVenueText: ev.venueFullName ?? null,
+            rawLocationText: `${ev.venueCity}, ${ev.venueState ?? ""}`.trim(),
+            organizerName: primaryContact?.organizerName ?? null,
+            organizerTitle: primaryContact?.organizerOrg ?? null,
+            organizerEmail: primaryContact?.organizerEmail ?? null,
+            metadata: ev.description ? { fullDescription: ev.description } : undefined,
+          },
+        })
+      )
       totalNew++
 
       if (contacts.length > 0) {
         let saved = false
         for (const c of contacts) {
           if (!c.organizerName && !c.organizerEmail) continue
-          await prisma.eventContact.create({
-            data: {
-              eventId: event.id,
-              name: c.organizerName ?? "",
-              title: c.organizerOrg,
-              email: c.organizerEmail,
-              phone: c.organizerPhone,
-              isPrimary: !saved,
-              sourceUrl: ev.eventUrl,
-              confidence: "high",
-            },
-          })
+          await withRetry(() =>
+            prisma.eventContact.create({
+              data: {
+                eventId: event.id,
+                name: c.organizerName ?? "",
+                title: c.organizerOrg,
+                email: c.organizerEmail,
+                phone: c.organizerPhone,
+                isPrimary: !saved,
+                sourceUrl: ev.eventUrl,
+                confidence: "high",
+              },
+            })
+          )
           saved = true
         }
         if (saved) {

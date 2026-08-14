@@ -5,7 +5,7 @@ import {
   scrapeBigEventEvents,
   type BigEventEvent,
 } from "../lib/scrapers/bigevent"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 
 const rawRunId = process.env.RUN_ID ?? null
 
@@ -80,6 +80,8 @@ async function main() {
     return { recordsFound: 0, recordsNew: 0 }
   }
 
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
+
   let rawEvents: BigEventEvent[]
   try {
     const page = await browser.newPage()
@@ -135,11 +137,11 @@ async function main() {
       if (!isNaN(d.getTime())) eventDateEnd = d
     }
 
-    const existing = await prisma.event.findFirst({
+    const existing = await withRetry(() => prisma.event.findFirst({
       where: {
         eventName: { equals: ev.name, mode: "insensitive" },
       },
-    })
+    }))
     if (existing) {
       skippedDuplicate++
       continue
@@ -149,7 +151,7 @@ async function main() {
       ? `${ev.city}, United States`
       : null
 
-    await prisma.event.create({
+    await withRetry(() => prisma.event.create({
       data: {
         locationId: loc.id,
         eventName: ev.name,
@@ -161,7 +163,7 @@ async function main() {
         rawVenueText: ev.venue || null,
         rawLocationText,
       },
-    })
+    }))
     totalNew++
   }
 

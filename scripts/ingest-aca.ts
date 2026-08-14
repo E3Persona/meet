@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapeACA } from "../lib/scrapers/allconferencealert"
 import { fetchPageMarkdown } from "../lib/contact-finder"
 import { buildVenueMap } from "../lib/venueResolution"
@@ -105,6 +105,7 @@ async function main() {
   let withoutContact = 0
 
   try {
+    await withRetry(() => prisma.$queryRaw`SELECT 1`)
     console.log(`[ACA/Ingest] Starting ACA scrape (fetchDetails=true, country-wide)...`)
     const scrapeStart = Date.now()
 
@@ -158,21 +159,25 @@ async function main() {
         continue
       }
 
-      const existing = await prisma.event.findFirst({
-        where: {
-          eventName: { equals: ev.eventName, mode: "insensitive" },
-        },
-      })
+      const existing = await withRetry(() =>
+        prisma.event.findFirst({
+          where: {
+            eventName: { equals: ev.eventName, mode: "insensitive" },
+          },
+        })
+      )
       if (existing) {
         skippedDuplicate++
         debug(`Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
         const newDesc = ev.objective ?? null
         const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
         if (newDesc && !existingMeta.fullDescription) {
-          await prisma.event.update({
-            where: { id: existing.id },
-            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
-          })
+          await withRetry(() =>
+            prisma.event.update({
+              where: { id: existing.id },
+              data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+            })
+          )
         }
         continue
       }
@@ -220,42 +225,46 @@ async function main() {
       }
 
       let venueId: string | null = null
-      const event = await prisma.event.create({
-        data: {
-          locationId: loc.id,
-          venueId: venueId ?? undefined,
-          matchType,
-          eventName: ev.eventName,
-          eventDateStart: eventDate,
-          sourceUrl: ev.eventUrl,
-          sourceSiteId,
-          runId: runId ?? undefined,
-          expectedAttendees: null,
-          rawLocationText: ev.venueCity,
-          rawVenueText: null,
-          organizerName: contactPerson ?? null,
-          organizerTitle: organizedBy ?? null,
-          organizerEmail: inquiryEmail ?? null,
-          metadata: ev.objective ? { fullDescription: ev.objective } : undefined,
-        },
-      })
+      const event = await withRetry(() =>
+        prisma.event.create({
+          data: {
+            locationId: loc.id,
+            venueId: venueId ?? undefined,
+            matchType,
+            eventName: ev.eventName,
+            eventDateStart: eventDate,
+            sourceUrl: ev.eventUrl,
+            sourceSiteId,
+            runId: runId ?? undefined,
+            expectedAttendees: null,
+            rawLocationText: ev.venueCity,
+            rawVenueText: null,
+            organizerName: contactPerson ?? null,
+            organizerTitle: organizedBy ?? null,
+            organizerEmail: inquiryEmail ?? null,
+            metadata: ev.objective ? { fullDescription: ev.objective } : undefined,
+          },
+        })
+      )
       totalNew++
 
       const hasContact = contactPerson || organizedBy || inquiryEmail
       if (hasContact) {
         withContact++
-        await prisma.eventContact.create({
-          data: {
-            eventId: event.id,
-            name: contactPerson ?? "",
-            title: organizedBy,
-            email: inquiryEmail,
-            phone: null,
-            isPrimary: true,
-            sourceUrl: ev.eventUrl,
-            confidence: "high",
-          },
-        })
+        await withRetry(() =>
+          prisma.eventContact.create({
+            data: {
+              eventId: event.id,
+              name: contactPerson ?? "",
+              title: organizedBy,
+              email: inquiryEmail,
+              phone: null,
+              isPrimary: true,
+              sourceUrl: ev.eventUrl,
+              confidence: "high",
+            },
+          })
+        )
         console.log(
           `[ACA/Ingest] ✓ Saved "${ev.eventName}" (${ev.venueCity}) — name="${contactPerson}" org="${organizedBy}" email="${inquiryEmail}"`
         )

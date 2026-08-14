@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapeBMEvents, scrapeBMVenues } from "../lib/scrapers/blackmeetings"
 import { normalizeState } from "../lib/stateNormalize"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
@@ -63,26 +63,31 @@ async function main() {
 
   // ─── Step 1: Scrape convention centers and upsert as Locations ───
   console.log("[BM/Ingest] Scraping convention centers...")
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
   const scrapedVenues = await scrapeBMVenues({ maxVenues: 50 })
   console.log(`[BM/Ingest] ${scrapedVenues.length} venues scraped`)
   debug("Raw venues:", scrapedVenues.map((v) => `${v.name} | url=${v.detailUrl}`))
 
   let venuesCreated = 0
   for (const venue of scrapedVenues) {
-    const existing = await prisma.location.findFirst({
-      where: {
-        name: { equals: venue.name, mode: "insensitive" },
-      },
-    })
-    if (!existing) {
-      await prisma.location.create({
-        data: {
-          type: "VENUE",
-          name: venue.name,
-          sourceUrl: venue.detailUrl,
-          active: true,
+    const existing = await withRetry(() =>
+      prisma.location.findFirst({
+        where: {
+          name: { equals: venue.name, mode: "insensitive" },
         },
       })
+    )
+    if (!existing) {
+      await withRetry(() =>
+        prisma.location.create({
+          data: {
+            type: "VENUE",
+            name: venue.name,
+            sourceUrl: venue.detailUrl,
+            active: true,
+          },
+        })
+      )
       venuesCreated++
       console.log(`[BM/Ingest] Created venue location: "${venue.name}" url=${venue.detailUrl}`)
     }
@@ -91,15 +96,19 @@ async function main() {
 
   // Refresh locations and venues so events can match against freshly created venues
   const [allLocations, allVenues] = await Promise.all([
-    prisma.location.findMany({
-      where: { active: true, type: "CITY" },
-      select: { id: true, name: true, city: true, state: true },
-      orderBy: { id: "asc" },
-    }),
-    prisma.location.findMany({
-      where: { active: true, type: "VENUE" },
-      select: { id: true, name: true, city: true, state: true },
-    }),
+    withRetry(() =>
+      prisma.location.findMany({
+        where: { active: true, type: "CITY" },
+        select: { id: true, name: true, city: true, state: true },
+        orderBy: { id: "asc" },
+      })
+    ),
+    withRetry(() =>
+      prisma.location.findMany({
+        where: { active: true, type: "VENUE" },
+        select: { id: true, name: true, city: true, state: true },
+      })
+    ),
   ])
   console.log(`[BM/Ingest] Refreshed to ${allLocations.length} total locations, ${allVenues.length} total venues`)
 
@@ -159,21 +168,25 @@ async function main() {
     let venueId: string | null = venueMatch.venueId
     let matchType: import("../lib/generated/prisma/client").EventMatchType = venueMatch.matchType
 
-    const existing = await prisma.event.findFirst({
-      where: {
-        eventName: { equals: ev.title, mode: "insensitive" },
-      },
-    })
+    const existing = await withRetry(() =>
+      prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.title, mode: "insensitive" },
+        },
+      })
+    )
     if (existing) {
       skippedDuplicate++
       debug(`Skip (duplicate): "${ev.title}" id=${existing.id}`)
       const newDesc = ev.bodyText ?? null
       const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
       if (newDesc && !existingMeta.fullDescription) {
-        await prisma.event.update({
-          where: { id: existing.id },
-          data: { metadata: { ...existingMeta, fullDescription: newDesc } },
-        })
+        await withRetry(() =>
+          prisma.event.update({
+            where: { id: existing.id },
+            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+          })
+        )
       }
       continue
     }
@@ -185,42 +198,46 @@ async function main() {
     debug(`  sourceUrl=${ev.detailUrl}`)
     debug(`  contact: name="${primaryContact?.name ?? ""}" email="${primaryContact?.email ?? ""}" phone="${primaryContact?.phone ?? ""}"`)
 
-    const event = await prisma.event.create({
-      data: {
-        locationId: cityLoc.id,
-          venueId: venueId ?? undefined,
-        matchType,
-        eventName: ev.title,
-        eventDateStart: ev.eventDateStart ?? undefined,
-        eventDateEnd: ev.eventDateEnd ?? undefined,
-        sourceUrl: ev.detailUrl ?? null,
-        sourceSiteId,
-        runId: runId ?? undefined,
-        expectedAttendees: null,
-        rawVenueText: ev.venueName ?? null,
-        rawLocationText: ev.venueLocation ?? null,
-        organizerName: primaryContact?.name ?? null,
-        organizerPhone: primaryContact?.phone ?? null,
-        organizerEmail: primaryContact?.email ?? null,
-        metadata: ev.bodyText ? { fullDescription: ev.bodyText } : undefined,
-      },
-    })
+    const event = await withRetry(() =>
+      prisma.event.create({
+        data: {
+          locationId: cityLoc.id,
+            venueId: venueId ?? undefined,
+          matchType,
+          eventName: ev.title,
+          eventDateStart: ev.eventDateStart ?? undefined,
+          eventDateEnd: ev.eventDateEnd ?? undefined,
+          sourceUrl: ev.detailUrl ?? null,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          expectedAttendees: null,
+          rawVenueText: ev.venueName ?? null,
+          rawLocationText: ev.venueLocation ?? null,
+          organizerName: primaryContact?.name ?? null,
+          organizerPhone: primaryContact?.phone ?? null,
+          organizerEmail: primaryContact?.email ?? null,
+          metadata: ev.bodyText ? { fullDescription: ev.bodyText } : undefined,
+        },
+      })
+    )
     totalNew++
     debug(`  Saved event id=${event.id}`)
 
     if (hasContact) {
       withContact++
-      await prisma.eventContact.create({
-        data: {
-          eventId: event.id,
-          name: primaryContact!.name ?? "",
-          email: primaryContact!.email,
-          phone: primaryContact!.phone,
-          isPrimary: true,
-          sourceUrl: ev.detailUrl ?? null,
-          confidence: "medium",
-        },
-      })
+      await withRetry(() =>
+        prisma.eventContact.create({
+          data: {
+            eventId: event.id,
+            name: primaryContact!.name ?? "",
+            email: primaryContact!.email,
+            phone: primaryContact!.phone,
+            isPrimary: true,
+            sourceUrl: ev.detailUrl ?? null,
+            confidence: "medium",
+          },
+        })
+      )
       console.log(`[BM/Ingest] ✓ Saved "${ev.title}" — venue="${ev.venueName ?? "none"}" name="${primaryContact!.name}" email="${primaryContact!.email}" phone="${primaryContact!.phone}" url=${ev.detailUrl}`)
     } else {
       withoutContact++

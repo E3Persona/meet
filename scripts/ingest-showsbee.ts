@@ -1,6 +1,6 @@
 import "dotenv/config"
 import { scrapeShowsbee } from "../lib/scrapers/showsbee"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
 const runId = process.env.RUN_ID ?? null
@@ -58,6 +58,7 @@ async function main() {
   const venueMap = buildVenueMap(venues)
 
   // ── Pass 1: listing only ───────────────────────────────────────────────
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
   console.log(`[Showsbee/Ingest] Pass 1: listing only (${locationCities.size} target cities)`)
   const allEvents = await scrapeShowsbee({
     category: "Professional_Shows",
@@ -97,19 +98,23 @@ async function main() {
     if (dateFrom && eventDateStart && eventDateStart < dateFrom) continue
     if (dateTo && eventDateStart && eventDateStart > dateTo) continue
 
-    const existing = await prisma.event.findFirst({
-      where: {
-        eventName: { equals: ev.title, mode: "insensitive" },
-      },
-    })
+    const existing = await withRetry(() =>
+      prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.title, mode: "insensitive" },
+        },
+      })
+    )
     if (existing) {
       const newDesc = ev.description ?? null
       const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
       if (newDesc && !existingMeta.fullDescription) {
-        await prisma.event.update({
-          where: { id: existing.id },
-          data: { metadata: { ...existingMeta, fullDescription: newDesc } },
-        })
+        await withRetry(() =>
+          prisma.event.update({
+            where: { id: existing.id },
+            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+          })
+        )
       }
       continue
     }
@@ -149,41 +154,45 @@ async function main() {
     const org = detail?.organizerContact ?? ev.organizerContact
     const hasContact = org && (org.name || org.email)
 
-    const event = await prisma.event.create({
-      data: {
-        locationId: loc.id,
-        venueId: venueId ?? undefined,
-        matchType,
-        eventName: ev.title,
-        eventDateStart,
-        eventDateEnd,
-        sourceUrl: ev.detailUrl ?? null,
-        sourceSiteId,
-        runId: runId ?? undefined,
-        expectedAttendees: null,
-        organizerName: org?.name ?? null,
-        organizerEmail: org?.email ?? null,
-        organizerPhone: org?.phone ?? null,
-        rawLocationText: detail?.venues?.[0]?.address ?? ev.venueName ?? null,
-        rawVenueText: venueId ? null : (venueName ?? null),
-        metadata: ev.description ? { fullDescription: ev.description } : undefined,
-      },
-    })
+    const event = await withRetry(() =>
+      prisma.event.create({
+        data: {
+          locationId: loc.id,
+          venueId: venueId ?? undefined,
+          matchType,
+          eventName: ev.title,
+          eventDateStart,
+          eventDateEnd,
+          sourceUrl: ev.detailUrl ?? null,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          expectedAttendees: null,
+          organizerName: org?.name ?? null,
+          organizerEmail: org?.email ?? null,
+          organizerPhone: org?.phone ?? null,
+          rawLocationText: detail?.venues?.[0]?.address ?? ev.venueName ?? null,
+          rawVenueText: venueId ? null : (venueName ?? null),
+          metadata: ev.description ? { fullDescription: ev.description } : undefined,
+        },
+      })
+    )
     totalNew++
 
     if (hasContact) {
-      await prisma.eventContact.create({
-        data: {
-          eventId: event.id,
-          name: org!.name ?? "",
-          title: null,
-          email: org!.email,
-          phone: org!.phone,
-          isPrimary: true,
-          sourceUrl: ev.detailUrl ?? null,
-          confidence: "medium",
-        },
-      })
+      await withRetry(() =>
+        prisma.eventContact.create({
+          data: {
+            eventId: event.id,
+            name: org!.name ?? "",
+            title: null,
+            email: org!.email,
+            phone: org!.phone,
+            isPrimary: true,
+            sourceUrl: ev.detailUrl ?? null,
+            confidence: "medium",
+          },
+        })
+      )
       console.log(`[Showsbee/Ingest] Saved contact for "${ev.title}"`)
     }
   }

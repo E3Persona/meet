@@ -6,7 +6,7 @@
 // Env: SCRAPE_API_BASE_URL (default http://localhost:8008)
 
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapeUrl } from "../lib/scrapers/generic-llm"
 import { isExcludedHostname } from "../lib/scrapers/dedicated-domains"
 
@@ -58,6 +58,9 @@ async function main() {
     return { recordsFound: 0, recordsNew: 0 }
   }
 
+  // Keepalive ping to prevent Neon P1017 connection drops during long scrapes
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
+
   let totalFound = 0
   let totalNew = 0
   let errors = 0
@@ -96,7 +99,7 @@ async function main() {
 
         let locationId: string | null = null
         if (ev.city) {
-          const loc = await prisma.location.findFirst({ where: { name: ev.city, active: true, type: "CITY" } })
+          const loc = await withRetry(() => prisma.location.findFirst({ where: { name: ev.city, active: true, type: "CITY" } }))
           if (loc) locationId = loc.id
         }
 
@@ -107,17 +110,17 @@ async function main() {
         }
 
         // Deduplicate by eventName
-        const existing = await prisma.event.findFirst({
+        const existing = await withRetry(() => prisma.event.findFirst({
           where: {
             eventName: { equals: normalizeEventName(ev.eventName), mode: "insensitive" },
           },
-        })
+        }))
         if (existing) {
           console.log(`[GenericLLM] Duplicate skip: "${ev.eventName}"`)
           continue
         }
 
-        await prisma.event.create({
+        await withRetry(() => prisma.event.create({
           data: {
             locationId,
             eventName: ev.eventName,
@@ -130,7 +133,7 @@ async function main() {
             rawLocationText: ev.city ?? null,
             rawVenueText: ev.venue ?? null,
           },
-        })
+        }))
         totalNew++
       }
     } catch (err) {

@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapeRrbitcEvents } from "../lib/scrapers/rrbitc"
 
 
@@ -76,6 +76,7 @@ async function main() {
 
   try {
     console.log(`[Rrbitc/Ingest] Starting scrape...`)
+    await withRetry(() => prisma.$queryRaw`SELECT 1`)
     const scrapeStart = Date.now()
     const events = await scrapeRrbitcEvents()
     const scrapeDuration = ((Date.now() - scrapeStart) / 1000).toFixed(1)
@@ -84,18 +85,18 @@ async function main() {
     for (const ev of events) {
       totalFound++
 
-      const existing = await prisma.event.findFirst({
+      const existing = await withRetry(() => prisma.event.findFirst({
         where: {
           eventName: { equals: ev.eventName, mode: "insensitive" },
         },
-      })
+      }))
       if (existing) {
         skippedDuplicate++
         console.log(`[Rrbitc/Ingest] Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
         continue
       }
 
-      await prisma.event.create({
+      await withRetry(() => prisma.event.create({
         data: {
           locationId: venueLocation.id,
           eventName: ev.eventName,
@@ -107,7 +108,7 @@ async function main() {
           rawVenueText: ev.venue ?? null,
           rawLocationText: "Washington, DC",
         },
-      })
+      }))
       totalNew++
       console.log(
         `[Rrbitc/Ingest] ✓ Saved "${ev.eventName}"` +

@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapePhillyExpoCenterEvents } from "../lib/scrapers/phillyexpocenter"
 
 const rawRunId = process.env.RUN_ID ?? null
@@ -74,6 +74,7 @@ async function main() {
   let skippedDuplicate = 0
 
   try {
+    await withRetry(() => prisma.$queryRaw`SELECT 1`)
     console.log(`[PhillyExpoCenter/Ingest] Starting scrape...`)
     const scrapeStart = Date.now()
     const events = await scrapePhillyExpoCenterEvents()
@@ -83,18 +84,18 @@ async function main() {
     for (const ev of events) {
       totalFound++
 
-      const existing = await prisma.event.findFirst({
+      const existing = await withRetry(() => prisma.event.findFirst({
         where: {
           eventName: { equals: ev.eventName, mode: "insensitive" },
         },
-      })
+      }))
       if (existing) {
         skippedDuplicate++
         console.log(`[PhillyExpoCenter/Ingest] Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
         continue
       }
 
-      await prisma.event.create({
+      await withRetry(() => prisma.event.create({
         data: {
           locationId: venueLocation.id,
           eventName: ev.eventName,
@@ -106,7 +107,7 @@ async function main() {
           rawVenueText: "Greater Philadelphia Expo Center",
           rawLocationText: "Oaks, PA",
         },
-      })
+      }))
       totalNew++
       console.log(
         `[PhillyExpoCenter/Ingest] ✓ Saved "${ev.eventName}"` +

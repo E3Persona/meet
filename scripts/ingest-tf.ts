@@ -1,5 +1,5 @@
 import "dotenv/config"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 import { scrapeTF } from "../lib/scrapers/tradefest"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
@@ -58,6 +58,7 @@ async function main() {
   const venueMap = buildVenueMap(venues)
 
   // ── Pass 1: listing only (no slow detail page fetches) ─────────────────
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
   console.log(`[TF/Ingest] Pass 1: listing only (${locationCities.size} target cities)`)
   const allEvents = await scrapeTF({
     maxPages: config.maxPages,
@@ -85,19 +86,23 @@ async function main() {
     if (dateFrom && eventDateStart && eventDateStart < dateFrom) continue
     if (dateTo && eventDateStart && eventDateStart > dateTo) continue
 
-    const existing = await prisma.event.findFirst({
-      where: {
-        eventName: { equals: ev.eventName, mode: "insensitive" },
-      },
-    })
+    const existing = await withRetry(() =>
+      prisma.event.findFirst({
+        where: {
+          eventName: { equals: ev.eventName, mode: "insensitive" },
+        },
+      })
+    )
     if (existing) {
       const newDesc = ev.description ?? null
       const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
       if (newDesc && !existingMeta.fullDescription) {
-        await prisma.event.update({
-          where: { id: existing.id },
-          data: { metadata: { ...existingMeta, fullDescription: newDesc } },
-        })
+        await withRetry(() =>
+          prisma.event.update({
+            where: { id: existing.id },
+            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+          })
+        )
       }
       continue
     }
@@ -133,41 +138,45 @@ async function main() {
     const org = detail?.organizer ?? ev.organizer
     const hasOrg = org.name || org.officialWebsite
 
-    const event = await prisma.event.create({
-      data: {
-        locationId: loc.id,
-          venueId: venueId ?? undefined,
-        matchType,
-        eventName: ev.eventName,
-        eventDateStart,
-        sourceUrl: ev.eventUrl,
-        sourceSiteId,
-        runId: runId ?? undefined,
-        expectedAttendees: detail?.expectedAttendees ?? ev.expectedAttendees ?? null,
-        organizerName: org.name ?? null,
-        organizerTitle: null,
-        organizerEmail: null,
-        organizerPhone: null,
-        rawLocationText: ev.venue.city ?? null,
-        rawVenueText: ev.venue.name ?? null,
-        metadata: ev.description ? { fullDescription: ev.description } : undefined,
-      },
-    })
+    const event = await withRetry(() =>
+      prisma.event.create({
+        data: {
+          locationId: loc.id,
+            venueId: venueId ?? undefined,
+          matchType,
+          eventName: ev.eventName,
+          eventDateStart,
+          sourceUrl: ev.eventUrl,
+          sourceSiteId,
+          runId: runId ?? undefined,
+          expectedAttendees: detail?.expectedAttendees ?? ev.expectedAttendees ?? null,
+          organizerName: org.name ?? null,
+          organizerTitle: null,
+          organizerEmail: null,
+          organizerPhone: null,
+          rawLocationText: ev.venue.city ?? null,
+          rawVenueText: ev.venue.name ?? null,
+          metadata: ev.description ? { fullDescription: ev.description } : undefined,
+        },
+      })
+    )
     totalNew++
 
     if (hasOrg) {
-      await prisma.eventContact.create({
-        data: {
-          eventId: event.id,
-          name: org.name ?? "",
-          title: null,
-          email: null,
-          phone: null,
-          isPrimary: true,
-          sourceUrl: org.officialWebsite ?? ev.eventUrl,
-          confidence: "medium",
-        },
-      })
+      await withRetry(() =>
+        prisma.eventContact.create({
+          data: {
+            eventId: event.id,
+            name: org.name ?? "",
+            title: null,
+            email: null,
+            phone: null,
+            isPrimary: true,
+            sourceUrl: org.officialWebsite ?? ev.eventUrl,
+            confidence: "medium",
+          },
+        })
+      )
       console.log(`[TF/Ingest] Saved contact for "${ev.eventName}"`)
     }
   }

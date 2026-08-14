@@ -1,7 +1,7 @@
 import "dotenv/config"
 
 import { scrapeMarriottLocalEvents } from "../lib/scrapers/marriott"
-import { prisma } from "../lib/prisma"
+import { prisma, withRetry } from "../lib/prisma"
 
 const rawRunId = process.env.RUN_ID ?? null
 
@@ -64,6 +64,8 @@ async function main() {
     console.log(`  → "${ml.name}" (${ml.city ?? "?"}, ${ml.state ?? "?"}) slug="${ml.slug}"`)
   }
 
+  await withRetry(() => prisma.$queryRaw`SELECT 1`)
+
   const existingSite = await prisma.sourceSite.findFirst({
     where: { name: { contains: "event.marriott.com", mode: "insensitive" } },
     select: { id: true },
@@ -102,17 +104,17 @@ async function main() {
     for (const ev of events) {
       totalFound++
 
-      const existing = await prisma.event.findFirst({
+      const existing = await withRetry(() => prisma.event.findFirst({
         where: {
           eventName: { equals: ev.eventName, mode: "insensitive" },
         },
-      })
+      }))
       if (existing) {
         skippedDuplicate++
         continue
       }
 
-      await prisma.event.create({
+      await withRetry(() => prisma.event.create({
         data: {
           locationId: ml.id,
           eventName: ev.eventName,
@@ -124,7 +126,7 @@ async function main() {
           rawLocationText: ev.city && ev.state ? `${ev.city}, ${ev.state}` : null,
           rawVenueText: ev.city && ev.state ? `${ev.city}, ${ev.state}` : null,
         },
-      })
+      }))
       totalNew++
     }
   }
