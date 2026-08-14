@@ -157,6 +157,14 @@ async function main() {
       if (existing) {
         skippedDuplicate++
         debug(`Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
+        const newDesc = ev.description ?? null
+        const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
+        if (newDesc && !existingMeta.fullDescription) {
+          await prisma.event.update({
+            where: { id: existing.id },
+            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+          })
+        }
         continue
       }
 
@@ -186,6 +194,7 @@ async function main() {
           organizerTitle: primaryContact?.organizerOrg ?? null,
           organizerEmail: primaryContact?.organizerEmail ?? null,
           organizerPhone: primaryContact?.organizerPhone ?? null,
+          metadata: ev.description ? { fullDescription: ev.description } : undefined,
         },
       })
       totalNew++

@@ -13,6 +13,7 @@ export interface InfosecEvent {
   city: string
   state: string
   organizerName: string | null
+  description: string | null
   expectedAttendees: number | null
   eventType: string | null
   focus: string | null
@@ -98,6 +99,7 @@ export interface DetailData {
   organizerName: string | null
   eventType: string | null
   focus: string | null
+  description: string | null
 }
 
 export interface ScrapeOptions {
@@ -179,6 +181,7 @@ export async function scrapeInfosecConferences(
             ev.organizerName = detail.organizerName ?? ev.organizerName
             ev.eventType = detail.eventType ?? ev.eventType
             ev.focus = detail.focus ?? ev.focus
+            ev.description = detail.description ?? ev.description
           }
         } catch (err) {
           console.warn(`[Infosec] Detail failed for ${ev.sourceUrl}:`, err)
@@ -330,6 +333,7 @@ function parseEventCards(
       city,
       state,
       organizerName,
+      description: null,
       expectedAttendees,
       eventType: null,
       focus: null,
@@ -351,6 +355,19 @@ async function fetchDetailPage(url: string): Promise<DetailData | null> {
   if (!html) return null
 
   const $ = cheerio.load(html)
+
+  // ---- Description from main content area ----
+  let description: string | null = null
+  const descEl = $("article, .event-description, [class*='description'], main, .content, #content, .event-body").first()
+  if (descEl.length) {
+    description = descEl.text().replace(/\s+/g, " ").trim() || null
+  }
+  if (!description) {
+    description = $("body").clone()
+      .find("script, style, nav, header, footer, .sidebar, .menu, .nav, .cookie, .modal, .popup, .ad, .advertisement, .social, .share, .related, .recommended")
+      .remove().end().text().replace(/\s+/g, " ").trim() || null
+  }
+  console.log(`[infosec] Description extracted: ${description ? `${description.length} chars` : "none"}`)
 
   // ── Official website: the "Visit Event" CTA link in the sidebar ──
   let officialWebsite: string | null = null
@@ -389,7 +406,7 @@ async function fetchDetailPage(url: string): Promise<DetailData | null> {
     focus = focusField.find('.ev-meta__value').text().trim() || null
   }
 
-  return { officialWebsite, organizerName, eventType, focus }
+  return { officialWebsite, organizerName, eventType, focus, description }
 }
 
 const MONTH_NAMES: Record<string, number> = {

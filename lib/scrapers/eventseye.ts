@@ -1,5 +1,9 @@
 import * as cheerio from "cheerio"
 import type { Browser, Page } from "puppeteer-core"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
+
+puppeteer.use(StealthPlugin())
 
 const BASE = "https://www.eventseye.com"
 const LISTING_URL = `${BASE}/fairs/upcoming_trade_shows.html`
@@ -239,9 +243,10 @@ async function scrapeDetailPage(
   const $ = cheerio.load(html)
 
   const description =
-    $('h2:contains("Description")').next("p").text().trim() ||
+    $('h2:contains("Description")').nextUntil("h2").text().trim() ||
     $(".description").text().trim() ||
     null
+  console.log(`[eventseye] Description extracted: ${description ? `${description.length} chars` : "none"}`)
 
   const industries: string[] = []
   $('h2:contains("Related industries")')
@@ -330,8 +335,7 @@ export async function scrapeEventseye(
     targetCities,
   } = options
 
-  const { launch: launchBrowser } = await import("puppeteer-core")
-  const browser: Browser = await launchBrowser({
+  const browser: Browser = await puppeteer.launch({
     headless: true,
     executablePath,
     args: [
@@ -343,9 +347,6 @@ export async function scrapeEventseye(
 
   const page = await browser.newPage()
   await page.setViewport({ width: 1920, height: 1080 })
-  await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-  )
 
   const events: EventseyeEvent[] = []
   let detailsVisited = 0

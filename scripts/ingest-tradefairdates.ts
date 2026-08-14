@@ -162,6 +162,14 @@ async function main() {
       if (existing) {
         skippedDuplicate++
         console.log(`[TradeFairDates/Ingest] Skip (duplicate): "${ev.eventName}" id=${existing.id}`)
+        const newDesc = ev.description ?? null
+        const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
+        if (newDesc && !existingMeta.fullDescription) {
+          await prisma.event.update({
+            where: { id: existing.id },
+            data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+          })
+        }
         continue
       }
 
@@ -179,6 +187,7 @@ async function main() {
           runId: runId ?? undefined,
           rawLocationText: ev.city,
           rawVenueText: ev.venueName ?? null,
+          metadata: ev.description ? { fullDescription: ev.description } : undefined,
         },
       })
       totalNew++

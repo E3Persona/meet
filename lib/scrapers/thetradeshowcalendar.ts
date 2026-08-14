@@ -1,6 +1,10 @@
 // scrapers/ecn.ts
 import * as cheerio from "cheerio"
 import { createJinaProvider } from "../providers/scrape/jina"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
+
+puppeteer.use(StealthPlugin())
 
 const ECN_BASE = "https://thetradeshowcalendar.com/ecn2.2024"
 const LISTING_URL = `${ECN_BASE}/index.php`
@@ -364,9 +368,7 @@ export async function scrapeECN(
   const skipContacts = options?.skipContacts ?? false
   const maxContactLookups = options?.maxContactLookups ?? Infinity
 
-  const { launch: launchBrowser } = await import("puppeteer-core")
-
-  const browser = await launchBrowser({
+  const browser = await puppeteer.launch({
     headless: true,
     executablePath: "/usr/bin/google-chrome",
     args: [
@@ -379,9 +381,6 @@ export async function scrapeECN(
 
   const page = await browser.newPage()
   await page.setViewport({ width: 1920, height: 1080 })
-  await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-  )
 
   let contactLookups = 0
   let batchCount = 0

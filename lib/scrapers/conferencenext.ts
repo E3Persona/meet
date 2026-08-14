@@ -1,3 +1,4 @@
+import * as cheerio from "cheerio"
 import puppeteer from "puppeteer-extra"
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import { normalizeState } from "../stateNormalize"
@@ -71,6 +72,7 @@ export interface CNEvent {
   venueCountry: string
   contacts: CNContact[]
   indexedIn: string[]
+  description: string | null
   expectedAttendees: number | null
   sourceSite: "conferencenext.com"
 }
@@ -225,6 +227,7 @@ interface CNDetailResult {
   organizerOrg: string | null
   organizerEmail: string | null
   indexedIn: string[]
+  description: string | null
 }
 
 async function scrapeDetailPage(
@@ -249,7 +252,7 @@ async function scrapeDetailPage(
     }
   }, `detail ${url}`, 5, 5000)
 
-  return await page.evaluate(
+  const result = await page.evaluate(
     (decodeFnBody: string) => {
       const decode = new Function("encoded", decodeFnBody) as (
         e: string
@@ -329,6 +332,19 @@ async function scrapeDetailPage(
     return email;
   `
   )
+
+  const html = await page.content()
+  const $ = cheerio.load(html)
+  const descEl = $("article, .event-description, [class*='description'], main, .content, #content, .event-body").first()
+  let description: string | null = descEl.length ? descEl.text().replace(/\s+/g, " ").trim() || null : null
+  if (!description) {
+    description = $("body").clone()
+      .find("script, style, nav, header, footer, .sidebar, .menu, .nav, .cookie, .modal, .popup, .ad, .advertisement, .social, .share, .related, .recommended")
+      .remove().end().text().replace(/\s+/g, " ").trim() || null
+  }
+  console.log(`[conferencenext] Description extracted: ${description ? `${description.length} chars` : "none"}`)
+
+  return { ...result, description }
 }
 
 function parseVenueText(venueText: string): { city: string; country: string } {
@@ -426,6 +442,7 @@ export async function scrapeCN(options?: {
               },
             ],
             indexedIn: detail.indexedIn || [],
+            description: detail.description ?? null,
             expectedAttendees: null,
             sourceSite: "conferencenext.com",
           }

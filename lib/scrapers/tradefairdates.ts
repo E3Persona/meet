@@ -27,6 +27,7 @@ export interface TradeFairDateEvent {
   detailUrl: string
   contactEmail: string | null
   websiteUrl: string | null
+  description: string | null
   sourceSite: "tradefairdates.com"
 }
 
@@ -134,6 +135,7 @@ export async function scrapeTradeFairDatesEvents(
         detailUrl,
         contactEmail: null,
         websiteUrl: null,
+        description: null,
         sourceSite: "tradefairdates.com",
       })
       tileCount++
@@ -170,8 +172,21 @@ export async function enrichTradeFairDateEvent(
   const html = await resp.text()
   const $ = cheerio.load(html)
 
+  // Extract description from main content area
+  let description: string | null = null
+  const descEl = $("article, .event-description, [class*='description'], main, .content, #content, .event-body").first()
+  if (descEl.length) {
+    description = descEl.text().replace(/\s+/g, " ").trim() || null
+  }
+  if (!description) {
+    description = $("body").clone()
+      .find("script, style, nav, header, footer, .sidebar, .menu, .nav, .cookie, .modal, .popup, .ad, .advertisement, .social, .share, .related, .recommended")
+      .remove().end().text().replace(/\s+/g, " ").trim() || null
+  }
+  console.log(`[tradefairdates] Description extracted: ${description ? `${description.length} chars` : "none"}`)
+
   const contactSection = $("#messekontakt")
-  if (!contactSection.length) return event
+  if (!contactSection.length) return { ...event, description }
 
   const websiteSpan = contactSection.find('[data-role="gothere"]')
   const websiteUrl = websiteSpan.text().trim() || null
@@ -204,7 +219,7 @@ export async function enrichTradeFairDateEvent(
     }
   }
 
-  return { ...event, contactEmail, websiteUrl }
+  return { ...event, contactEmail, websiteUrl, description }
 }
 
 export async function scrapeTradeFairDatesWithDetails(

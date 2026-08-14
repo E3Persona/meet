@@ -55,8 +55,6 @@ import {
   Search,
   Loader2,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   MoreHorizontal,
   FileText,
   StickyNote,
@@ -334,8 +332,6 @@ export function EventsTable() {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "eventDateStart", desc: false },
   ])
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
   const [total, setTotal] = useState(0)
   const [filterHasContact, setFilterHasContact] = useState<string>("all")
   const [filterDateFrom, setFilterDateFrom] = useState<string>("")
@@ -426,8 +422,6 @@ export function EventsTable() {
       if (search) params.set("search", search)
       if (filterDateFrom) params.set("dateFrom", filterDateFrom)
       if (filterDateTo) params.set("dateTo", filterDateTo)
-      params.set("page", String(page))
-      params.set("pageSize", String(pageSize))
 
       const res = await fetch(`/api/events?${params}`)
       if (!res.ok) throw new Error("Failed")
@@ -447,8 +441,6 @@ export function EventsTable() {
     search,
     filterDateFrom,
     filterDateTo,
-    page,
-    pageSize,
   ])
 
   const saveMetadata = useCallback(async () => {
@@ -485,31 +477,24 @@ export function EventsTable() {
   const setCityFilter = (val: string) => {
     setFilterCity(val)
     setFilterLocation("all")
-    setPage(1)
   }
   const setLocationFilter = (val: string) => {
     setFilterLocation(val)
-    setPage(1)
   }
   const setStatusFilter = (val: string) => {
     setFilterStatus(val)
-    setPage(1)
   }
   const setSearchFilter = (val: string) => {
     setSearch(val)
-    setPage(1)
   }
   const setHasContactFilter = (val: string) => {
     setFilterHasContact(val)
-    setPage(1)
   }
   const setDateFromFilter = (val: string) => {
     setFilterDateFrom(val)
-    setPage(1)
   }
   const setDateToFilter = (val: string) => {
     setFilterDateTo(val)
-    setPage(1)
   }
 
   const fetchLocations = useCallback(async () => {
@@ -618,7 +603,6 @@ export function EventsTable() {
       if (!res.ok) throw new Error()
       const data = await res.json()
       toast.success(`Deleted ${data.deleted} events`)
-      setPage(1)
       fetchEvents()
       refreshStats()
     } catch {
@@ -733,17 +717,27 @@ export function EventsTable() {
           header: "Location",
           cell: ({ row }) => {
             const ev = row.original
+            const matchedCity = ev.location.city || ev.location.name
+            const matchedState = ev.location.state
+            const matchedText = `${matchedCity}${matchedState ? `, ${matchedState}` : ""}`
             const raw = ev.rawLocationText
-            const locText = raw ?? `${ev.location.city || ev.location.name}${ev.location.state ? `, ${ev.location.state}` : ""}`
+            const showRaw = raw && raw !== matchedText
             return (
-              <span className="text-sm">
-                <TruncatedCell text={locText} />
-                {raw && (
-                  <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
-                    raw
-                  </span>
+              <div className="max-w-[180px]">
+                {showRaw && (
+                  <p className="text-xs text-muted-foreground truncate" title={raw}>
+                    {raw}
+                  </p>
                 )}
-              </span>
+                <p className={`text-sm ${showRaw ? "text-foreground" : ""}`}>
+                  <TruncatedCell text={showRaw ? matchedText : (raw ?? matchedText)} />
+                  {showRaw && (
+                    <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
+                      matched
+                    </span>
+                  )}
+                </p>
+              </div>
             )
           },
         },
@@ -752,27 +746,44 @@ export function EventsTable() {
           header: "Venue",
           cell: ({ row }) => {
             const ev = row.original
-            const venueName = ev.venue?.name ?? ev.rawVenueText
-            const venueCity = ev.venue?.city
-            const venueAddress = ev.venue?.address
+            const raw = ev.rawVenueText
+            const venue = ev.venue
+            const showRaw = raw && venue && raw !== venue.name
             return (
               <div className="max-w-[200px]">
-                {venueName ? (
+                {showRaw && (
+                  <p className="text-xs text-muted-foreground truncate" title={raw}>
+                    {raw}
+                  </p>
+                )}
+                {venue ? (
                   <>
                     <p className="text-sm font-medium">
-                      <TruncatedCell text={venueName} />
+                      <TruncatedCell text={venue.name} />
+                      {showRaw && (
+                        <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
+                          matched
+                        </span>
+                      )}
                     </p>
-                    {venueCity && (
+                    {venue.city && (
                       <p className="text-xs text-muted-foreground">
-                        {venueCity}{ev.venue?.state ? `, ${ev.venue.state}` : ""}
+                        {venue.city}{venue.state ? `, ${venue.state}` : ""}
                       </p>
                     )}
-                    {venueAddress && (
+                    {venue.address && (
                       <p className="text-xs text-muted-foreground truncate">
-                        {venueAddress}
+                        {venue.address}
                       </p>
                     )}
                   </>
+                ) : raw ? (
+                  <p className="text-sm">
+                    <TruncatedCell text={raw} />
+                    <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
+                      raw
+                    </span>
+                  </p>
                 ) : (
                   <span className="text-sm text-muted-foreground">—</span>
                 )}
@@ -1375,9 +1386,7 @@ export function EventsTable() {
             Delete All ({total})
           </Button> */}
           <span className="ml-auto text-xs text-muted-foreground">
-            {events.length > 0
-              ? `Showing ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} of ${total}`
-              : `${total} events`}
+            {total} events
           </span>
         </div>
       </div>
@@ -1451,56 +1460,6 @@ export function EventsTable() {
           </Table>
         </CardContent>
       </Card>
-
-      {/* Pagination */}
-      {total > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Show</span>
-            <Select
-              value={String(pageSize)}
-              onValueChange={(v) => {
-                setPageSize(Number(v))
-                setPage(1)
-              }}
-            >
-              <SelectTrigger className="h-8 w-16" size="sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="200">200</SelectItem>
-                <SelectItem value="400">400</SelectItem>
-                <SelectItem value="600">600</SelectItem>
-                <SelectItem value="1000">1000</SelectItem>
-              </SelectContent>
-            </Select>
-            <span>of {total}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="px-3 text-sm">
-              Page {page} of {Math.max(1, Math.ceil(total / pageSize))}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setPage((p) => Math.min(Math.ceil(total / pageSize), p + 1))
-              }
-              disabled={page >= Math.ceil(total / pageSize)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Progress Dialog */}
       <ProgressDialog

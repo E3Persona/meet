@@ -159,6 +159,7 @@ async function scrapeDetailPage(
 
   const contentHtml = $(".mc-event-details").html() ?? ""
   const description = htmlToText(contentHtml) || null
+  console.log(`[sgmp] Description extracted: ${description ? `${description.length} chars` : "none"}`)
 
   let venueName: string | null = null
   let venueAddress: string | null = null

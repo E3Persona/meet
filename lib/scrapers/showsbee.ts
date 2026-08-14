@@ -1,5 +1,9 @@
 import * as cheerio from "cheerio"
 import type { Browser, Page } from "puppeteer-core"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
+
+puppeteer.use(StealthPlugin())
 
 const BASE = "https://www.showsbee.com"
 
@@ -32,6 +36,7 @@ export interface ShowsbeeEvent extends ShowsbeeEventCard {
     phone: string | null
     website: string | null
   } | null
+  description: string | null
   expectedAttendees: number | null
   sourceSite: "showsbee.com"
 }
@@ -55,6 +60,7 @@ interface ShowsbeeListingResult {
 interface ShowsbeeDetailResult {
   venues: ShowsbeeCompany[]
   organizers: ShowsbeeCompany[]
+  description: string | null
 }
 
 // ---------- Helpers ----------
@@ -274,11 +280,21 @@ async function scrapeDetailPage(
   const venueTableHtml = findSectionTableHtml($, "Venues")
   const organizerTableHtml = findSectionTableHtml($, "Organizers")
 
+  const descEl = $("article, .event-description, [class*='description'], main, .content, #content, .event-body").first()
+  let description: string | null = descEl.length ? descEl.text().replace(/\s+/g, " ").trim() || null : null
+  if (!description) {
+    description = $("body").clone()
+      .find("script, style, nav, header, footer, .sidebar, .menu, .nav, .cookie, .modal, .popup, .ad, .advertisement, .social, .share, .related, .recommended")
+      .remove().end().text().replace(/\s+/g, " ").trim() || null
+  }
+  console.log(`[showsbee] Description extracted: ${description ? `${description.length} chars` : "none"}`)
+
   return {
     venues: venueTableHtml ? extractCompanyBlocks(venueTableHtml) : [],
     organizers: organizerTableHtml
       ? extractCompanyBlocks(organizerTableHtml)
       : [],
+    description,
   }
 }
 
@@ -298,8 +314,7 @@ export async function scrapeShowsbee(
     targetCity,
   } = options
 
-  const { launch: launchBrowser } = await import("puppeteer-core")
-  const browser: Browser = await launchBrowser({
+  const browser: Browser = await puppeteer.launch({
     headless: true,
     executablePath,
     args: [
@@ -311,9 +326,6 @@ export async function scrapeShowsbee(
 
   const page = await browser.newPage()
   await page.setViewport({ width: 1920, height: 1080 })
-  await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-  )
 
   const events: ShowsbeeEvent[] = []
   const seenDetailUrls = new Set<string>()
@@ -332,6 +344,7 @@ export async function scrapeShowsbee(
       for (const card of cards) {
         let venues: ShowsbeeCompany[] = []
         let organizers: ShowsbeeCompany[] = []
+        let description: string | null = null
 
         if (
           withDetails &&
@@ -345,6 +358,7 @@ export async function scrapeShowsbee(
               const detail = await scrapeDetailPage(page, card.detailUrl)
               venues = detail.venues
               organizers = detail.organizers
+              description = detail.description
             } catch (err) {
               console.error(
                 `[showsbee] detail failed for ${card.detailUrl}:`,
@@ -367,6 +381,7 @@ export async function scrapeShowsbee(
                 website: organizers[0].website || null,
               }
             : null,
+          description,
           expectedAttendees: null,
           sourceSite: "showsbee.com",
         })

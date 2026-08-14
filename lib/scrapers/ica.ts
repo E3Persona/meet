@@ -1,4 +1,8 @@
 import * as cheerio from "cheerio"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
+
+puppeteer.use(StealthPlugin())
 
 const BASE = "https://internationalconferencealerts.com"
 
@@ -111,21 +115,13 @@ export interface ICAEvent {
   contacts: ICAContact[]
   registrationDeadline: string | null
   submissionDeadline: string | null
+  description: string | null
   expectedAttendees: number | null
   sourceSite: "internationalconferencealerts.com"
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const jitter = (baseMs: number) => baseMs + Math.random() * baseMs * 0.5
-
-async function setHumanHeaders(page: any) {
-  await page.setExtraHTTPHeaders({
-    "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-  })
-}
 
 function decodeCFEmail(encoded: string): string {
   let email = ""
@@ -263,8 +259,8 @@ async function fetchListingPage(
   let html: string = await page.content()
 
   if (isCloudflareChallenge(html)) {
-    console.log(`[ICA] CF challenge detected, waiting up to 30s...`)
-    await wait(30000)
+    console.log(`[ICA] CF challenge detected, waiting up to 45s...`)
+    await wait(45000)
     html = await page.content()
     if (isCloudflareChallenge(html)) {
       console.warn(`[ICA] Still blocked by Cloudflare: ${url}`)
@@ -358,6 +354,7 @@ interface DetailResult {
   organizerOrg: string | null
   organizerEmail: string | null
   organizerPhone: string | null
+  description: string | null
   registrationDeadline: string | null
   submissionDeadline: string | null
 }
@@ -379,8 +376,8 @@ async function scrapeDetailPage(
   let html: string = await page.content()
 
   if (isCloudflareChallenge(html)) {
-    console.log(`[ICA] CF challenge on detail, waiting up to 30s...`)
-    await wait(30000)
+    console.log(`[ICA] CF challenge on detail, waiting up to 45s...`)
+    await wait(45000)
     html = await page.content()
     if (isCloudflareChallenge(html)) {
       console.warn(`[ICA] Still blocked by Cloudflare: ${url}`)
@@ -390,6 +387,19 @@ async function scrapeDetailPage(
   }
 
   const $ = cheerio.load(html)
+
+  // ---- Description from main content area ----
+  let description: string | null = null
+  const descEl = $("article, .event-description, [class*='description'], main, .content, #content, .event-body").first()
+  if (descEl.length) {
+    description = descEl.text().replace(/\s+/g, " ").trim() || null
+  }
+  if (!description) {
+    description = $("body").clone()
+      .find("script, style, nav, header, footer, .sidebar, .menu, .nav, .cookie, .modal, .popup, .ad, .advertisement, .social, .share, .related, .recommended")
+      .remove().end().text().replace(/\s+/g, " ").trim() || null
+  }
+  console.log(`[ICA] Description extracted: ${description ? `${description.length} chars` : "none"}`)
 
   // ---- Official website: first external link that isn't ICA/social/CF internals ----
   let officialWebsite: string | null = null
@@ -549,6 +559,7 @@ async function scrapeDetailPage(
     organizerOrg,
     organizerEmail,
     organizerPhone,
+    description,
     registrationDeadline,
     submissionDeadline,
   }
@@ -571,9 +582,7 @@ export async function scrapeICA(options?: {
   const pagesPerBatch = options?.pagesPerBatch ?? 999
   const onBatch = options?.onBatch
 
-  const { launch: launchBrowser } = await import("puppeteer-core")
-
-  const browser = await launchBrowser({
+  const browser = await puppeteer.launch({
     headless: true,
     executablePath: "/usr/bin/google-chrome",
     args: [
@@ -586,7 +595,6 @@ export async function scrapeICA(options?: {
 
   const page = await browser.newPage()
   await page.setViewport({ width: 1920, height: 1080 })
-  await setHumanHeaders(page)
 
   const allResults: ICAEvent[] = []
   const seenUrls = new Set<string>()
@@ -656,6 +664,7 @@ export async function scrapeICA(options?: {
                   organizerLinkedIn: null,
                 },
               ],
+              description: detail.description ?? null,
               registrationDeadline: detail.registrationDeadline ?? null,
               submissionDeadline: detail.submissionDeadline ?? null,
               expectedAttendees: null,

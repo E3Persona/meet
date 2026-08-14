@@ -126,7 +126,17 @@ async function main() {
         eventName: { equals: ev.eventName, mode: "insensitive" },
       },
     })
-    if (existing) continue
+    if (existing) {
+      const newDesc = ev.description ?? null
+      const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
+      if (newDesc && !existingMeta.fullDescription) {
+        await prisma.event.update({
+          where: { id: existing.id },
+          data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+        })
+      }
+      continue
+    }
 
     let eventDateStart: Date | undefined
     let eventDateEnd: Date | undefined

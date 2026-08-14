@@ -1,5 +1,8 @@
-import puppeteer from "puppeteer-core"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
 import * as cheerio from "cheerio"
+
+puppeteer.use(StealthPlugin())
 
 const BASE = "https://tickets.gaylordnational.com"
 const EVENTS_URL = `${BASE}/`
@@ -69,11 +72,6 @@ export async function scrapeGaylordNationalEvents(): Promise<GaylordNationalEven
 
   try {
     const page = await browser.newPage()
-    await page.setExtraHTTPHeaders({
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-      "Accept-Language": "en-US,en;q=0.9",
-    })
     await page.setViewport({ width: 1920, height: 1080 })
 
     await page.goto(EVENTS_URL, { waitUntil: "networkidle2", timeout: 30000 })
@@ -117,6 +115,7 @@ export async function scrapeGaylordNationalEvents(): Promise<GaylordNationalEven
       )
 
       const description = $panel.find(".description").first().text().trim().replace(/\s+/g, " ") || null
+      console.log(`[gaylordnational] Description extracted: ${description ? `${description.length} chars` : "none"}`)
       const priceText = $panel.find(".event-pricing-wrap .pricing-item").first().text().trim() || null
 
       const ticketUrl =

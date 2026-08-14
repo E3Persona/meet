@@ -7,16 +7,13 @@ export async function GET(request: Request) {
   const cityId = searchParams.get("cityId")
   const status = searchParams.get("status")
   const search = searchParams.get("search")
-  const hasContact = searchParams.get("hasContact") // "true", "false", or null
+  const hasContact = searchParams.get("hasContact")
   const dateFrom = searchParams.get("dateFrom")
   const dateTo = searchParams.get("dateTo")
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
-  const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get("pageSize") ?? "25", 10)))
 
   const where: Record<string, unknown> = {}
 
   if (cityId && !locationId) {
-    // Find all venues under this city, then match events at those venues
     const venueIds = await prisma.location.findMany({
       where: { type: "VENUE", parentId: cityId },
       select: { id: true },
@@ -105,14 +102,12 @@ export async function GET(request: Request) {
           },
         },
         orderBy: { eventDateStart: "asc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
       }),
       prisma.event.count({ where }),
     ])
   )
 
-  return NextResponse.json({ events, total, page, pageSize })
+  return NextResponse.json({ events, total })
 }
 
 export async function DELETE() {

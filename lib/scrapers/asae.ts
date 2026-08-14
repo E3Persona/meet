@@ -1,6 +1,10 @@
 // scrapers/asae.ts
 import * as cheerio from "cheerio"
 import { createJinaProvider } from "../providers/scrape/jina"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
+
+puppeteer.use(StealthPlugin())
 
 const ASAE_CALENDAR_URL = "https://www.asaecenter.org/programs/events"
 const PHEEDLOOP_EMBED_HOST = "site.pheedloop.com"
@@ -309,13 +313,11 @@ export async function scrapeEventContact(
 
   // Strategy 1: Puppeteer — ASAE loads contacts via JS, so DOM is the reliable source
   const closeBrowser = !browser
-  const pupBrowser = browser ?? await import("puppeteer-core").then((m) =>
-    m.launch({
+  const pupBrowser = browser ?? await puppeteer.launch({
       headless: true,
       executablePath: "/usr/bin/google-chrome",
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     })
-  )
 
   let fullDescription: string | null = null
   let contact: ASAEContact = { organizerEmail: null, organizerPhone: null }
@@ -336,6 +338,7 @@ export async function scrapeEventContact(
 
     // Build organized description from structured HTML
     fullDescription = buildOrganizedDescription(html)
+    console.log(`[ASAE] Description extracted: ${fullDescription ? `${fullDescription.length} chars` : "none"}`)
 
     // Parse with cheerio for contact info
     const $ = cheerio.load(html)
@@ -436,9 +439,7 @@ export async function scrapeASAE(options?: {
   const skipContacts = options?.skipContacts ?? false
   const maxContactLookups = options?.maxContactLookups ?? Infinity
 
-  const { launch: launchBrowser } = await import("puppeteer-core")
-
-  const browser = await launchBrowser({
+  const browser = await puppeteer.launch({
     headless: true,
     executablePath: "/usr/bin/google-chrome",
     args: [
@@ -451,9 +452,6 @@ export async function scrapeASAE(options?: {
 
   const page = await browser.newPage()
   await page.setViewport({ width: 1920, height: 1080 })
-  await page.setUserAgent(
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-  )
 
   let cards: ASAEEventCard[] = []
   try {

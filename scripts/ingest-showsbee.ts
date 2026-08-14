@@ -105,7 +105,17 @@ async function main() {
         eventName: { equals: ev.title, mode: "insensitive" },
       },
     })
-    if (existing) continue
+    if (existing) {
+      const newDesc = ev.description ?? null
+      const existingMeta = (existing.metadata as Record<string, unknown>) ?? {}
+      if (newDesc && !existingMeta.fullDescription) {
+        await prisma.event.update({
+          where: { id: existing.id },
+          data: { metadata: { ...existingMeta, fullDescription: newDesc } },
+        })
+      }
+      continue
+    }
 
     newCandidates.push({ ev, loc: matchingLoc, eventDateStart, eventDateEnd })
   }
@@ -166,6 +176,7 @@ async function main() {
         organizerPhone: org?.phone ?? null,
         rawLocationText: detail?.venues?.[0]?.address ?? ev.venueName ?? null,
         rawVenueText: venueId ? null : (venueName ?? null),
+        metadata: ev.description ? { fullDescription: ev.description } : undefined,
       },
     })
     totalNew++

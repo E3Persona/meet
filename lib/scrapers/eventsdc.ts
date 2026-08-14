@@ -1,4 +1,7 @@
-import puppeteer from "puppeteer-core"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
+
+puppeteer.use(StealthPlugin())
 
 const BASE = "https://eventsdc.com"
 const VENUE_SLUG = "walter-e-washington-convention-center"
@@ -72,9 +75,6 @@ export async function scrapeEventsDcEvents(
   })
   try {
     const page = await browser.newPage()
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-    )
     await page.goto(startUrl, { waitUntil: "networkidle2", timeout: 45000 })
 
     const events: EventsDcEvent[] = []

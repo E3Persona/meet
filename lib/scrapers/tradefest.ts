@@ -1,4 +1,8 @@
-import puppeteer from "puppeteer-core"
+import * as cheerio from "cheerio"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
+
+puppeteer.use(StealthPlugin())
 
 const BASE_URL = "https://tradefest.io"
 const LISTING_PATH = "/en/selection/best-conventions-and-expos-in-usa"
@@ -27,6 +31,7 @@ export interface TFEvent {
   venue: TFVenue
   organizer: TFOrganizer
   tags: string[]
+  description: string | null
   expectedAttendees: number | null
   expectedExhibitors: number | null
   sourceSite: "tradefest.io"
@@ -233,12 +238,13 @@ async function scrapeDetailPage(
 ): Promise<{
   organizerName: string | null
   organizerProfileUrl: string | null
+  description: string | null
   expectedAttendees: number | null
   expectedExhibitors: number | null
 }> {
   await withRetry(() => page.goto(url, { waitUntil: "networkidle2", timeout: 30000 }), `detail ${url}`)
 
-  return await page.evaluate((baseUrl: string) => {
+  const result = await page.evaluate((baseUrl: string) => {
     // Info box paragraphs, matched by visible label text since Chakra class
     // hashes (css-1art13b etc.) are unstable across builds.
     const paragraphs = Array.from(
@@ -281,6 +287,19 @@ async function scrapeDetailPage(
       expectedExhibitors,
     }
   }, BASE_URL)
+
+  const html = await page.content()
+  const $ = cheerio.load(html)
+  const descEl = $("article, .event-description, [class*='description'], main, .content, #content, .event-body").first()
+  let description: string | null = descEl.length ? descEl.text().replace(/\s+/g, " ").trim() || null : null
+  if (!description) {
+    description = $("body").clone()
+      .find("script, style, nav, header, footer, .sidebar, .menu, .nav, .cookie, .modal, .popup, .ad, .advertisement, .social, .share, .related, .recommended")
+      .remove().end().text().replace(/\s+/g, " ").trim() || null
+  }
+  console.log(`[tradefest] Description extracted: ${description ? `${description.length} chars` : "none"}`)
+
+  return { ...result, description }
 }
 
 function parseDateRange(dateText: string | null): {
@@ -345,6 +364,7 @@ export async function scrapeTF(options?: {
 
         let organizerName: string | null = null
         let organizerProfileUrl: string | null = null
+        let description: string | null = null
         let expectedAttendees: number | null = null
         let expectedExhibitors: number | null = null
 
@@ -354,6 +374,7 @@ export async function scrapeTF(options?: {
             const detail = await scrapeDetailPage(detailPage, card.url)
             organizerName = detail.organizerName
             organizerProfileUrl = detail.organizerProfileUrl
+            description = detail.description
             expectedAttendees = detail.expectedAttendees
             expectedExhibitors = detail.expectedExhibitors
           } catch (err) {
@@ -384,6 +405,7 @@ export async function scrapeTF(options?: {
               : null,
           },
           tags: card.tags,
+          description,
           expectedAttendees,
           expectedExhibitors,
           sourceSite: "tradefest.io",

@@ -1,4 +1,7 @@
-import puppeteer from "puppeteer-core"
+import puppeteer from "puppeteer-extra"
+import StealthPlugin from "puppeteer-extra-plugin-stealth"
+
+puppeteer.use(StealthPlugin())
 
 const CALENDAR_URL = "https://phillyexpocenter.com/calendar/"
 
@@ -84,9 +87,6 @@ export async function scrapePhillyExpoCenterEvents(): Promise<PhillyExpoCenterEv
 
   try {
     const page = await browser.newPage()
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-    )
     await page.goto(CALENDAR_URL, { waitUntil: "networkidle2", timeout: 30000 })
     await new Promise((r) => setTimeout(r, 2000))
 

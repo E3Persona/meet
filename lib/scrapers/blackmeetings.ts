@@ -337,6 +337,7 @@ async function scrapeDetailPage(url: string): Promise<{
   const jina = createJinaProvider()
   const jinaResult = await jina.scrape(url, { timeout: 25000 })
   const bodyText = jinaResult.markdown || null
+  console.log(`[blackmeetings] BodyText extracted: ${bodyText ? `${bodyText.length} chars` : "none"}`)
   if (!bodyText && jinaResult.error) {
     console.warn(`[blackmeetings] Jina failed for ${url}: ${jinaResult.error}`)
   }
