@@ -99,7 +99,8 @@ async function main() {
 
         let locationId: string | null = null
         if (ev.city) {
-          const loc = await withRetry(() => prisma.location.findFirst({ where: { name: ev.city, active: true, type: "CITY" } }))
+          const cityName = ev.city
+          const loc = await withRetry(() => prisma.location.findFirst({ where: { name: cityName, active: true, type: "CITY" } }))
           if (loc) locationId = loc.id
         }
 

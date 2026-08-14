@@ -194,7 +194,7 @@ async function main() {
         sourceUrl: ev.url,
         sourceSiteId,
         runId: runId ?? undefined,
-        rawVenueText: ev.venue.name,
+        rawVenueText: ev.venue?.name ?? null,
         rawLocationText,
       },
     }))
