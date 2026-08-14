@@ -52,7 +52,7 @@ async function submitCountrySearch(
   page: any,
   country: string
 ): Promise<boolean> {
-  await page.goto(LISTING_URL, { waitUntil: "networkidle2", timeout: 30000 })
+  await page.goto(LISTING_URL, { waitUntil: "networkidle2", timeout: 60000 })
   await wait(1500)
 
   // Runtime introspection: find the <select> whose options include our target
@@ -217,7 +217,7 @@ async function scrapeListing(
     const url = `${LISTING_URL}?vShow=&vSort=&vPos=${pos}&vRpP=${pageSize}`
     console.log(`[ECN] Listing page: ${url}`)
 
-    await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 })
+    await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 })
     await wait(jitter(800))
 
     const html: string = await page.content()
