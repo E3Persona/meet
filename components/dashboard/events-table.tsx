@@ -90,7 +90,13 @@ interface EventRow {
   rawVenueText: string | null
   rawLocationText: string | null
   venueId: string | null
-  venue: { id: string; name: string; city: string | null; state: string | null; address: string | null } | null
+  venue: {
+    id: string
+    name: string
+    city: string | null
+    state: string | null
+    address: string | null
+  } | null
   organizerName: string | null
   organizerTitle: string | null
   organizerEmail: string | null
@@ -98,7 +104,12 @@ interface EventRow {
   contactNote: string | null
   status: "new" | "reviewed" | "contacted"
   dateAdded: string
-  location: { name: string; city: string | null; state: string | null; type: string }
+  location: {
+    name: string
+    city: string | null
+    state: string | null
+    type: string
+  }
   contacts: EventContact[]
   notes?: { id: string; content: string; noteType: string; notedAt: string }[]
 }
@@ -125,10 +136,17 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
   other: "Other",
 }
 
-function TruncatedCell({ text, maxChars = 40 }: { text: string; maxChars?: number }) {
+function TruncatedCell({
+  text,
+  maxChars = 40,
+}: {
+  text: string
+  maxChars?: number
+}) {
   const [expanded, setExpanded] = useState(false)
   const needsTruncation = text.length > maxChars
-  const display = expanded || !needsTruncation ? text : text.slice(0, maxChars) + "…"
+  const display =
+    expanded || !needsTruncation ? text : text.slice(0, maxChars) + "…"
   return (
     <>
       <span className="text-sm">{display}</span>
@@ -136,7 +154,7 @@ function TruncatedCell({ text, maxChars = 40 }: { text: string; maxChars?: numbe
         <button
           type="button"
           onClick={() => setExpanded((p) => !p)}
-          className="ml-1 text-[10px] text-primary hover:underline whitespace-nowrap"
+          className="ml-1 text-[10px] whitespace-nowrap text-primary hover:underline"
         >
           {expanded ? "less" : "more"}
         </button>
@@ -161,7 +179,7 @@ function DescriptionPreview({
 
   return (
     <div className="max-w-[280px]">
-      <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
+      <p className="text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
         {expanded ? text : text.slice(0, maxChars)}
         {needsTruncation && !expanded && "…"}
       </p>
@@ -373,7 +391,9 @@ export function EventsTable() {
     eventId: string
     eventName: string
   }>({ open: false, eventId: "", eventName: "" })
-  const [dialogNotes, setDialogNotes] = useState<{ id: string; content: string; noteType: string; notedAt: string }[]>([])
+  const [dialogNotes, setDialogNotes] = useState<
+    { id: string; content: string; noteType: string; notedAt: string }[]
+  >([])
   const [dialogNotesLoading, setDialogNotesLoading] = useState(false)
   const [newNoteContent, setNewNoteContent] = useState("")
   const [newNoteType, setNewNoteType] = useState("general")
@@ -392,15 +412,20 @@ export function EventsTable() {
     try {
       const res = await fetch(`/api/events/${eventId}/notes`)
       if (res.ok) setDialogNotes(await res.json())
-    } catch { /* ignore */ } finally {
+    } catch {
+      /* ignore */
+    } finally {
       setDialogNotesLoading(false)
     }
   }, [])
 
-  const openNotes = useCallback((eventId: string, eventName: string) => {
-    setNotesDialog({ open: true, eventId, eventName })
-    fetchDialogNotes(eventId)
-  }, [fetchDialogNotes])
+  const openNotes = useCallback(
+    (eventId: string, eventName: string) => {
+      setNotesDialog({ open: true, eventId, eventName })
+      fetchDialogNotes(eventId)
+    },
+    [fetchDialogNotes]
+  )
 
   const openMetadata = useCallback((event: EventRow) => {
     setMetadataDialog({
@@ -447,7 +472,11 @@ export function EventsTable() {
     let metadata: EventMetadata
     try {
       const parsed: unknown = JSON.parse(metadataDraft)
-      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      if (
+        typeof parsed !== "object" ||
+        parsed === null ||
+        Array.isArray(parsed)
+      ) {
         throw new Error("Metadata must be a JSON object")
       }
       metadata = parsed as EventMetadata
@@ -684,375 +713,374 @@ export function EventsTable() {
   // ── Columns ───────────────────────────────────────────────────────────────
 
   const maxContacts = useMemo(
-    () => Math.max(0, ...events.map((e) => (e.contacts?.length ?? 0))),
+    () => Math.max(0, ...events.map((e) => e.contacts?.length ?? 0)),
     [events]
   )
 
-  const columns: ColumnDef<EventRow, unknown>[] = useMemo(
-    () => {
-      const baseColumns: ColumnDef<EventRow, unknown>[] = [
-        {
-          accessorKey: "eventName",
-          header: "Event Name",
-          cell: ({ row }) => (
-            <div className="max-w-[300px]">
-              <p className="truncate text-sm font-medium">
-                {row.original.eventName}
-              </p>
-              {row.original.sourceUrl && (
-                <a
-                  href={row.original.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block truncate text-xs text-muted-foreground hover:underline"
+  const columns: ColumnDef<EventRow, unknown>[] = useMemo(() => {
+    const baseColumns: ColumnDef<EventRow, unknown>[] = [
+      {
+        accessorKey: "eventName",
+        header: "Event Name",
+        cell: ({ row }) => (
+          <div className="max-w-[300px]">
+            <p className="truncate text-sm font-medium">
+              {row.original.eventName}
+            </p>
+            {row.original.sourceUrl && (
+              <a
+                href={row.original.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block truncate text-xs text-muted-foreground hover:underline"
+              >
+                {row.original.sourceUrl}
+              </a>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "location",
+        header: "Location",
+        cell: ({ row }) => {
+          const ev = row.original
+          const matchedCity = ev.location.city || ev.location.name
+          const matchedState = ev.location.state
+          const matchedText = `${matchedCity}${matchedState ? `, ${matchedState}` : ""}`
+          const raw = ev.rawLocationText
+          const showRaw = raw && raw !== matchedText
+          return (
+            <div className="max-w-[180px]">
+              {showRaw && (
+                <p
+                  className="truncate text-xs text-muted-foreground"
+                  title={raw}
                 >
-                  {row.original.sourceUrl}
-                </a>
+                  {raw}
+                </p>
+              )}
+              <p className={`text-sm ${showRaw ? "text-foreground" : ""}`}>
+                <TruncatedCell
+                  text={showRaw ? matchedText : (raw ?? matchedText)}
+                />
+                {showRaw && (
+                  <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
+                    matched
+                  </span>
+                )}
+              </p>
+            </div>
+          )
+        },
+      },
+      {
+        accessorKey: "rawVenueText",
+        header: "Venue",
+        cell: ({ row }) => {
+          const ev = row.original
+          const raw = ev.rawVenueText
+          const venue = ev.venue
+          const showRaw = raw && venue && raw !== venue.name
+          return (
+            <div className="max-w-[200px]">
+              {showRaw && (
+                <p
+                  className="truncate text-xs text-muted-foreground"
+                  title={raw}
+                >
+                  {raw}
+                </p>
+              )}
+              {venue ? (
+                <>
+                  <p className="text-sm font-medium">
+                    <TruncatedCell text={venue.name} />
+                    {showRaw && (
+                      <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
+                        matched
+                      </span>
+                    )}
+                  </p>
+                  {venue.city && (
+                    <p className="text-xs text-muted-foreground">
+                      {venue.city}
+                      {venue.state ? `, ${venue.state}` : ""}
+                    </p>
+                  )}
+                  {venue.address && (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {venue.address}
+                    </p>
+                  )}
+                </>
+              ) : raw ? (
+                <p className="text-sm">
+                  <TruncatedCell text={raw} />
+                  <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
+                    raw
+                  </span>
+                </p>
+              ) : (
+                <span className="text-sm text-muted-foreground">—</span>
               )}
             </div>
-          ),
+          )
         },
-        {
-          id: "location",
-          header: "Location",
-          cell: ({ row }) => {
-            const ev = row.original
-            const matchedCity = ev.location.city || ev.location.name
-            const matchedState = ev.location.state
-            const matchedText = `${matchedCity}${matchedState ? `, ${matchedState}` : ""}`
-            const raw = ev.rawLocationText
-            const showRaw = raw && raw !== matchedText
-            return (
-              <div className="max-w-[180px]">
-                {showRaw && (
-                  <p className="text-xs text-muted-foreground truncate" title={raw}>
-                    {raw}
-                  </p>
-                )}
-                <p className={`text-sm ${showRaw ? "text-foreground" : ""}`}>
-                  <TruncatedCell text={showRaw ? matchedText : (raw ?? matchedText)} />
-                  {showRaw && (
-                    <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
-                      matched
-                    </span>
-                  )}
-                </p>
-              </div>
-            )
-          },
-        },
-        {
-          accessorKey: "rawVenueText",
-          header: "Venue",
-          cell: ({ row }) => {
-            const ev = row.original
-            const raw = ev.rawVenueText
-            const venue = ev.venue
-            const showRaw = raw && venue && raw !== venue.name
-            return (
-              <div className="max-w-[200px]">
-                {showRaw && (
-                  <p className="text-xs text-muted-foreground truncate" title={raw}>
-                    {raw}
-                  </p>
-                )}
-                {venue ? (
-                  <>
-                    <p className="text-sm font-medium">
-                      <TruncatedCell text={venue.name} />
-                      {showRaw && (
-                        <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
-                          matched
-                        </span>
-                      )}
-                    </p>
-                    {venue.city && (
-                      <p className="text-xs text-muted-foreground">
-                        {venue.city}{venue.state ? `, ${venue.state}` : ""}
-                      </p>
-                    )}
-                    {venue.address && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {venue.address}
-                      </p>
-                    )}
-                  </>
-                ) : raw ? (
-                  <p className="text-sm">
-                    <TruncatedCell text={raw} />
-                    <span className="ml-1.5 text-[10px] text-muted-foreground/50 italic">
-                      raw
-                    </span>
-                  </p>
-                ) : (
-                  <span className="text-sm text-muted-foreground">—</span>
-                )}
-              </div>
-            )
-          },
-        },
-      ]
+      },
+    ]
 
-      // Dynamic contact columns: Contact 1 Name, Contact 1 Email, Contact 1 Phone, ...
-      for (let i = 0; i < maxContacts; i++) {
-        const idx = i
-        baseColumns.push({
-          id: `contact_${idx}_name`,
-          header: `C${idx + 1} Name`,
-          cell: ({ row }) => {
-            const c = row.original.contacts?.[idx]
-            if (!c) return <span className="text-muted-foreground">—</span>
-            return (
-              <span className="text-xs font-medium truncate block max-w-[140px]" title={c.name}>
-                {c.name}
-              </span>
-            )
-          },
-        })
-        baseColumns.push({
-          id: `contact_${idx}_email`,
-          header: `C${idx + 1} Email`,
-          cell: ({ row }) => {
-            const c = row.original.contacts?.[idx]
-            if (!c?.email) return <span className="text-muted-foreground">—</span>
-            return (
-              <a
-                href={`mailto:${c.email}`}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:text-primary max-w-[160px]"
-                title={c.email}
-              >
-                <Mail className="h-3 w-3 shrink-0" />
-                <span className="truncate">{c.email}</span>
-              </a>
-            )
-          },
-        })
-        baseColumns.push({
-          id: `contact_${idx}_phone`,
-          header: `C${idx + 1} Phone`,
-          cell: ({ row }) => {
-            const c = row.original.contacts?.[idx]
-            if (!c?.phone) return <span className="text-muted-foreground">—</span>
-            return (
-              <a
-                href={`tel:${c.phone}`}
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-                title={c.phone}
-              >
-                <Phone className="h-3 w-3 shrink-0" />
-                <span className="truncate">{c.phone}</span>
-              </a>
-            )
-          },
-        })
-      }
+    // Dynamic contact columns: Contact 1 Name, Contact 1 Email, Contact 1 Phone, ...
+    for (let i = 0; i < maxContacts; i++) {
+      const idx = i
+      baseColumns.push({
+        id: `contact_${idx}_name`,
+        header: `C${idx + 1} Name`,
+        cell: ({ row }) => {
+          const c = row.original.contacts?.[idx]
+          if (!c) return <span className="text-muted-foreground">—</span>
+          return (
+            <span
+              className="block max-w-[140px] truncate text-xs font-medium"
+              title={c.name}
+            >
+              {c.name}
+            </span>
+          )
+        },
+      })
+      baseColumns.push({
+        id: `contact_${idx}_email`,
+        header: `C${idx + 1} Email`,
+        cell: ({ row }) => {
+          const c = row.original.contacts?.[idx]
+          if (!c?.email) return <span className="text-muted-foreground">—</span>
+          return (
+            <a
+              href={`mailto:${c.email}`}
+              className="inline-flex max-w-[160px] items-center gap-1 text-xs font-semibold text-foreground hover:text-primary"
+              title={c.email}
+            >
+              <Mail className="h-3 w-3 shrink-0" />
+              <span className="truncate">{c.email}</span>
+            </a>
+          )
+        },
+      })
+      baseColumns.push({
+        id: `contact_${idx}_phone`,
+        header: `C${idx + 1} Phone`,
+        cell: ({ row }) => {
+          const c = row.original.contacts?.[idx]
+          if (!c?.phone) return <span className="text-muted-foreground">—</span>
+          return (
+            <a
+              href={`tel:${c.phone}`}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+              title={c.phone}
+            >
+              <Phone className="h-3 w-3 shrink-0" />
+              <span className="truncate">{c.phone}</span>
+            </a>
+          )
+        },
+      })
+    }
 
-      baseColumns.push(
-        {
-          accessorKey: "eventDateStart",
-          header: ({ column }) => (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-              className="h-8 px-2"
-            >
-              Start Date
-              <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
-            </Button>
-          ),
-          sortingFn: "datetime",
-          cell: ({ row }) => {
-            if (isOldYear(row.original))
-              return <span className="text-sm text-muted-foreground">—</span>
-            const d = row.original.eventDateStart
-            if (!d)
-              return <span className="text-sm text-muted-foreground">—</span>
-            const start = new Date(d)
-            const fmt = (date: Date) =>
-              date.toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })
-            return (
-              <span className="text-sm whitespace-nowrap">
-                {fmt(start)}
-              </span>
-            )
-          },
+    baseColumns.push(
+      {
+        accessorKey: "eventDateStart",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-8 px-2"
+          >
+            Start Date
+            <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
+          </Button>
+        ),
+        sortingFn: "datetime",
+        cell: ({ row }) => {
+          if (isOldYear(row.original))
+            return <span className="text-sm text-muted-foreground">—</span>
+          const d = row.original.eventDateStart
+          if (!d)
+            return <span className="text-sm text-muted-foreground">—</span>
+          const start = new Date(d)
+          const fmt = (date: Date) =>
+            date.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          return <span className="text-sm whitespace-nowrap">{fmt(start)}</span>
         },
-        {
-          accessorKey: "eventDateEnd",
-          header: ({ column }) => (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-              className="h-8 px-2"
-            >
-              End Date
-              <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
-            </Button>
-          ),
-          sortingFn: "datetime",
-          cell: ({ row }) => {
-            if (isOldYear(row.original))
-              return <span className="text-sm text-muted-foreground">—</span>
-            const d = row.original.eventDateEnd
-            if (!d)
-              return <span className="text-sm text-muted-foreground">—</span>
-            const end = new Date(d)
-            const fmt = (date: Date) =>
-              date.toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })
-            return (
-              <span className="text-sm whitespace-nowrap">
-                {fmt(end)}
-              </span>
-            )
-          },
+      },
+      {
+        accessorKey: "eventDateEnd",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="h-8 px-2"
+          >
+            End Date
+            <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
+          </Button>
+        ),
+        sortingFn: "datetime",
+        cell: ({ row }) => {
+          if (isOldYear(row.original))
+            return <span className="text-sm text-muted-foreground">—</span>
+          const d = row.original.eventDateEnd
+          if (!d)
+            return <span className="text-sm text-muted-foreground">—</span>
+          const end = new Date(d)
+          const fmt = (date: Date) =>
+            date.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          return <span className="text-sm whitespace-nowrap">{fmt(end)}</span>
         },
-        {
-          accessorKey: "expectedAttendees",
-          header: "Attendees",
-          cell: ({ row }) => {
-            const val = row.original.expectedAttendees
-            return (
-              <span className="text-sm">
-                {val != null ? (
-                  val.toLocaleString()
-                ) : (
-                  <span className="text-muted-foreground italic">—</span>
-                )}
-              </span>
-            )
-          },
+      },
+      {
+        accessorKey: "expectedAttendees",
+        header: "Attendees",
+        cell: ({ row }) => {
+          const val = row.original.expectedAttendees
+          return (
+            <span className="text-sm">
+              {val != null ? (
+                val.toLocaleString()
+              ) : (
+                <span className="text-muted-foreground italic">—</span>
+              )}
+            </span>
+          )
         },
-        {
-          id: "metadata",
-          header: "Description",
-          cell: ({ row }) => {
-            const metadata = row.original.metadata ?? {}
-            const fullDesc = (metadata as Record<string, unknown>).fullDescription
-            if (typeof fullDesc !== "string" || !fullDesc) {
-              return (
-                <button
-                  type="button"
-                  onClick={() => openMetadata(row.original)}
-                  className="group -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 text-sm hover:bg-muted/50"
-                >
-                  <FileText className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
-                  <span className="text-muted-foreground italic">Add details</span>
-                  <Pencil className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
-                </button>
-              )
-            }
-            return (
-              <DescriptionPreview
-                text={fullDesc}
-                onOpen={() => openMetadata(row.original)}
-              />
-            )
-          },
-        },
-        {
-          accessorKey: "status",
-          header: "Status",
-          cell: ({ row }) => (
-            <StatusBadge
-              status={row.original.status}
-              eventId={row.original.id}
-              onSaved={fetchEvents}
-            />
-          ),
-        },
-        {
-          id: "notes",
-          header: "Notes",
-          cell: ({ row }) => {
-            const event = row.original
-            const notes = event.notes ?? []
-            const notesCount = notes.length
-            const lastNote = notesCount > 0 ? notes[notesCount - 1] : null
+      },
+      {
+        id: "metadata",
+        header: "Description",
+        cell: ({ row }) => {
+          const metadata = row.original.metadata ?? {}
+          const fullDesc = (metadata as Record<string, unknown>).fullDescription
+          if (typeof fullDesc !== "string" || !fullDesc) {
             return (
               <button
                 type="button"
-                onClick={() =>
-                  openNotes(event.id, event.eventName)
-                }
-                className="group -mx-1 flex cursor-pointer items-start gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/50"
+                onClick={() => openMetadata(row.original)}
+                className="group -mx-1 inline-flex items-center gap-1.5 rounded px-1 py-0.5 text-sm hover:bg-muted/50"
               >
-                <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
-                <div className="min-w-0 flex-1">
-                  {lastNote ? (
-                    <p className="text-xs leading-tight text-muted-foreground line-clamp-2">
-                      {lastNote.content}
-                    </p>
-                  ) : (
-                    <p className="text-xs italic text-muted-foreground/50">
-                      No notes
-                    </p>
-                  )}
-                </div>
-                {notesCount > 0 && (
-                  <Badge variant="info" size="sm" className="mt-0.5 shrink-0">
-                    {notesCount}
-                  </Badge>
-                )}
+                <FileText className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" />
+                <span className="text-muted-foreground italic">
+                  Add details
+                </span>
+                <Pencil className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
               </button>
             )
-          },
+          }
+          return (
+            <DescriptionPreview
+              text={fullDesc}
+              onOpen={() => openMetadata(row.original)}
+            />
+          )
         },
-        {
-          id: "actions",
-          header: "",
-          meta: { align: "center" },
-          cell: ({ row }) => {
-            const event = row.original
-            const contactCount = event.contacts?.length ?? 0
-            return (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-40">
-                  <DropdownMenuItem
-                    onClick={() =>
-                      setContactModal({
-                        open: true,
-                        eventId: event.id,
-                        eventName: event.eventName,
-                      })
-                    }
-                  >
-                    <Search className="mr-2 h-4 w-4" />
-                    {contactCount > 0 ? "View Contacts" : "Find Contact"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      openNotes(event.id, event.eventName)
-                    }
-                  >
-                    <StickyNote className="mr-2 h-4 w-4" />
-                    View Notes
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )
-          },
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => (
+          <StatusBadge
+            status={row.original.status}
+            eventId={row.original.id}
+            onSaved={fetchEvents}
+          />
+        ),
+      },
+      {
+        id: "notes",
+        header: "Contact Notes",
+        cell: ({ row }) => {
+          const event = row.original
+          const notes = event.notes ?? []
+          const notesCount = notes.length
+          const lastNote = notesCount > 0 ? notes[notesCount - 1] : null
+          return (
+            <button
+              type="button"
+              onClick={() => openNotes(event.id, event.eventName)}
+              className="group -mx-1 flex cursor-pointer items-start gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/50"
+            >
+              <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-foreground" />
+              <div className="min-w-0 flex-1">
+                {lastNote ? (
+                  <p className="line-clamp-2 text-xs leading-tight text-muted-foreground">
+                    {lastNote.content}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground/50 italic">
+                    No notes
+                  </p>
+                )}
+              </div>
+              {notesCount > 0 && (
+                <Badge variant="info" size="sm" className="mt-0.5 shrink-0">
+                  {notesCount}
+                </Badge>
+              )}
+            </button>
+          )
         },
-      )
+      },
+      {
+        id: "actions",
+        header: "",
+        meta: { align: "center" },
+        cell: ({ row }) => {
+          const event = row.original
+          const contactCount = event.contacts?.length ?? 0
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-40">
+                <DropdownMenuItem
+                  onClick={() =>
+                    setContactModal({
+                      open: true,
+                      eventId: event.id,
+                      eventName: event.eventName,
+                    })
+                  }
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  {contactCount > 0 ? "View Contacts" : "Find Contact"}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => openNotes(event.id, event.eventName)}
+                >
+                  <StickyNote className="mr-2 h-4 w-4" />
+                  View Notes
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      }
+    )
 
-      return baseColumns
-    },
-    [fetchEvents, maxContacts, openMetadata]
-  )
+    return baseColumns
+  }, [fetchEvents, maxContacts, openMetadata])
 
   // ── Table ─────────────────────────────────────────────────────────────────
 
@@ -1484,29 +1512,39 @@ export function EventsTable() {
       />
 
       {/* Notes Dialog */}
-      <Dialog open={notesDialog.open} onOpenChange={(open) => setNotesDialog({ ...notesDialog, open })}>
-        <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
+      <Dialog
+        open={notesDialog.open}
+        onOpenChange={(open) => setNotesDialog({ ...notesDialog, open })}
+      >
+        <DialogContent className="flex max-h-[80vh] flex-col sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Notes - {notesDialog.eventName}</DialogTitle>
             <DialogDescription>
               {dialogNotes.length} note(s) recorded
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden flex flex-col gap-3 min-h-0">
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
             {/* Notes list */}
-            <div className="flex-1 overflow-y-auto space-y-2 min-h-0 max-h-64">
+            <div className="max-h-64 min-h-0 flex-1 space-y-2 overflow-y-auto">
               {dialogNotesLoading ? (
-                <div className="py-6 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>
+                <div className="py-6 text-center">
+                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
               ) : dialogNotes.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground italic">No notes yet</p>
+                <p className="py-6 text-center text-sm text-muted-foreground italic">
+                  No notes yet
+                </p>
               ) : (
                 [...dialogNotes].reverse().map((note) => (
-                  <div key={note.id} className="rounded-md border border-border/50 bg-muted/20 p-3 space-y-1.5">
+                  <div
+                    key={note.id}
+                    className="space-y-1.5 rounded-md border border-border/50 bg-muted/20 p-3"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <Badge variant="neutral" size="sm">
                         {NOTE_TYPE_LABELS[note.noteType] ?? note.noteType}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      <span className="text-[10px] whitespace-nowrap text-muted-foreground">
                         {new Date(note.notedAt).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
@@ -1516,13 +1554,15 @@ export function EventsTable() {
                         })}
                       </span>
                     </div>
-                    <p className="text-sm text-foreground whitespace-pre-wrap">{note.content}</p>
+                    <p className="text-sm whitespace-pre-wrap text-foreground">
+                      {note.content}
+                    </p>
                   </div>
                 ))
               )}
             </div>
             {/* Add note */}
-            <div className="border-t border-border pt-3 space-y-2">
+            <div className="space-y-2 border-t border-border pt-3">
               <label className="text-sm font-medium">Add Note</label>
               <Textarea
                 placeholder="What happened? (e.g., Called organizer, left voicemail, sent follow-up email...)"
@@ -1537,7 +1577,9 @@ export function EventsTable() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="general">General</SelectItem>
-                    <SelectItem value="contact_attempt">Contact Attempt</SelectItem>
+                    <SelectItem value="contact_attempt">
+                      Contact Attempt
+                    </SelectItem>
                     <SelectItem value="follow_up">Follow Up</SelectItem>
                     <SelectItem value="status_change">Status Change</SelectItem>
                     <SelectItem value="venue_update">Venue Update</SelectItem>
@@ -1551,15 +1593,18 @@ export function EventsTable() {
                     if (!newNoteContent.trim()) return
                     setAddingNote(true)
                     try {
-                      const res = await fetch(`/api/events/${notesDialog.eventId}/notes`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          content: newNoteContent,
-                          noteType: newNoteType,
-                          notedAt: new Date().toISOString(),
-                        }),
-                      })
+                      const res = await fetch(
+                        `/api/events/${notesDialog.eventId}/notes`,
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            content: newNoteContent,
+                            noteType: newNoteType,
+                            notedAt: new Date().toISOString(),
+                          }),
+                        }
+                      )
                       if (!res.ok) throw new Error("Failed to add note")
                       toast.success("Note added")
                       setNewNoteContent("")
@@ -1574,7 +1619,11 @@ export function EventsTable() {
                   }}
                   disabled={!newNoteContent.trim() || addingNote}
                 >
-                  {addingNote ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add Note"}
+                  {addingNote ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Add Note"
+                  )}
                 </Button>
               </div>
             </div>
@@ -1592,9 +1641,12 @@ export function EventsTable() {
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Event Metadata — {metadataDialog.eventName}</DialogTitle>
+            <DialogTitle>
+              Event Metadata — {metadataDialog.eventName}
+            </DialogTitle>
             <DialogDescription>
-              Add any structured event details as a JSON object. These details are entered manually.
+              Add any structured event details as a JSON object. These details
+              are entered manually.
             </DialogDescription>
           </DialogHeader>
           <Textarea
