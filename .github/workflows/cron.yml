@@ -2,8 +2,8 @@ name: Scheduled Ingestion
 
 on:
   schedule:
-    # Every 6 hours
-    - cron: "0 */6 * * *"
+    # 4 times daily: 2am, 8am, 2pm, 8pm UTC
+    - cron: "0 2,8,14,20 * * *"
   workflow_dispatch:
 
 jobs:
