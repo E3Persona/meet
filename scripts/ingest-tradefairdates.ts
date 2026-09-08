@@ -3,25 +3,15 @@ import "dotenv/config"
 import { prisma, withRetry } from "../lib/prisma"
 import { scrapeTradeFairDatesEvents, enrichTradeFairDateEvent } from "../lib/scrapers/tradefairdates"
 import { buildVenueMap } from "../lib/venueResolution"
-
-
-const rawRunId = process.env.RUN_ID || null
-
-async function resolveRunId(): Promise<string | undefined> {
-  if (!rawRunId) return undefined
-  const row = await prisma.ingestionRun.findUnique({ where: { id: rawRunId }, select: { id: true } })
-  return row?.id ?? undefined
-}
+import { startIngestRun, finishIngestRun, type IngestRunContext } from "../lib/ingest-run"
 
 function norm(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ")
 }
 
 async function main() {
-  console.log(`[TradeFairDates/Ingest] Starting at ${new Date().toISOString()}`)
-
-  const runId = await resolveRunId()
-  console.log(`[TradeFairDates/Ingest] runId=${runId ?? "none"}`)
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
+  console.log(`[TradeFairDates/Ingest] Starting at ${new Date().toISOString()}, runId=${ctx.runId}`)
 
   const config = await prisma.ingestConfig.findUnique({
     where: { scraper: "tradefairdates" },
@@ -187,7 +177,7 @@ async function main() {
             organizerEmail: ev.contactEmail,
             organizerName: ev.websiteUrl,
             sourceSiteId,
-            runId: runId ?? undefined,
+            runId: ctx.runId ?? undefined,
             rawLocationText: ev.city,
             rawVenueText: ev.venueName ?? null,
             metadata: ev.description ? { fullDescription: ev.description } : undefined,
@@ -213,6 +203,7 @@ async function main() {
   console.log(`[TradeFairDates/Ingest]   New saved:        ${totalNew}`)
   console.log(`[TradeFairDates/Ingest] ═══════════════════════════════════════\n`)
 
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

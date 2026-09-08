@@ -1,27 +1,19 @@
 import "dotenv/config"
 import { scrapeEventsDcEvents } from "../lib/scrapers/eventsdc"
 import { prisma, withRetry } from "@/lib/prisma"
-
-
-const rawRunId = process.env.RUN_ID || null
-
-async function resolveRunId(): Promise<string | undefined> {
-  if (!rawRunId) return undefined
-  const row = await prisma.ingestionRun.findUnique({ where: { id: rawRunId }, select: { id: true } })
-  return row?.id ?? undefined
-}
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 
 async function main() {
   console.log(`[EventsDc/Ingest] Starting at ${new Date().toISOString()}`)
 
-  const runId = await resolveRunId()
-  console.log(`[EventsDc/Ingest] runId=${runId ?? "none (will be saved without run association)"}`)
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
 
   const config = await prisma.ingestConfig.findUnique({
     where: { scraper: "eventsdc" },
   })
   if (config?.active === false) {
     console.log("[EventsDc/Ingest] Scraping disabled via IngestConfig")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -49,6 +41,7 @@ async function main() {
 
   if (locations.length === 0) {
     console.warn("[EventsDc/Ingest] No Walter E. Washington Convention Center found in DB — cannot associate events")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -108,7 +101,7 @@ async function main() {
             eventDateEnd: ev.eventDateEnd,
             sourceUrl: ev.sourceUrl,
             sourceSiteId,
-            runId: runId ?? undefined,
+            runId: ctx.runId ?? undefined,
             rawVenueText: ev.venue ?? null,
             rawLocationText: "Washington, DC",
           },
@@ -131,6 +124,7 @@ async function main() {
   console.log(`[EventsDc/Ingest]   New saved:        ${totalNew}`)
   console.log(`[EventsDc/Ingest] ═══════════════════════════════════════\n`)
 
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

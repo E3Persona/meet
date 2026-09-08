@@ -2,8 +2,7 @@ import "dotenv/config"
 
 import { scrapeMarriottLocalEvents } from "../lib/scrapers/marriott"
 import { prisma, withRetry } from "../lib/prisma"
-
-const rawRunId = process.env.RUN_ID || null
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 
 // Map location names (case-insensitive match by "contains") to Marriott property slugs.
 // Property slugs are visible in the event.marriott.com URL for each hotel.
@@ -12,12 +11,6 @@ const rawRunId = process.env.RUN_ID || null
 const MARRIOTT_PROPERTY_MAP: Record<string, string> = {
   "Bethesda North Marriott": "wasbt-bethesda-marriott",
   "Bethesda Marriott": "wasbt-bethesda-marriott",
-}
-
-async function resolveRunId(): Promise<string | undefined> {
-  if (!rawRunId) return undefined
-  const row = await prisma.ingestionRun.findUnique({ where: { id: rawRunId }, select: { id: true } })
-  return row?.id ?? undefined
 }
 
 async function findMatchingLocations(): Promise<Array<{ id: string; name: string; city: string | null; state: string | null; slug: string }>> {
@@ -41,7 +34,7 @@ async function findMatchingLocations(): Promise<Array<{ id: string; name: string
 async function main() {
   console.log(`[Marriott/Ingest] Starting at ${new Date().toISOString()}`)
 
-  const runId = await resolveRunId()
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
 
   const config = await prisma.ingestConfig.findUnique({
     where: { scraper: "marriott" },
@@ -122,7 +115,7 @@ async function main() {
           eventDateEnd: ev.eventDateEnd,
           sourceUrl: ev.detailUrl,
           sourceSiteId,
-          runId: runId ?? undefined,
+          runId: ctx.runId ?? undefined,
           rawLocationText: ev.city && ev.state ? `${ev.city}, ${ev.state}` : null,
           rawVenueText: ev.city && ev.state ? `${ev.city}, ${ev.state}` : null,
         },
@@ -139,6 +132,7 @@ async function main() {
   console.log(`[Marriott/Ingest]   New saved:        ${totalNew}`)
   console.log(`[Marriott/Ingest] ═══════════════════════════════════════\n`)
 
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

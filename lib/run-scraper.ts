@@ -23,10 +23,6 @@ export async function startScraperRun(
     }
   }
 
-  const run = await prisma.ingestionRun.create({
-    data: { trigger, status: "running" },
-  })
-
   const site = await prisma.sourceSite.findFirst({ where: { name: siteName } })
   if (site) {
     await prisma.sourceSiteConfig.upsert({
@@ -43,24 +39,13 @@ export async function startScraperRun(
     create: { scraper: scraperKey },
   })
 
-  try {
-    const result = await triggerIngestWorkflow({
-      scraperScript: scriptName,
-      trigger,
-      dateFrom,
-      dateTo,
-      forceRefresh,
-      runId: run.id,
-    })
-    console.log(`[Scraper] Triggered GitHub Actions for "${siteName}": ${result.workflowRunUrl}`)
-    return { runId: run.id, workflowUrl: result.workflowRunUrl }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown"
-    console.error(`[Scraper] Failed to trigger GitHub Actions for "${siteName}":`, errorMessage)
-    await prisma.ingestionRun.update({
-      where: { id: run.id },
-      data: { status: "failed", finishedAt: new Date(), errorMessage },
-    })
-    throw error
-  }
+  const result = await triggerIngestWorkflow({
+    scraperScript: scriptName,
+    trigger,
+    dateFrom,
+    dateTo,
+    forceRefresh,
+  })
+  console.log(`[Scraper] Triggered GitHub Actions for "${siteName}": ${result.workflowRunUrl}`)
+  return { runId: "", workflowUrl: result.workflowRunUrl }
 }

@@ -3,8 +3,7 @@ import "dotenv/config"
 import { createEventbriteBrowser, scrapeSearchPage } from "../lib/scrapers/eventbrite"
 import { discoverEvents, type EventbriteApiEvent } from "../lib/scrapers/eventbrite-api"
 import { prisma, withRetry } from "../lib/prisma"
-
-const rawRunId = process.env.RUN_ID || null
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 
 const CITY_ALIASES: Record<string, string> = {
   "washington, d.c.": "Washington DC",
@@ -17,22 +16,17 @@ function normalizeCity(raw: string): string {
   return CITY_ALIASES[lower] ?? raw.trim()
 }
 
-async function resolveRunId(): Promise<string | undefined> {
-  if (!rawRunId) return undefined
-  const row = await prisma.ingestionRun.findUnique({ where: { id: rawRunId }, select: { id: true } })
-  return row?.id ?? undefined
-}
-
 async function main() {
   console.log(`[EventbriteAPI/Ingest] Starting at ${new Date().toISOString()}`)
 
-  const runId = await resolveRunId()
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
 
   const config = await prisma.ingestConfig.findUnique({
     where: { scraper: "eventbrite-api" },
   })
   if (config?.active === false) {
     console.log("[EventbriteAPI/Ingest] Scraping disabled via IngestConfig")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -84,6 +78,7 @@ async function main() {
     browser = await createEventbriteBrowser()
   } catch (err) {
     console.error("[EventbriteAPI/Ingest] Failed to launch browser:", err)
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -113,6 +108,7 @@ async function main() {
 
   if (seedIds.size === 0) {
     console.log("[EventbriteAPI/Ingest] No seed event IDs found from search")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -125,6 +121,7 @@ async function main() {
     apiEvents = await discoverEvents(seedArray, 3, 2000)
   } catch (err) {
     console.error("[EventbriteAPI/Ingest] API enrichment failed:", err)
+    await finishIngestRun(ctx, { recordsFound: seedArray.length, recordsNew: 0 })
     return { recordsFound: seedArray.length, recordsNew: 0 }
   }
 
@@ -193,7 +190,7 @@ async function main() {
         eventDateEnd,
         sourceUrl: ev.url,
         sourceSiteId,
-        runId: runId ?? undefined,
+        runId: ctx.runId ?? undefined,
         rawVenueText: ev.venue?.name ?? null,
         rawLocationText,
       },
@@ -211,6 +208,7 @@ async function main() {
   console.log(`[EventbriteAPI/Ingest]   New saved:         ${totalNew}`)
   console.log(`[EventbriteAPI/Ingest] ═══════════════════════════════════════\n`)
 
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

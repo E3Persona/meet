@@ -1,8 +1,7 @@
 import "dotenv/config"
 import { prisma, withRetry } from "../lib/prisma"
 import { fetchWebmobiEvents } from "../lib/scrapers/webmobi"
-
-const rawRunId = process.env.RUN_ID || null
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 
 const CITY_ALIASES: Record<string, string> = {
   "washington, d.c.": "Washington DC",
@@ -14,22 +13,17 @@ function normalizeCity(raw: string): string {
   return CITY_ALIASES[lower] ?? raw.trim()
 }
 
-async function resolveRunId(): Promise<string | undefined> {
-  if (!rawRunId) return undefined
-  const row = await prisma.ingestionRun.findUnique({ where: { id: rawRunId }, select: { id: true } })
-  return row?.id ?? undefined
-}
-
 async function main() {
   console.log(`[Webmobi/Ingest] Starting at ${new Date().toISOString()}`)
 
-  const runId = await resolveRunId()
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
 
   const config = await prisma.ingestConfig.findUnique({
     where: { scraper: "webmobi" },
   })
   if (config?.active === false) {
     console.log("[Webmobi/Ingest] Scraping disabled via IngestConfig")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -80,6 +74,7 @@ async function main() {
     events = await fetchWebmobiEvents()
   } catch (err) {
     console.error("[Webmobi/Ingest] API fetch failed:", err)
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -138,7 +133,7 @@ async function main() {
           eventDateEnd,
           sourceUrl: ev.website_url ?? `https://www.webmobi.com/events/${ev.id}`,
           sourceSiteId,
-          runId: runId ?? undefined,
+          runId: ctx.runId ?? undefined,
           rawLocationText: rawCity,
           rawVenueText: null,
         },
@@ -155,6 +150,7 @@ async function main() {
   console.log(`[Webmobi/Ingest]   New saved:        ${totalNew}`)
   console.log(`[Webmobi/Ingest] ═══════════════════════════════════════\n`)
 
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

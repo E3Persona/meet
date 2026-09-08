@@ -9,9 +9,8 @@ import "dotenv/config"
 import { prisma, withRetry } from "../lib/prisma"
 import { scrapeUrl } from "../lib/scrapers/generic-llm"
 import { isExcludedHostname } from "../lib/scrapers/dedicated-domains"
+import { startIngestRun, finishIngestRun, type IngestRunContext } from "../lib/ingest-run"
 
-
-const runId = process.env.RUN_ID || null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 const sourceSiteIdOverride = process.env.SOURCE_SITE_ID ?? null
@@ -21,8 +20,9 @@ function normalizeEventName(name: string): string {
 }
 
 async function main() {
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
   console.log(`[GenericLLM] Starting at ${new Date().toISOString()}`)
-  console.log(`[GenericLLM] runId=${runId ?? "none"} dateFrom=${dateFrom?.toISOString()?.slice(0, 10) ?? "any"} dateTo=${dateTo?.toISOString()?.slice(0, 10) ?? "any"}`)
+  console.log(`[GenericLLM] dateFrom=${dateFrom?.toISOString()?.slice(0, 10) ?? "any"} dateTo=${dateTo?.toISOString()?.slice(0, 10) ?? "any"}`)
   console.log(`[GenericLLM] SCRAPE_API_BASE_URL=${process.env.SCRAPE_API_BASE_URL || "http://localhost:8008"}`)
 
   const baseUrl = process.env.SCRAPE_API_BASE_URL
@@ -129,7 +129,7 @@ async function main() {
             eventDateEnd: ev.eventDateEnd ? new Date(ev.eventDateEnd) : null,
             sourceUrl: ev.sourceUrl ?? site.url,
             sourceSiteId: site.id,
-            runId: runId ?? undefined,
+            runId: ctx.runId ?? undefined,
             status: "new",
             rawLocationText: ev.city ?? null,
             rawVenueText: ev.venue ?? null,

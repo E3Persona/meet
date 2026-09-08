@@ -2,8 +2,7 @@ import "dotenv/config"
 import { prisma, withRetry } from "../lib/prisma"
 import { scrapeInfosecConferences } from "../lib/scrapers/infosec-conferences"
 import { buildVenueMap } from "../lib/venueResolution"
-
-const runId = process.env.RUN_ID || null
+import { startIngestRun, finishIngestRun, type IngestRunContext } from "../lib/ingest-run"
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true"
@@ -41,9 +40,10 @@ const STATE_NAME_TO_CODE: Record<string, string> = {
 }
 
 async function main() {
-  console.log(`[Infosec/Ingest] Starting at ${new Date().toISOString()}`)
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
+  console.log(`[Infosec/Ingest] Starting at ${new Date().toISOString()}, runId=${ctx.runId}`)
   console.log(
-    `[Infosec/Ingest] Config: runId=${runId ?? "none"} dateFrom=${dateFrom?.toISOString()?.slice(0, 10) ?? "any"} dateTo=${dateTo?.toISOString()?.slice(0, 10) ?? "any"} DEBUG=${DEBUG}`
+    `[Infosec/Ingest] Config: dateFrom=${dateFrom?.toISOString()?.slice(0, 10) ?? "any"} dateTo=${dateTo?.toISOString()?.slice(0, 10) ?? "any"} DEBUG=${DEBUG}`
   )
 
   const config = await getConfig()
@@ -243,7 +243,7 @@ async function main() {
             expectedAttendees: ev.expectedAttendees,
             sourceUrl: ev.sourceUrl,
             sourceSiteId,
-            runId: runId ?? undefined,
+            runId: ctx.runId ?? undefined,
             organizerName: ev.organizerName ?? null,
             organizerTitle: ev.focus ?? null,
             contactNote: notes || null,
@@ -272,6 +272,7 @@ async function main() {
   console.log(`[Infosec/Ingest]   New saved:        ${totalNew}`)
   console.log(`[Infosec/Ingest] ═══════════════════════════════════════\n`)
 
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

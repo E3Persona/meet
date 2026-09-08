@@ -3,8 +3,7 @@ import { scrapeASAE } from "../lib/scrapers/asae"
 import { prisma, withRetry } from "../lib/prisma"
 import { normalizeState, statesMatch } from "../lib/stateNormalize"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
-
-const runId = process.env.RUN_ID || null
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
@@ -143,12 +142,14 @@ function matchLocation(
 }
 
 async function main() {
+  const ctx = await startIngestRun((process.env.TRIGGER as any) || "manual")
   console.log(`[ASAE/Ingest] Starting at ${new Date().toISOString()}`)
-  if (runId) console.log(`[ASAE/Ingest] Run ID: ${runId}`)
+  if (ctx.runId) console.log(`[ASAE/Ingest] Run ID: ${ctx.runId}`)
 
   const config = await getConfig()
   if (!config.active) {
     console.log("[ASAE/Ingest] Scraping disabled via IngestConfig")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -170,6 +171,7 @@ async function main() {
 
   if (locations.length === 0) {
     console.log("[ASAE/Ingest] No active locations")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -283,7 +285,7 @@ async function main() {
           eventDateStart: eventDateStart ?? undefined,
           sourceUrl: ev.detailUrl,
           sourceSiteId,
-          runId: runId ?? undefined,
+          runId: ctx.runId ?? undefined,
           expectedAttendees: null,
           rawLocationText: ev.locationText,
           rawVenueText: citiesStates.length > 0 ? citiesStates[0].city : null,
@@ -316,6 +318,7 @@ async function main() {
   }
 
   console.log(`[ASAE/Ingest] Complete: ${totalNew} new from ${totalFound}`)
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

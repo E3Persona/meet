@@ -2,8 +2,8 @@ import "dotenv/config"
 import { scrapeShowsbee } from "../lib/scrapers/showsbee"
 import { prisma, withRetry } from "../lib/prisma"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 
-const runId = process.env.RUN_ID || null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
@@ -19,8 +19,8 @@ async function getConfig() {
 }
 
 async function main() {
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
   console.log(`[Showsbee/Ingest] Starting at ${new Date().toISOString()}`)
-  if (runId) console.log(`[Showsbee/Ingest] Run ID: ${runId}`)
 
   const config = await getConfig()
   if (!config.active) {
@@ -166,7 +166,7 @@ async function main() {
           eventDateEnd,
           sourceUrl: ev.detailUrl ?? null,
           sourceSiteId,
-          runId: runId ?? undefined,
+          runId: ctx.runId ?? undefined,
           expectedAttendees: null,
           organizerName: org?.name ?? null,
           organizerEmail: org?.email ?? null,
@@ -199,11 +199,12 @@ async function main() {
   }
 
   console.log(`[Showsbee/Ingest] Complete: ${totalNew} new from ${totalFound}`)
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 
 main()
-  .catch((e) => {
+  .catch(async (e) => {
     console.error("[Showsbee/Ingest] Fatal:", e)
     process.exit(1)
   })

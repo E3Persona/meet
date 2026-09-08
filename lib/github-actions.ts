@@ -34,7 +34,6 @@ export interface TriggerOptions {
   dateFrom?: string
   dateTo?: string
   forceRefresh?: boolean
-  runId?: string
 }
 
 export async function triggerIngestWorkflow(options: TriggerOptions): Promise<{
@@ -60,7 +59,6 @@ export async function triggerIngestWorkflow(options: TriggerOptions): Promise<{
       ...(options.dateFrom && { date_from: options.dateFrom }),
       ...(options.dateTo && { date_to: options.dateTo }),
       ...(options.forceRefresh && { force_refresh: "true" }),
-      ...(options.runId && { run_id: options.runId }),
     },
   }
 

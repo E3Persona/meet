@@ -3,8 +3,7 @@ import { prisma, withRetry } from "../lib/prisma"
 import { scrapeECN, type ECNEvent } from "../lib/scrapers/thetradeshowcalendar"
 import { statesMatch } from "../lib/stateNormalize"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
-
-const runId = process.env.RUN_ID || null
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
@@ -42,12 +41,14 @@ function parseRange(rawStart: string, rawEnd: string | null): { start: Date | nu
 }
 
 async function main() {
+  const ctx = await startIngestRun((process.env.TRIGGER as any) || "manual")
   console.log(`[TheTradeShowCalendar/Ingest] Starting at ${new Date().toISOString()}`)
-  if (runId) console.log(`[TheTradeShowCalendar/Ingest] Run ID: ${runId}`)
+  if (ctx.runId) console.log(`[TheTradeShowCalendar/Ingest] Run ID: ${ctx.runId}`)
 
   const config = await getConfig()
   if (!config.active) {
     console.log("[TheTradeShowCalendar/Ingest] Scraping disabled via IngestConfig")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -69,6 +70,7 @@ async function main() {
 
   if (locations.length === 0) {
     console.log("[TheTradeShowCalendar/Ingest] No active locations")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -122,8 +124,8 @@ async function main() {
             eventDateEnd: end ?? undefined,
             sourceUrl: ev.officialWebsite || null,
             sourceSiteId,
-            runId: runId ?? undefined,
-            expectedAttendees: ev.attendees ?? null,
+          runId: ctx.runId ?? undefined,
+          expectedAttendees: ev.attendees ?? null,
             organizerName: contact?.organizerName ?? null,
             organizerEmail: contact?.organizerEmail ?? null,
             organizerPhone: contact?.organizerPhone ?? null,
@@ -164,6 +166,7 @@ async function main() {
   )
 
   console.log(`[TheTradeShowCalendar/Ingest] Complete: ${totalNew} new from ${totalFound} across ${result.totalBatches} batches`)
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

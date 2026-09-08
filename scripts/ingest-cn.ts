@@ -3,8 +3,7 @@ import { prisma, withRetry } from "../lib/prisma"
 import { scrapeCN, cityToCnSlug } from "../lib/scrapers/conferencenext"
 import { locationKey } from "../lib/stateNormalize"
 import { buildVenueMap } from "../lib/venueResolution"
-
-const runId = process.env.RUN_ID || null
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true"
@@ -25,12 +24,14 @@ async function getConfig() {
 }
 
 async function main() {
+  const ctx = await startIngestRun((process.env.TRIGGER as any) || "manual")
   console.log(`[CN/Ingest] Starting at ${new Date().toISOString()}`)
-  console.log(`[CN/Ingest] Config: runId=${runId ?? "none"} dateFrom=${dateFrom?.toISOString()?.slice(0, 10) ?? "any"} dateTo=${dateTo?.toISOString()?.slice(0, 10) ?? "any"} DEBUG=${DEBUG}`)
+  console.log(`[CN/Ingest] Config: runId=${ctx.runId ?? "none"} dateFrom=${dateFrom?.toISOString()?.slice(0, 10) ?? "any"} dateTo=${dateTo?.toISOString()?.slice(0, 10) ?? "any"} DEBUG=${DEBUG}`)
 
   const config = await getConfig()
   if (!config.active) {
     console.log("[CN/Ingest] Scraping disabled via IngestConfig")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
   console.log(`[CN/Ingest] Config: maxPages=${config.maxPages} maxLocations=${config.maxLocations}`)
@@ -69,6 +70,7 @@ async function main() {
 
   if (cnLocations.length === 0) {
     console.log("[CN/Ingest] No active locations with CN slugs")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -188,9 +190,9 @@ async function main() {
             eventDateEnd,
             sourceUrl: ev.eventUrl,
             sourceSiteId,
-            runId: runId ?? undefined,
-            expectedAttendees: null,
-            rawVenueText: ev.venueFullName ?? null,
+          runId: ctx.runId ?? undefined,
+          expectedAttendees: null,
+          rawVenueText: ev.venueFullName ?? null,
             rawLocationText: `${ev.venueCity}, ${ev.venueState ?? ""}`.trim(),
             organizerName: primaryContact?.organizerName ?? null,
             organizerTitle: primaryContact?.organizerOrg ?? null,
@@ -261,6 +263,7 @@ async function main() {
   console.log(`[CN/Ingest]   Batches:           ${batchNum}`)
   console.log(`[CN/Ingest] ═══════════════════════════════════════\n`)
 
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

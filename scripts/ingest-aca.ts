@@ -3,8 +3,8 @@ import { prisma, withRetry } from "../lib/prisma"
 import { scrapeACA } from "../lib/scrapers/allconferencealert"
 import { fetchPageMarkdown } from "../lib/contact-finder"
 import { buildVenueMap } from "../lib/venueResolution"
+import { startIngestRun, finishIngestRun, type IngestRunContext } from "../lib/ingest-run"
 
-const runId = process.env.RUN_ID || null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true"
@@ -33,8 +33,9 @@ function normalizeCity(city: string): string {
 }
 
 async function main() {
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
   console.log(`[ACA/Ingest] Starting at ${new Date().toISOString()}`)
-  console.log(`[ACA/Ingest] Config: runId=${runId ?? "none"} dateFrom=${dateFrom?.toISOString()?.slice(0, 10) ?? "any"} dateTo=${dateTo?.toISOString()?.slice(0, 10) ?? "any"} DEBUG=${DEBUG}`)
+  console.log(`[ACA/Ingest] Config: dateFrom=${dateFrom?.toISOString()?.slice(0, 10) ?? "any"} dateTo=${dateTo?.toISOString()?.slice(0, 10) ?? "any"} DEBUG=${DEBUG}`)
 
   const config = await getConfig()
   console.log(`[ACA/Ingest] IngestConfig: active=${config.active} maxLocations=${config.maxLocations}`)
@@ -235,7 +236,7 @@ async function main() {
             eventDateStart: eventDate,
             sourceUrl: ev.eventUrl,
             sourceSiteId,
-            runId: runId ?? undefined,
+            runId: ctx.runId ?? undefined,
             expectedAttendees: null,
             rawLocationText: ev.venueCity,
             rawVenueText: null,

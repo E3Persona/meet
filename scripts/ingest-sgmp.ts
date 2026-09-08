@@ -3,9 +3,8 @@ import { prisma, withRetry } from "../lib/prisma"
 import { scrapeSgmpEvents } from "../lib/scrapers/sgmp"
 import { statesMatch } from "../lib/stateNormalize"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
+import { startIngestRun, finishIngestRun, type IngestRunContext } from "../lib/ingest-run"
 
-
-const runId = process.env.RUN_ID || null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
@@ -68,8 +67,8 @@ function matchLocation(
 }
 
 async function main() {
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
   console.log(`[SGMP/Ingest] Starting at ${new Date().toISOString()}`)
-  if (runId) console.log(`[SGMP/Ingest] Run ID: ${runId}`)
 
   const config = await getConfig()
   if (!config.active) {
@@ -172,7 +171,7 @@ async function main() {
           eventDateEnd,
           sourceUrl: ev.sourceUrl,
           sourceSiteId,
-          runId: runId ?? undefined,
+          runId: ctx.runId ?? undefined,
           expectedAttendees: null,
           organizerName: ev.contactName ?? null,
           organizerEmail: ev.contactEmail ?? null,

@@ -2,8 +2,8 @@ import "dotenv/config"
 import { scrapeEventseye } from "../lib/scrapers/eventseye"
 import { prisma, withRetry } from "../lib/prisma"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
+import { startIngestRun, finishIngestRun, type IngestRunContext } from "../lib/ingest-run"
 
-const runId = process.env.RUN_ID || null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
@@ -18,8 +18,8 @@ async function getConfig() {
 }
 
 async function main() {
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
   console.log(`[Eventseye/Ingest] Starting at ${new Date().toISOString()}`)
-  if (runId) console.log(`[Eventseye/Ingest] Run ID: ${runId}`)
 
   const config = await getConfig()
   if (!config.active) {
@@ -153,7 +153,7 @@ async function main() {
           eventDateEnd,
           sourceUrl: ev.detailUrl ?? null,
           sourceSiteId,
-          runId: runId ?? undefined,
+          runId: ctx.runId ?? undefined,
           expectedAttendees: null,
           rawLocationText: cityMatch.city ?? null,
           rawVenueText,

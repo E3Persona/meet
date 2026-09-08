@@ -3,8 +3,8 @@ import { prisma, withRetry } from "../lib/prisma"
 import { scrapeICA, cityToIcaSlug } from "../lib/scrapers/ica"
 import { locationKey } from "../lib/stateNormalize"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
+import { startIngestRun, finishIngestRun, type IngestRunContext } from "../lib/ingest-run"
 
-const runId = process.env.RUN_ID || null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
@@ -27,8 +27,8 @@ async function getConfig() {
 }
 
 async function main() {
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
   console.log(`[ICA/Ingest] Starting at ${new Date().toISOString()}`)
-  if (runId) console.log(`[ICA/Ingest] Run ID: ${runId}`)
 
   const config = await getConfig()
   if (!config.active) {
@@ -171,7 +171,7 @@ async function main() {
             eventDateEnd,
             sourceUrl: ev.eventUrl,
             sourceSiteId,
-            runId: runId ?? undefined,
+            runId: ctx.runId ?? undefined,
             expectedAttendees: null,
             rawVenueText: ev.venueFullName ?? null,
             rawLocationText: `${ev.venueCity}, ${ev.venueState ?? ""}`.trim(),

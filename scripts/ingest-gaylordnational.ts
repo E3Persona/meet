@@ -1,22 +1,13 @@
 import "dotenv/config"
 import { prisma, withRetry } from "@/lib/prisma"
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 
 import { scrapeGaylordNationalEvents } from "../lib/scrapers/gaylordnational"
-
-
-const rawRunId = process.env.RUN_ID || null
-
-async function resolveRunId(): Promise<string | undefined> {
-  if (!rawRunId) return undefined
-  const row = await prisma.ingestionRun.findUnique({ where: { id: rawRunId }, select: { id: true } })
-  return row?.id ?? undefined
-}
 
 async function main() {
   console.log(`[GaylordNational/Ingest] Starting at ${new Date().toISOString()}`)
 
-  const runId = await resolveRunId()
-  console.log(`[GaylordNational/Ingest] runId=${runId ?? "none (will be saved without run association)"}`)
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
 
   const config = await prisma.ingestConfig.findUnique({
     where: { scraper: "gaylordnational" },
@@ -104,7 +95,7 @@ async function main() {
           eventDateEnd: ev.eventDateEnd,
           sourceUrl: ev.sourceUrl,
           sourceSiteId,
-          runId: runId ?? undefined,
+          runId: ctx.runId ?? undefined,
           rawVenueText: ev.venueName ?? null,
           rawLocationText: "National Harbor, MD",
         },
@@ -126,6 +117,7 @@ async function main() {
   console.log(`[GaylordNational/Ingest]   New saved:        ${totalNew}`)
   console.log(`[GaylordNational/Ingest] ═══════════════════════════════════════\n`)
 
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

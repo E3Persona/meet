@@ -2,25 +2,19 @@ import "dotenv/config"
 import { prisma, withRetry } from "../lib/prisma"
 import { createEventbriteBrowser, matchEventsToVenue, scrapeSearchPage } from "../lib/scrapers/eventbrite"
 import { locationKey } from "../lib/stateNormalize"
-
-const rawRunId = process.env.RUN_ID || null
-
-async function resolveRunId(): Promise<string | undefined> {
-  if (!rawRunId) return undefined
-  const row = await prisma.ingestionRun.findUnique({ where: { id: rawRunId }, select: { id: true } })
-  return row?.id ?? undefined
-}
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 
 async function main() {
   console.log(`[Eventbrite/Ingest] Starting at ${new Date().toISOString()}`)
 
-  const runId = await resolveRunId()
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
 
   const config = await prisma.ingestConfig.findUnique({
     where: { scraper: "eventbrite" },
   })
   if (config?.active === false) {
     console.log("[Eventbrite/Ingest] Scraping disabled via IngestConfig")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -58,6 +52,7 @@ async function main() {
     browser = await createEventbriteBrowser()
   } catch (err) {
     console.error("[Eventbrite/Ingest] Failed to launch browser:", err)
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
   let totalFound = 0
@@ -111,7 +106,7 @@ async function main() {
               eventDateEnd: ev.eventDateEnd ? new Date(ev.eventDateEnd) : null,
               sourceUrl: ev.detailUrl,
               sourceSiteId: sourceSite.id,
-              runId: runId ?? undefined,
+              runId: ctx.runId ?? undefined,
               rawVenueText: ev.venueName,
               rawLocationText: ev.venueCity && ev.venueState ? `${ev.venueCity}, ${ev.venueState}` : null,
             },
@@ -133,6 +128,7 @@ async function main() {
   console.log(`[Eventbrite/Ingest]   Duplicates:       ${skippedDuplicate}`)
   console.log(`[Eventbrite/Ingest] ═══════════════════════════════════════\n`)
 
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

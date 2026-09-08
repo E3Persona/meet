@@ -2,9 +2,7 @@ import "dotenv/config"
 import { prisma, withRetry } from "../lib/prisma"
 import { scrapeTF } from "../lib/scrapers/tradefest"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
-
-
-const runId = process.env.RUN_ID || null
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
@@ -20,12 +18,14 @@ async function getConfig() {
 }
 
 async function main() {
+  const ctx = await startIngestRun((process.env.TRIGGER as any) || "manual")
   console.log(`[TF/Ingest] Starting at ${new Date().toISOString()}`)
-  if (runId) console.log(`[TF/Ingest] Run ID: ${runId}`)
+  if (ctx.runId) console.log(`[TF/Ingest] Run ID: ${ctx.runId}`)
 
   const config = await getConfig()
   if (!config.active) {
     console.log("[TF/Ingest] Scraping disabled via IngestConfig")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
   console.log(`[TF/Ingest] Config: maxPages=${config.maxPages}`)
@@ -48,6 +48,7 @@ async function main() {
 
   if (locations.length === 0) {
     console.log("[TF/Ingest] No active locations")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -113,6 +114,7 @@ async function main() {
   console.log(`[TF/Ingest] Pass 1: ${allEvents.length} total scraped, ${newCandidates.length} are new`)
 
   if (newCandidates.length === 0) {
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -148,7 +150,7 @@ async function main() {
           eventDateStart,
           sourceUrl: ev.eventUrl,
           sourceSiteId,
-          runId: runId ?? undefined,
+          runId: ctx.runId ?? undefined,
           expectedAttendees: detail?.expectedAttendees ?? ev.expectedAttendees ?? null,
           organizerName: org.name ?? null,
           organizerTitle: null,
@@ -182,6 +184,7 @@ async function main() {
   }
 
   console.log(`[TF/Ingest] Complete: ${totalNew} new from ${totalFound}`)
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 

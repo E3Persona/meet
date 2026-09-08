@@ -6,8 +6,7 @@ import {
   type BigEventEvent,
 } from "../lib/scrapers/bigevent"
 import { prisma, withRetry } from "../lib/prisma"
-
-const rawRunId = process.env.RUN_ID || null
+import { startIngestRun, finishIngestRun } from "../lib/ingest-run"
 
 const CITY_ALIASES: Record<string, string> = {
   "new york city": "New York",
@@ -20,22 +19,17 @@ function normalizeCity(raw: string): string {
   return CITY_ALIASES[lower] ?? raw.trim()
 }
 
-async function resolveRunId(): Promise<string | undefined> {
-  if (!rawRunId) return undefined
-  const row = await prisma.ingestionRun.findUnique({ where: { id: rawRunId }, select: { id: true } })
-  return row?.id ?? undefined
-}
-
 async function main() {
   console.log(`[BigEvent/Ingest] Starting at ${new Date().toISOString()}`)
 
-  const runId = await resolveRunId()
+  const ctx = await startIngestRun(process.env.TRIGGER as any || "manual")
 
   const config = await prisma.ingestConfig.findUnique({
     where: { scraper: "bigevent" },
   })
   if (config?.active === false) {
     console.log("[BigEvent/Ingest] Scraping disabled via IngestConfig")
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -77,6 +71,7 @@ async function main() {
     browser = await createBigEventBrowser()
   } catch (err) {
     console.error("[BigEvent/Ingest] Failed to launch browser:", err)
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   }
 
@@ -91,6 +86,7 @@ async function main() {
   } catch (err) {
     console.error("[BigEvent/Ingest] Scraping failed:", err)
     await browser.close().catch(() => {})
+    await finishIngestRun(ctx, { recordsFound: 0, recordsNew: 0 })
     return { recordsFound: 0, recordsNew: 0 }
   } finally {
     await browser.close().catch(() => {})
@@ -159,7 +155,7 @@ async function main() {
         eventDateEnd,
         sourceUrl: ev.website,
         sourceSiteId,
-        runId: runId ?? undefined,
+        runId: ctx.runId ?? undefined,
         rawVenueText: ev.venue || null,
         rawLocationText,
       },
@@ -176,6 +172,7 @@ async function main() {
   console.log(`[BigEvent/Ingest]   New saved:         ${totalNew}`)
   console.log(`[BigEvent/Ingest] ═══════════════════════════════════════\n`)
 
+  await finishIngestRun(ctx, { recordsFound: totalFound, recordsNew: totalNew })
   return { recordsFound: totalFound, recordsNew: totalNew }
 }
 
