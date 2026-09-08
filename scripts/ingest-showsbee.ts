@@ -3,7 +3,7 @@ import { scrapeShowsbee } from "../lib/scrapers/showsbee"
 import { prisma, withRetry } from "../lib/prisma"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
-const runId = process.env.RUN_ID ?? null
+const runId = process.env.RUN_ID || null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 
@@ -135,6 +135,7 @@ async function main() {
     country: "United_States",
     city: "all_city",
     maxPages: config.maxPages,
+    maxDetailPages: newCandidates.length,
     withDetails: true,
   })
 

@@ -4,7 +4,7 @@ import { scrapeICA, cityToIcaSlug } from "../lib/scrapers/ica"
 import { locationKey } from "../lib/stateNormalize"
 import { matchVenue, buildVenueMap } from "../lib/venueResolution"
 
-const runId = process.env.RUN_ID ?? null
+const runId = process.env.RUN_ID || null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 

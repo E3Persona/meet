@@ -2,7 +2,7 @@ import "dotenv/config"
 import { scrapePhiladelphiaUnionEvents } from "../lib/scrapers/philadelphiaunion"
 import { prisma, withRetry } from "../lib/prisma"
 
-const rawRunId = process.env.RUN_ID ?? null
+const rawRunId = process.env.RUN_ID || null
 
 async function resolveRunId(): Promise<string | undefined> {
   if (!rawRunId) return undefined

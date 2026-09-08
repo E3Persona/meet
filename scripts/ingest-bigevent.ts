@@ -7,7 +7,7 @@ import {
 } from "../lib/scrapers/bigevent"
 import { prisma, withRetry } from "../lib/prisma"
 
-const rawRunId = process.env.RUN_ID ?? null
+const rawRunId = process.env.RUN_ID || null
 
 const CITY_ALIASES: Record<string, string> = {
   "new york city": "New York",

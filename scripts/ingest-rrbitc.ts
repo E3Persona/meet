@@ -3,7 +3,7 @@ import { prisma, withRetry } from "../lib/prisma"
 import { scrapeRrbitcEvents } from "../lib/scrapers/rrbitc"
 
 
-const rawRunId = process.env.RUN_ID ?? null
+const rawRunId = process.env.RUN_ID || null
 
 async function resolveRunId(): Promise<string | undefined> {
   if (!rawRunId) return undefined

@@ -4,7 +4,7 @@ import { scrapeCN, cityToCnSlug } from "../lib/scrapers/conferencenext"
 import { locationKey } from "../lib/stateNormalize"
 import { buildVenueMap } from "../lib/venueResolution"
 
-const runId = process.env.RUN_ID ?? null
+const runId = process.env.RUN_ID || null
 const dateFrom = process.env.DATE_FROM ? new Date(process.env.DATE_FROM) : null
 const dateTo = process.env.DATE_TO ? new Date(process.env.DATE_TO) : null
 const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true"

@@ -2,7 +2,7 @@ import "dotenv/config"
 import { prisma, withRetry } from "../lib/prisma"
 import { fetchWebmobiEvents } from "../lib/scrapers/webmobi"
 
-const rawRunId = process.env.RUN_ID ?? null
+const rawRunId = process.env.RUN_ID || null
 
 const CITY_ALIASES: Record<string, string> = {
   "washington, d.c.": "Washington DC",

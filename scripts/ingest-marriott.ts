@@ -3,7 +3,7 @@ import "dotenv/config"
 import { scrapeMarriottLocalEvents } from "../lib/scrapers/marriott"
 import { prisma, withRetry } from "../lib/prisma"
 
-const rawRunId = process.env.RUN_ID ?? null
+const rawRunId = process.env.RUN_ID || null
 
 // Map location names (case-insensitive match by "contains") to Marriott property slugs.
 // Property slugs are visible in the event.marriott.com URL for each hotel.

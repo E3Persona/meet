@@ -3,7 +3,7 @@ import { prisma, withRetry } from "../lib/prisma"
 import { createEventbriteBrowser, matchEventsToVenue, scrapeSearchPage } from "../lib/scrapers/eventbrite"
 import { locationKey } from "../lib/stateNormalize"
 
-const rawRunId = process.env.RUN_ID ?? null
+const rawRunId = process.env.RUN_ID || null
 
 async function resolveRunId(): Promise<string | undefined> {
   if (!rawRunId) return undefined

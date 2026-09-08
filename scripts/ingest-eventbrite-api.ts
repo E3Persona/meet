@@ -4,7 +4,7 @@ import { createEventbriteBrowser, scrapeSearchPage } from "../lib/scrapers/event
 import { discoverEvents, type EventbriteApiEvent } from "../lib/scrapers/eventbrite-api"
 import { prisma, withRetry } from "../lib/prisma"
 
-const rawRunId = process.env.RUN_ID ?? null
+const rawRunId = process.env.RUN_ID || null
 
 const CITY_ALIASES: Record<string, string> = {
   "washington, d.c.": "Washington DC",

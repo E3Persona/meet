@@ -63,7 +63,7 @@ jobs:
       - name: Run scraper
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          RUN_ID: ${{ inputs.run_id || '' }}
+          RUN_ID: ${{ inputs.run_id }}
           DATE_FROM: ${{ inputs.date_from || '' }}
           DATE_TO: ${{ inputs.date_to || '' }}
           FORCE_REFRESH: ${{ inputs.force_refresh && '1' || '' }}
