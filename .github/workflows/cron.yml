@@ -7,18 +7,68 @@ on:
   workflow_dispatch:
 
 jobs:
-  ingest:
+  ingest-all:
     name: Run all scrapers
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 360
+
+    strategy:
+      fail-fast: false
+      matrix:
+        scraper:
+          - ingest-aca.ts
+          - ingest-asae.ts
+          - ingest-bigevent.ts
+          - ingest-blackmeetings.ts
+          - ingest-cn.ts
+          - ingest-eventbrite.ts
+          - ingest-eventbrite-api.ts
+          - ingest-eventsdc.ts
+          - ingest-eventseye.ts
+          - ingest-gaylordnational.ts
+          - ingest-generic-llm.ts
+          - ingest-ica.ts
+          - ingest-infosec.ts
+          - ingest-marriott.ts
+          - ingest-philadelphiaunion.ts
+          - ingest-phillyexpocenter.ts
+          - ingest-rrbitc.ts
+          - ingest-sgmp.ts
+          - ingest-showsbee.ts
+          - ingest-tf.ts
+          - ingest-thetradeshowcalendar.ts
+          - ingest-tradefairdates.ts
+          - ingest-webmobi.ts
 
     steps:
-      - name: Trigger ingestion cron endpoint
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Run scraper
         env:
-          API_KEY: ${{ secrets.GOOGLE_SHEETS_SYNC_API_KEY }}
-          APP_URL: ${{ vars.APP_URL }}
-        run: |
-          curl -sSf -w "\nHTTP %{http_code}" \
-            -H "Authorization: Bearer ${API_KEY}" \
-            "${APP_URL:-https://e3evint.e3personnel.com}/api/ingest/run" \
-            || echo "CURL_EXIT=$?" >> "$GITHUB_ENV"
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          BRAVE_SEARCH_API_KEY: ${{ secrets.BRAVE_SEARCH_API_KEY }}
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          WEBPEEL_API_KEY: ${{ secrets.WEBPEEL_API_KEY }}
+        run: pnpm exec tsx scripts/${{ matrix.scraper }}

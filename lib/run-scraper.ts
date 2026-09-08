@@ -1,32 +1,6 @@
-import { spawn } from "child_process"
 import { prisma } from "@/lib/prisma"
 import { isSiteStale, getStaleHours } from "@/lib/ingest/crawl-cache"
-
-const SCRAPER_KEYS: Record<string, string> = {
-  "ingest-ica.ts": "ica",
-  "ingest-cn.ts": "cn",
-  "ingest-aca.ts": "aca",
-  "ingest-tf.ts": "tf",
-  "ingest-showsbee.ts": "showsbee",
-  "ingest-eventseye.ts": "eventseye",
-  "ingest-asae.ts": "asae",
-  "ingest-blackmeetings.ts": "blackmeetings",
-  "ingest-sgmp.ts": "sgmp",
-  "ingest-thetradeshowcalendar.ts": "thetradeshowcalendar",
-  "ingest-infosec.ts": "infosec",
-  "ingest-generic-llm.ts": "generic-llm",
-  "ingest-philadelphiaunion.ts": "philadelphiaunion",
-  "ingest-rrbitc.ts": "rrbitc",
-  "ingest-gaylordnational.ts": "gaylordnational",
-  "ingest-eventsdc.ts": "eventsdc",
-  "ingest-tradefairdates.ts": "tradefairdates",
-  "ingest-phillyexpocenter.ts": "phillyexpocenter",
-  "ingest-marriott.ts": "marriott",
-  "ingest-eventbrite.ts": "eventbrite",
-  "ingest-eventbrite-api.ts": "eventbrite-api",
-  "ingest-bigevent.ts": "bigevent",
-  "ingest-webmobi.ts": "webmobi",
-}
+import { triggerIngestWorkflow } from "@/lib/github-actions"
 
 export async function startScraperRun(
   scriptName: string,
@@ -36,7 +10,7 @@ export async function startScraperRun(
   dateFrom?: string,
   dateTo?: string,
   forceRefresh = false,
-): Promise<{ runId: string; skipped?: boolean }> {
+): Promise<{ runId: string; skipped?: boolean; workflowUrl?: string }> {
   // ── Change detection: skip if site was scraped recently ──
   if (!forceRefresh) {
     const site = await prisma.sourceSite.findFirst({ where: { name: siteName } })
@@ -62,67 +36,31 @@ export async function startScraperRun(
     })
   }
 
-  const scraperKey = SCRAPER_KEYS[scriptName]
-  if (scraperKey) {
-    await prisma.ingestConfig.upsert({
-      where: { scraper: scraperKey },
-      update: {},
-      create: { scraper: scraperKey },
+  const scraperKey = scriptName.replace("ingest-", "").replace(".ts", "")
+  await prisma.ingestConfig.upsert({
+    where: { scraper: scraperKey },
+    update: {},
+    create: { scraper: scraperKey },
+  })
+
+  try {
+    const result = await triggerIngestWorkflow({
+      scraperScript: scriptName,
+      trigger,
+      dateFrom,
+      dateTo,
+      forceRefresh,
+      runId: run.id,
     })
-  }
-
-  const scriptPath = `${process.cwd()}/scripts/${scriptName}`
-  const env: NodeJS.ProcessEnv = {
-    ...process.env,
-    DATABASE_URL: process.env.DATABASE_URL!,
-    RUN_ID: run.id,
-    ...(dateFrom ? { DATE_FROM: dateFrom } : {}),
-    ...(dateTo ? { DATE_TO: dateTo } : {}),
-    ...(forceRefresh ? { FORCE_REFRESH: "1" } : {}),
-  }
-
-  const child = spawn("npx", ["tsx", scriptPath], {
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-  })
-
-  let stdout = ""
-
-  child.stdout?.on("data", (chunk: Buffer) => {
-    stdout += chunk.toString()
-    process.stdout.write(`[${siteName}] ${chunk}`)
-  })
-
-  child.stderr?.on("data", (chunk: Buffer) => {
-    process.stderr.write(`[${siteName}] ${chunk}`)
-  })
-
-  child.on("error", (err) => {
-    console.error(`[${siteName}] spawn error:`, err.message)
-    prisma.ingestionRun.update({
+    console.log(`[Scraper] Triggered GitHub Actions for "${siteName}": ${result.workflowRunUrl}`)
+    return { runId: run.id, workflowUrl: result.workflowRunUrl }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown"
+    console.error(`[Scraper] Failed to trigger GitHub Actions for "${siteName}":`, errorMessage)
+    await prisma.ingestionRun.update({
       where: { id: run.id },
-      data: { status: "failed", finishedAt: new Date(), errorMessage: err.message },
-    }).catch(() => {})
-  })
-
-  child.on("exit", (code) => {
-    const lines = stdout.split("\n").filter((l) => l.includes("Complete:"))
-    const match = lines[0]?.match(/(\d+) new from (\d+)/)
-    const totalNew = match ? parseInt(match[1]) : 0
-    const totalFound = match ? parseInt(match[2]) : 0
-
-    if (code === 0) {
-      prisma.ingestionRun.update({
-        where: { id: run.id },
-        data: { status: "success", finishedAt: new Date(), recordsFound: totalFound, recordsNew: totalNew },
-      }).catch(() => {})
-    } else {
-      prisma.ingestionRun.update({
-        where: { id: run.id },
-        data: { status: "failed", finishedAt: new Date(), errorMessage: `Exited with code ${code}` },
-      }).catch(() => {})
-    }
-  })
-
-  return { runId: run.id }
+      data: { status: "failed", finishedAt: new Date(), errorMessage },
+    })
+    throw error
+  }
 }
