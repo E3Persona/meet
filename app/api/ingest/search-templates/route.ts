@@ -120,7 +120,7 @@ export async function POST(request: Request) {
 
   /* ── Round-robin mode: hand off to GitHub Actions, unattended ── */
   const { runId } = await startScraperRun(
-    "ingest-search-templates.ts",
+    "search-templates.ts",
     "search-templates",
     "manual",
     false,
