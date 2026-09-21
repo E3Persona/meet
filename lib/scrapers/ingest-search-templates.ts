@@ -5,7 +5,6 @@ import { enrichEvent } from "@/lib/search/enrich-event"
 // import type { EventMatchType, LocationType } from "@/lib/search/generated/prisma"
 import { searchGoogle } from "../search/search-provider"
 import { EventMatchType, LocationType } from "../generated/prisma/enums"
-import { startIngestRun, finishIngestRun } from "../ingest-run"
 
 export interface RunSearchTemplatesOptions {
   // Targeted mode: only these templates/terms, only these locations.
@@ -405,37 +404,5 @@ export async function runSearchTemplates(
     resultsSaved,
     eventsEnriched,
     providerBreakdown,
-  }
-}
-
-/* ──────────────────────────────────────────────────────────
-    CLI entry point
-    ────────────────────────────────────────────────────────── */
-if (require.main === module) {
-  const args = process.argv.slice(2)
-  const runIdArg = args[0] // optional runId passed from the workflow trigger
-
-  const ctx = await startIngestRun(
-    (process.env.TRIGGER as "manual" | "scheduled") ?? "manual"
-  )
-
-  try {
-    const summary = await runSearchTemplates({
-      runId: runIdArg || ctx.runId,
-    })
-    console.log("[SearchTemplates] Summary:", summary)
-    await finishIngestRun(ctx, {
-      recordsFound: summary.searched,
-      recordsNew: summary.eventsEnriched,
-    })
-    process.exit(0)
-  } catch (err) {
-    console.error("[SearchTemplates] Fatal error:", err)
-    await finishIngestRun(ctx, {
-      recordsFound: 0,
-      recordsNew: 0,
-      errorMessage: err instanceof Error ? err.message : String(err),
-    })
-    process.exit(1)
   }
 }
