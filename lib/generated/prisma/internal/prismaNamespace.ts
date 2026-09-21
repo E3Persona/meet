@@ -400,7 +400,10 @@ export const ModelName = {
   SeenBlock: 'SeenBlock',
   EventDetailPage: 'EventDetailPage',
   EventDetailSection: 'EventDetailSection',
-  Note: 'Note'
+  Note: 'Note',
+  WebSearchQuery: 'WebSearchQuery',
+  WebSearchResult: 'WebSearchResult',
+  SearchExecution: 'SearchExecution'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -416,7 +419,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "location" | "searchTerm" | "searchTemplate" | "event" | "ingestionRun" | "sourceSite" | "sourceSiteConfig" | "ingestionSchedule" | "ingestConfig" | "crawledUrl" | "eventContact" | "directory" | "venueDirectorySource" | "seenBlock" | "eventDetailPage" | "eventDetailSection" | "note"
+    modelProps: "location" | "searchTerm" | "searchTemplate" | "event" | "ingestionRun" | "sourceSite" | "sourceSiteConfig" | "ingestionSchedule" | "ingestConfig" | "crawledUrl" | "eventContact" | "directory" | "venueDirectorySource" | "seenBlock" | "eventDetailPage" | "eventDetailSection" | "note" | "webSearchQuery" | "webSearchResult" | "searchExecution"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1678,6 +1681,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    WebSearchQuery: {
+      payload: Prisma.$WebSearchQueryPayload<ExtArgs>
+      fields: Prisma.WebSearchQueryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WebSearchQueryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WebSearchQueryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload>
+        }
+        findFirst: {
+          args: Prisma.WebSearchQueryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WebSearchQueryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload>
+        }
+        findMany: {
+          args: Prisma.WebSearchQueryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload>[]
+        }
+        create: {
+          args: Prisma.WebSearchQueryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload>
+        }
+        createMany: {
+          args: Prisma.WebSearchQueryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WebSearchQueryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload>[]
+        }
+        delete: {
+          args: Prisma.WebSearchQueryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload>
+        }
+        update: {
+          args: Prisma.WebSearchQueryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload>
+        }
+        deleteMany: {
+          args: Prisma.WebSearchQueryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WebSearchQueryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WebSearchQueryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload>[]
+        }
+        upsert: {
+          args: Prisma.WebSearchQueryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchQueryPayload>
+        }
+        aggregate: {
+          args: Prisma.WebSearchQueryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWebSearchQuery>
+        }
+        groupBy: {
+          args: Prisma.WebSearchQueryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WebSearchQueryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WebSearchQueryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WebSearchQueryCountAggregateOutputType> | number
+        }
+      }
+    }
+    WebSearchResult: {
+      payload: Prisma.$WebSearchResultPayload<ExtArgs>
+      fields: Prisma.WebSearchResultFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WebSearchResultFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WebSearchResultFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload>
+        }
+        findFirst: {
+          args: Prisma.WebSearchResultFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WebSearchResultFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload>
+        }
+        findMany: {
+          args: Prisma.WebSearchResultFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload>[]
+        }
+        create: {
+          args: Prisma.WebSearchResultCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload>
+        }
+        createMany: {
+          args: Prisma.WebSearchResultCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WebSearchResultCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload>[]
+        }
+        delete: {
+          args: Prisma.WebSearchResultDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload>
+        }
+        update: {
+          args: Prisma.WebSearchResultUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload>
+        }
+        deleteMany: {
+          args: Prisma.WebSearchResultDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WebSearchResultUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WebSearchResultUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload>[]
+        }
+        upsert: {
+          args: Prisma.WebSearchResultUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WebSearchResultPayload>
+        }
+        aggregate: {
+          args: Prisma.WebSearchResultAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWebSearchResult>
+        }
+        groupBy: {
+          args: Prisma.WebSearchResultGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WebSearchResultGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WebSearchResultCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WebSearchResultCountAggregateOutputType> | number
+        }
+      }
+    }
+    SearchExecution: {
+      payload: Prisma.$SearchExecutionPayload<ExtArgs>
+      fields: Prisma.SearchExecutionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SearchExecutionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SearchExecutionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload>
+        }
+        findFirst: {
+          args: Prisma.SearchExecutionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SearchExecutionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload>
+        }
+        findMany: {
+          args: Prisma.SearchExecutionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload>[]
+        }
+        create: {
+          args: Prisma.SearchExecutionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload>
+        }
+        createMany: {
+          args: Prisma.SearchExecutionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SearchExecutionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload>[]
+        }
+        delete: {
+          args: Prisma.SearchExecutionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload>
+        }
+        update: {
+          args: Prisma.SearchExecutionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload>
+        }
+        deleteMany: {
+          args: Prisma.SearchExecutionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SearchExecutionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SearchExecutionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload>[]
+        }
+        upsert: {
+          args: Prisma.SearchExecutionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SearchExecutionPayload>
+        }
+        aggregate: {
+          args: Prisma.SearchExecutionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSearchExecution>
+        }
+        groupBy: {
+          args: Prisma.SearchExecutionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SearchExecutionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SearchExecutionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SearchExecutionCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2007,6 +2232,46 @@ export const NoteScalarFieldEnum = {
 } as const
 
 export type NoteScalarFieldEnum = (typeof NoteScalarFieldEnum)[keyof typeof NoteScalarFieldEnum]
+
+
+export const WebSearchQueryScalarFieldEnum = {
+  id: 'id',
+  query: 'query',
+  createdAt: 'createdAt'
+} as const
+
+export type WebSearchQueryScalarFieldEnum = (typeof WebSearchQueryScalarFieldEnum)[keyof typeof WebSearchQueryScalarFieldEnum]
+
+
+export const WebSearchResultScalarFieldEnum = {
+  id: 'id',
+  queryId: 'queryId',
+  source: 'source',
+  title: 'title',
+  url: 'url',
+  snippet: 'snippet',
+  publishedDate: 'publishedDate',
+  page: 'page',
+  createdAt: 'createdAt'
+} as const
+
+export type WebSearchResultScalarFieldEnum = (typeof WebSearchResultScalarFieldEnum)[keyof typeof WebSearchResultScalarFieldEnum]
+
+
+export const SearchExecutionScalarFieldEnum = {
+  id: 'id',
+  searchTemplateId: 'searchTemplateId',
+  searchTermId: 'searchTermId',
+  locationId: 'locationId',
+  targetMonth: 'targetMonth',
+  targetYear: 'targetYear',
+  resolvedQuery: 'resolvedQuery',
+  lastRunAt: 'lastRunAt',
+  resultCount: 'resultCount',
+  webSearchQueryId: 'webSearchQueryId'
+} as const
+
+export type SearchExecutionScalarFieldEnum = (typeof SearchExecutionScalarFieldEnum)[keyof typeof SearchExecutionScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -2476,6 +2741,9 @@ export type GlobalOmitConfig = {
   eventDetailPage?: Prisma.EventDetailPageOmit
   eventDetailSection?: Prisma.EventDetailSectionOmit
   note?: Prisma.NoteOmit
+  webSearchQuery?: Prisma.WebSearchQueryOmit
+  webSearchResult?: Prisma.WebSearchResultOmit
+  searchExecution?: Prisma.SearchExecutionOmit
 }
 
 /* Types for Logging */

@@ -13,6 +13,15 @@ import { VenueDirectoriesManager } from "@/components/directories/venue-director
 import { ScrapersPanel } from "@/components/dashboard/scrapers-panel"
 import { ScheduleManager } from "@/components/schedules/schedule-manager"
 import { Sidebar, type SidebarSection } from "@/components/dashboard/sidebar"
+import dynamic from "next/dynamic"
+
+const WebSearchPage = dynamic(
+  () => import("@/app/web-search/page").then((mod) => mod.default),
+  {
+    ssr: false,
+    loading: () => <div className="p-6">Loading...</div>,
+  }
+)
 
 const SECTION_TITLES: Record<
   SidebarSection,
@@ -20,7 +29,12 @@ const SECTION_TITLES: Record<
 > = {
   events: {
     title: "e3 Event Intelligence Dashboard",
-    description: "Sales pipeline for tracking meetings, conventions, and tradeshows across venues.",
+    description:
+      "Sales pipeline for tracking meetings, conventions, and tradeshows across venues.",
+  },
+  "web-search": {
+    title: "Web Search",
+    description: "Search the web and view search history with results.",
   },
   locations: {
     title: "Locations",
@@ -102,6 +116,7 @@ export default function DashboardPage() {
 
             {/* Content */}
             {active === "events" && <EventsTable key={refreshKey} />}
+            {active === "web-search" && <WebSearchPage />}
             {active === "locations" && <LocationsManager />}
             {active === "templates" && <TemplatesManager />}
             {active === "sources" && <SourceSitesManager />}

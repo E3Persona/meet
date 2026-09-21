@@ -191,6 +191,7 @@ export type SearchTermWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
   location?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
+  executions?: Prisma.SearchExecutionListRelationFilter
 }
 
 export type SearchTermOrderByWithRelationInput = {
@@ -201,6 +202,7 @@ export type SearchTermOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   location?: Prisma.LocationOrderByWithRelationInput
+  executions?: Prisma.SearchExecutionOrderByRelationAggregateInput
 }
 
 export type SearchTermWhereUniqueInput = Prisma.AtLeast<{
@@ -214,6 +216,7 @@ export type SearchTermWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
   location?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
+  executions?: Prisma.SearchExecutionListRelationFilter
 }, "id">
 
 export type SearchTermOrderByWithAggregationInput = {
@@ -247,6 +250,7 @@ export type SearchTermCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   location?: Prisma.LocationCreateNestedOneWithoutSearchTermsInput
+  executions?: Prisma.SearchExecutionCreateNestedManyWithoutSearchTermInput
 }
 
 export type SearchTermUncheckedCreateInput = {
@@ -256,6 +260,7 @@ export type SearchTermUncheckedCreateInput = {
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  executions?: Prisma.SearchExecutionUncheckedCreateNestedManyWithoutSearchTermInput
 }
 
 export type SearchTermUpdateInput = {
@@ -265,6 +270,7 @@ export type SearchTermUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   location?: Prisma.LocationUpdateOneWithoutSearchTermsNestedInput
+  executions?: Prisma.SearchExecutionUpdateManyWithoutSearchTermNestedInput
 }
 
 export type SearchTermUncheckedUpdateInput = {
@@ -274,6 +280,7 @@ export type SearchTermUncheckedUpdateInput = {
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  executions?: Prisma.SearchExecutionUncheckedUpdateManyWithoutSearchTermNestedInput
 }
 
 export type SearchTermCreateManyInput = {
@@ -339,6 +346,11 @@ export type SearchTermMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type SearchTermNullableScalarRelationFilter = {
+  is?: Prisma.SearchTermWhereInput | null
+  isNot?: Prisma.SearchTermWhereInput | null
+}
+
 export type SearchTermCreateNestedManyWithoutLocationInput = {
   create?: Prisma.XOR<Prisma.SearchTermCreateWithoutLocationInput, Prisma.SearchTermUncheckedCreateWithoutLocationInput> | Prisma.SearchTermCreateWithoutLocationInput[] | Prisma.SearchTermUncheckedCreateWithoutLocationInput[]
   connectOrCreate?: Prisma.SearchTermCreateOrConnectWithoutLocationInput | Prisma.SearchTermCreateOrConnectWithoutLocationInput[]
@@ -381,12 +393,29 @@ export type SearchTermUncheckedUpdateManyWithoutLocationNestedInput = {
   deleteMany?: Prisma.SearchTermScalarWhereInput | Prisma.SearchTermScalarWhereInput[]
 }
 
+export type SearchTermCreateNestedOneWithoutExecutionsInput = {
+  create?: Prisma.XOR<Prisma.SearchTermCreateWithoutExecutionsInput, Prisma.SearchTermUncheckedCreateWithoutExecutionsInput>
+  connectOrCreate?: Prisma.SearchTermCreateOrConnectWithoutExecutionsInput
+  connect?: Prisma.SearchTermWhereUniqueInput
+}
+
+export type SearchTermUpdateOneWithoutExecutionsNestedInput = {
+  create?: Prisma.XOR<Prisma.SearchTermCreateWithoutExecutionsInput, Prisma.SearchTermUncheckedCreateWithoutExecutionsInput>
+  connectOrCreate?: Prisma.SearchTermCreateOrConnectWithoutExecutionsInput
+  upsert?: Prisma.SearchTermUpsertWithoutExecutionsInput
+  disconnect?: Prisma.SearchTermWhereInput | boolean
+  delete?: Prisma.SearchTermWhereInput | boolean
+  connect?: Prisma.SearchTermWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SearchTermUpdateToOneWithWhereWithoutExecutionsInput, Prisma.SearchTermUpdateWithoutExecutionsInput>, Prisma.SearchTermUncheckedUpdateWithoutExecutionsInput>
+}
+
 export type SearchTermCreateWithoutLocationInput = {
   id?: string
   keyword: string
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  executions?: Prisma.SearchExecutionCreateNestedManyWithoutSearchTermInput
 }
 
 export type SearchTermUncheckedCreateWithoutLocationInput = {
@@ -395,6 +424,7 @@ export type SearchTermUncheckedCreateWithoutLocationInput = {
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  executions?: Prisma.SearchExecutionUncheckedCreateNestedManyWithoutSearchTermInput
 }
 
 export type SearchTermCreateOrConnectWithoutLocationInput = {
@@ -435,6 +465,58 @@ export type SearchTermScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"SearchTerm"> | Date | string
 }
 
+export type SearchTermCreateWithoutExecutionsInput = {
+  id?: string
+  keyword: string
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  location?: Prisma.LocationCreateNestedOneWithoutSearchTermsInput
+}
+
+export type SearchTermUncheckedCreateWithoutExecutionsInput = {
+  id?: string
+  keyword: string
+  locationId?: string | null
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type SearchTermCreateOrConnectWithoutExecutionsInput = {
+  where: Prisma.SearchTermWhereUniqueInput
+  create: Prisma.XOR<Prisma.SearchTermCreateWithoutExecutionsInput, Prisma.SearchTermUncheckedCreateWithoutExecutionsInput>
+}
+
+export type SearchTermUpsertWithoutExecutionsInput = {
+  update: Prisma.XOR<Prisma.SearchTermUpdateWithoutExecutionsInput, Prisma.SearchTermUncheckedUpdateWithoutExecutionsInput>
+  create: Prisma.XOR<Prisma.SearchTermCreateWithoutExecutionsInput, Prisma.SearchTermUncheckedCreateWithoutExecutionsInput>
+  where?: Prisma.SearchTermWhereInput
+}
+
+export type SearchTermUpdateToOneWithWhereWithoutExecutionsInput = {
+  where?: Prisma.SearchTermWhereInput
+  data: Prisma.XOR<Prisma.SearchTermUpdateWithoutExecutionsInput, Prisma.SearchTermUncheckedUpdateWithoutExecutionsInput>
+}
+
+export type SearchTermUpdateWithoutExecutionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  keyword?: Prisma.StringFieldUpdateOperationsInput | string
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  location?: Prisma.LocationUpdateOneWithoutSearchTermsNestedInput
+}
+
+export type SearchTermUncheckedUpdateWithoutExecutionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  keyword?: Prisma.StringFieldUpdateOperationsInput | string
+  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type SearchTermCreateManyLocationInput = {
   id?: string
   keyword: string
@@ -449,6 +531,7 @@ export type SearchTermUpdateWithoutLocationInput = {
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  executions?: Prisma.SearchExecutionUpdateManyWithoutSearchTermNestedInput
 }
 
 export type SearchTermUncheckedUpdateWithoutLocationInput = {
@@ -457,6 +540,7 @@ export type SearchTermUncheckedUpdateWithoutLocationInput = {
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  executions?: Prisma.SearchExecutionUncheckedUpdateManyWithoutSearchTermNestedInput
 }
 
 export type SearchTermUncheckedUpdateManyWithoutLocationInput = {
@@ -468,6 +552,35 @@ export type SearchTermUncheckedUpdateManyWithoutLocationInput = {
 }
 
 
+/**
+ * Count Type SearchTermCountOutputType
+ */
+
+export type SearchTermCountOutputType = {
+  executions: number
+}
+
+export type SearchTermCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  executions?: boolean | SearchTermCountOutputTypeCountExecutionsArgs
+}
+
+/**
+ * SearchTermCountOutputType without action
+ */
+export type SearchTermCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SearchTermCountOutputType
+   */
+  select?: Prisma.SearchTermCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * SearchTermCountOutputType without action
+ */
+export type SearchTermCountOutputTypeCountExecutionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SearchExecutionWhereInput
+}
+
 
 export type SearchTermSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -477,6 +590,8 @@ export type SearchTermSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   createdAt?: boolean
   updatedAt?: boolean
   location?: boolean | Prisma.SearchTerm$locationArgs<ExtArgs>
+  executions?: boolean | Prisma.SearchTerm$executionsArgs<ExtArgs>
+  _count?: boolean | Prisma.SearchTermCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["searchTerm"]>
 
 export type SearchTermSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -511,6 +626,8 @@ export type SearchTermSelectScalar = {
 export type SearchTermOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "keyword" | "locationId" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["searchTerm"]>
 export type SearchTermInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   location?: boolean | Prisma.SearchTerm$locationArgs<ExtArgs>
+  executions?: boolean | Prisma.SearchTerm$executionsArgs<ExtArgs>
+  _count?: boolean | Prisma.SearchTermCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SearchTermIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   location?: boolean | Prisma.SearchTerm$locationArgs<ExtArgs>
@@ -523,6 +640,7 @@ export type $SearchTermPayload<ExtArgs extends runtime.Types.Extensions.Internal
   name: "SearchTerm"
   objects: {
     location: Prisma.$LocationPayload<ExtArgs> | null
+    executions: Prisma.$SearchExecutionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -926,6 +1044,7 @@ readonly fields: SearchTermFieldRefs;
 export interface Prisma__SearchTermClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   location<T extends Prisma.SearchTerm$locationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SearchTerm$locationArgs<ExtArgs>>): Prisma.Prisma__LocationClient<runtime.Types.Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  executions<T extends Prisma.SearchTerm$executionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SearchTerm$executionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SearchExecutionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1378,6 +1497,30 @@ export type SearchTerm$locationArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   include?: Prisma.LocationInclude<ExtArgs> | null
   where?: Prisma.LocationWhereInput
+}
+
+/**
+ * SearchTerm.executions
+ */
+export type SearchTerm$executionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SearchExecution
+   */
+  select?: Prisma.SearchExecutionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SearchExecution
+   */
+  omit?: Prisma.SearchExecutionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchExecutionInclude<ExtArgs> | null
+  where?: Prisma.SearchExecutionWhereInput
+  orderBy?: Prisma.SearchExecutionOrderByWithRelationInput | Prisma.SearchExecutionOrderByWithRelationInput[]
+  cursor?: Prisma.SearchExecutionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SearchExecutionScalarFieldEnum | Prisma.SearchExecutionScalarFieldEnum[]
 }
 
 /**

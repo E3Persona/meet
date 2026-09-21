@@ -67,7 +67,10 @@ export const ModelName = {
   SeenBlock: 'SeenBlock',
   EventDetailPage: 'EventDetailPage',
   EventDetailSection: 'EventDetailSection',
-  Note: 'Note'
+  Note: 'Note',
+  WebSearchQuery: 'WebSearchQuery',
+  WebSearchResult: 'WebSearchResult',
+  SearchExecution: 'SearchExecution'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -376,6 +379,46 @@ export const NoteScalarFieldEnum = {
 } as const
 
 export type NoteScalarFieldEnum = (typeof NoteScalarFieldEnum)[keyof typeof NoteScalarFieldEnum]
+
+
+export const WebSearchQueryScalarFieldEnum = {
+  id: 'id',
+  query: 'query',
+  createdAt: 'createdAt'
+} as const
+
+export type WebSearchQueryScalarFieldEnum = (typeof WebSearchQueryScalarFieldEnum)[keyof typeof WebSearchQueryScalarFieldEnum]
+
+
+export const WebSearchResultScalarFieldEnum = {
+  id: 'id',
+  queryId: 'queryId',
+  source: 'source',
+  title: 'title',
+  url: 'url',
+  snippet: 'snippet',
+  publishedDate: 'publishedDate',
+  page: 'page',
+  createdAt: 'createdAt'
+} as const
+
+export type WebSearchResultScalarFieldEnum = (typeof WebSearchResultScalarFieldEnum)[keyof typeof WebSearchResultScalarFieldEnum]
+
+
+export const SearchExecutionScalarFieldEnum = {
+  id: 'id',
+  searchTemplateId: 'searchTemplateId',
+  searchTermId: 'searchTermId',
+  locationId: 'locationId',
+  targetMonth: 'targetMonth',
+  targetYear: 'targetYear',
+  resolvedQuery: 'resolvedQuery',
+  lastRunAt: 'lastRunAt',
+  resultCount: 'resultCount',
+  webSearchQueryId: 'webSearchQueryId'
+} as const
+
+export type SearchExecutionScalarFieldEnum = (typeof SearchExecutionScalarFieldEnum)[keyof typeof SearchExecutionScalarFieldEnum]
 
 
 export const SortOrder = {

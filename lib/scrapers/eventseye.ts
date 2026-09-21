@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio"
-import type { Browser, Page } from "puppeteer-core"
+import type { Browser, Page } from "puppeteer"
 import puppeteer from "puppeteer-extra"
 import StealthPlugin from "puppeteer-extra-plugin-stealth"
 

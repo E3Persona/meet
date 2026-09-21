@@ -126,3 +126,18 @@ export type EventDetailSection = Prisma.EventDetailSectionModel
  * 
  */
 export type Note = Prisma.NoteModel
+/**
+ * Model WebSearchQuery
+ * 
+ */
+export type WebSearchQuery = Prisma.WebSearchQueryModel
+/**
+ * Model WebSearchResult
+ * 
+ */
+export type WebSearchResult = Prisma.WebSearchResultModel
+/**
+ * Model SearchExecution
+ * 
+ */
+export type SearchExecution = Prisma.SearchExecutionModel

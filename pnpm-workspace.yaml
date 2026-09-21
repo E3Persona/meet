@@ -4,3 +4,6 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   msw: false
+  '@google/genai': false
+  puppeteer: false
+  ws: false

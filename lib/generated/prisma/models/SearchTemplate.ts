@@ -190,6 +190,7 @@ export type SearchTemplateWhereInput = {
   active?: Prisma.BoolFilter<"SearchTemplate"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SearchTemplate"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SearchTemplate"> | Date | string
+  executions?: Prisma.SearchExecutionListRelationFilter
 }
 
 export type SearchTemplateOrderByWithRelationInput = {
@@ -199,6 +200,7 @@ export type SearchTemplateOrderByWithRelationInput = {
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  executions?: Prisma.SearchExecutionOrderByRelationAggregateInput
 }
 
 export type SearchTemplateWhereUniqueInput = Prisma.AtLeast<{
@@ -211,6 +213,7 @@ export type SearchTemplateWhereUniqueInput = Prisma.AtLeast<{
   active?: Prisma.BoolFilter<"SearchTemplate"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SearchTemplate"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SearchTemplate"> | Date | string
+  executions?: Prisma.SearchExecutionListRelationFilter
 }, "id">
 
 export type SearchTemplateOrderByWithAggregationInput = {
@@ -244,6 +247,7 @@ export type SearchTemplateCreateInput = {
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  executions?: Prisma.SearchExecutionCreateNestedManyWithoutSearchTemplateInput
 }
 
 export type SearchTemplateUncheckedCreateInput = {
@@ -253,6 +257,7 @@ export type SearchTemplateUncheckedCreateInput = {
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  executions?: Prisma.SearchExecutionUncheckedCreateNestedManyWithoutSearchTemplateInput
 }
 
 export type SearchTemplateUpdateInput = {
@@ -262,6 +267,7 @@ export type SearchTemplateUpdateInput = {
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  executions?: Prisma.SearchExecutionUpdateManyWithoutSearchTemplateNestedInput
 }
 
 export type SearchTemplateUncheckedUpdateInput = {
@@ -271,6 +277,7 @@ export type SearchTemplateUncheckedUpdateInput = {
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  executions?: Prisma.SearchExecutionUncheckedUpdateManyWithoutSearchTemplateNestedInput
 }
 
 export type SearchTemplateCreateManyInput = {
@@ -327,10 +334,112 @@ export type SearchTemplateMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type SearchTemplateNullableScalarRelationFilter = {
+  is?: Prisma.SearchTemplateWhereInput | null
+  isNot?: Prisma.SearchTemplateWhereInput | null
+}
+
 export type EnumTemplateScopeFieldUpdateOperationsInput = {
   set?: $Enums.TemplateScope
 }
 
+export type SearchTemplateCreateNestedOneWithoutExecutionsInput = {
+  create?: Prisma.XOR<Prisma.SearchTemplateCreateWithoutExecutionsInput, Prisma.SearchTemplateUncheckedCreateWithoutExecutionsInput>
+  connectOrCreate?: Prisma.SearchTemplateCreateOrConnectWithoutExecutionsInput
+  connect?: Prisma.SearchTemplateWhereUniqueInput
+}
+
+export type SearchTemplateUpdateOneWithoutExecutionsNestedInput = {
+  create?: Prisma.XOR<Prisma.SearchTemplateCreateWithoutExecutionsInput, Prisma.SearchTemplateUncheckedCreateWithoutExecutionsInput>
+  connectOrCreate?: Prisma.SearchTemplateCreateOrConnectWithoutExecutionsInput
+  upsert?: Prisma.SearchTemplateUpsertWithoutExecutionsInput
+  disconnect?: Prisma.SearchTemplateWhereInput | boolean
+  delete?: Prisma.SearchTemplateWhereInput | boolean
+  connect?: Prisma.SearchTemplateWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SearchTemplateUpdateToOneWithWhereWithoutExecutionsInput, Prisma.SearchTemplateUpdateWithoutExecutionsInput>, Prisma.SearchTemplateUncheckedUpdateWithoutExecutionsInput>
+}
+
+export type SearchTemplateCreateWithoutExecutionsInput = {
+  id?: string
+  template: string
+  scope?: $Enums.TemplateScope
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type SearchTemplateUncheckedCreateWithoutExecutionsInput = {
+  id?: string
+  template: string
+  scope?: $Enums.TemplateScope
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type SearchTemplateCreateOrConnectWithoutExecutionsInput = {
+  where: Prisma.SearchTemplateWhereUniqueInput
+  create: Prisma.XOR<Prisma.SearchTemplateCreateWithoutExecutionsInput, Prisma.SearchTemplateUncheckedCreateWithoutExecutionsInput>
+}
+
+export type SearchTemplateUpsertWithoutExecutionsInput = {
+  update: Prisma.XOR<Prisma.SearchTemplateUpdateWithoutExecutionsInput, Prisma.SearchTemplateUncheckedUpdateWithoutExecutionsInput>
+  create: Prisma.XOR<Prisma.SearchTemplateCreateWithoutExecutionsInput, Prisma.SearchTemplateUncheckedCreateWithoutExecutionsInput>
+  where?: Prisma.SearchTemplateWhereInput
+}
+
+export type SearchTemplateUpdateToOneWithWhereWithoutExecutionsInput = {
+  where?: Prisma.SearchTemplateWhereInput
+  data: Prisma.XOR<Prisma.SearchTemplateUpdateWithoutExecutionsInput, Prisma.SearchTemplateUncheckedUpdateWithoutExecutionsInput>
+}
+
+export type SearchTemplateUpdateWithoutExecutionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  template?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.EnumTemplateScopeFieldUpdateOperationsInput | $Enums.TemplateScope
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type SearchTemplateUncheckedUpdateWithoutExecutionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  template?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.EnumTemplateScopeFieldUpdateOperationsInput | $Enums.TemplateScope
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+
+/**
+ * Count Type SearchTemplateCountOutputType
+ */
+
+export type SearchTemplateCountOutputType = {
+  executions: number
+}
+
+export type SearchTemplateCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  executions?: boolean | SearchTemplateCountOutputTypeCountExecutionsArgs
+}
+
+/**
+ * SearchTemplateCountOutputType without action
+ */
+export type SearchTemplateCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SearchTemplateCountOutputType
+   */
+  select?: Prisma.SearchTemplateCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * SearchTemplateCountOutputType without action
+ */
+export type SearchTemplateCountOutputTypeCountExecutionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SearchExecutionWhereInput
+}
 
 
 export type SearchTemplateSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -340,6 +449,8 @@ export type SearchTemplateSelect<ExtArgs extends runtime.Types.Extensions.Intern
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  executions?: boolean | Prisma.SearchTemplate$executionsArgs<ExtArgs>
+  _count?: boolean | Prisma.SearchTemplateCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["searchTemplate"]>
 
 export type SearchTemplateSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -370,10 +481,18 @@ export type SearchTemplateSelectScalar = {
 }
 
 export type SearchTemplateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "template" | "scope" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["searchTemplate"]>
+export type SearchTemplateInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  executions?: boolean | Prisma.SearchTemplate$executionsArgs<ExtArgs>
+  _count?: boolean | Prisma.SearchTemplateCountOutputTypeDefaultArgs<ExtArgs>
+}
+export type SearchTemplateIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type SearchTemplateIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
 
 export type $SearchTemplatePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SearchTemplate"
-  objects: {}
+  objects: {
+    executions: Prisma.$SearchExecutionPayload<ExtArgs>[]
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     template: string
@@ -775,6 +894,7 @@ readonly fields: SearchTemplateFieldRefs;
  */
 export interface Prisma__SearchTemplateClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  executions<T extends Prisma.SearchTemplate$executionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SearchTemplate$executionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SearchExecutionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -827,6 +947,10 @@ export type SearchTemplateFindUniqueArgs<ExtArgs extends runtime.Types.Extension
    */
   omit?: Prisma.SearchTemplateOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchTemplateInclude<ExtArgs> | null
+  /**
    * Filter, which SearchTemplate to fetch.
    */
   where: Prisma.SearchTemplateWhereUniqueInput
@@ -845,6 +969,10 @@ export type SearchTemplateFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Ex
    */
   omit?: Prisma.SearchTemplateOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchTemplateInclude<ExtArgs> | null
+  /**
    * Filter, which SearchTemplate to fetch.
    */
   where: Prisma.SearchTemplateWhereUniqueInput
@@ -862,6 +990,10 @@ export type SearchTemplateFindFirstArgs<ExtArgs extends runtime.Types.Extensions
    * Omit specific fields from the SearchTemplate
    */
   omit?: Prisma.SearchTemplateOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchTemplateInclude<ExtArgs> | null
   /**
    * Filter, which SearchTemplate to fetch.
    */
@@ -911,6 +1043,10 @@ export type SearchTemplateFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Ext
    */
   omit?: Prisma.SearchTemplateOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchTemplateInclude<ExtArgs> | null
+  /**
    * Filter, which SearchTemplate to fetch.
    */
   where?: Prisma.SearchTemplateWhereInput
@@ -958,6 +1094,10 @@ export type SearchTemplateFindManyArgs<ExtArgs extends runtime.Types.Extensions.
    * Omit specific fields from the SearchTemplate
    */
   omit?: Prisma.SearchTemplateOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchTemplateInclude<ExtArgs> | null
   /**
    * Filter, which SearchTemplates to fetch.
    */
@@ -1007,6 +1147,10 @@ export type SearchTemplateCreateArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   omit?: Prisma.SearchTemplateOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchTemplateInclude<ExtArgs> | null
+  /**
    * The data needed to create a SearchTemplate.
    */
   data: Prisma.XOR<Prisma.SearchTemplateCreateInput, Prisma.SearchTemplateUncheckedCreateInput>
@@ -1054,6 +1198,10 @@ export type SearchTemplateUpdateArgs<ExtArgs extends runtime.Types.Extensions.In
    * Omit specific fields from the SearchTemplate
    */
   omit?: Prisma.SearchTemplateOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchTemplateInclude<ExtArgs> | null
   /**
    * The data needed to update a SearchTemplate.
    */
@@ -1121,6 +1269,10 @@ export type SearchTemplateUpsertArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   omit?: Prisma.SearchTemplateOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchTemplateInclude<ExtArgs> | null
+  /**
    * The filter to search for the SearchTemplate to update in case it exists.
    */
   where: Prisma.SearchTemplateWhereUniqueInput
@@ -1147,6 +1299,10 @@ export type SearchTemplateDeleteArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   omit?: Prisma.SearchTemplateOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchTemplateInclude<ExtArgs> | null
+  /**
    * Filter which SearchTemplate to delete.
    */
   where: Prisma.SearchTemplateWhereUniqueInput
@@ -1167,6 +1323,30 @@ export type SearchTemplateDeleteManyArgs<ExtArgs extends runtime.Types.Extension
 }
 
 /**
+ * SearchTemplate.executions
+ */
+export type SearchTemplate$executionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SearchExecution
+   */
+  select?: Prisma.SearchExecutionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SearchExecution
+   */
+  omit?: Prisma.SearchExecutionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchExecutionInclude<ExtArgs> | null
+  where?: Prisma.SearchExecutionWhereInput
+  orderBy?: Prisma.SearchExecutionOrderByWithRelationInput | Prisma.SearchExecutionOrderByWithRelationInput[]
+  cursor?: Prisma.SearchExecutionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SearchExecutionScalarFieldEnum | Prisma.SearchExecutionScalarFieldEnum[]
+}
+
+/**
  * SearchTemplate without action
  */
 export type SearchTemplateDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1178,4 +1358,8 @@ export type SearchTemplateDefaultArgs<ExtArgs extends runtime.Types.Extensions.I
    * Omit specific fields from the SearchTemplate
    */
   omit?: Prisma.SearchTemplateOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SearchTemplateInclude<ExtArgs> | null
 }

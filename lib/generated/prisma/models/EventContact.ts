@@ -252,6 +252,7 @@ export type EventContactOrderByWithRelationInput = {
 
 export type EventContactWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  eventId_email?: Prisma.EventContactEventIdEmailCompoundUniqueInput
   AND?: Prisma.EventContactWhereInput | Prisma.EventContactWhereInput[]
   OR?: Prisma.EventContactWhereInput[]
   NOT?: Prisma.EventContactWhereInput | Prisma.EventContactWhereInput[]
@@ -267,7 +268,7 @@ export type EventContactWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"EventContact"> | Date | string
   event?: Prisma.XOR<Prisma.EventScalarRelationFilter, Prisma.EventWhereInput>
   notes?: Prisma.NoteListRelationFilter
-}, "id">
+}, "id" | "eventId_email">
 
 export type EventContactOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -412,6 +413,11 @@ export type EventContactListRelationFilter = {
 
 export type EventContactOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type EventContactEventIdEmailCompoundUniqueInput = {
+  eventId: string
+  email: string
 }
 
 export type EventContactCountOrderByAggregateInput = {

@@ -9,7 +9,6 @@ import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { ProgressDialog } from "@/components/ui/progress-dialog"
 import { Trash2, Plus, Play } from "lucide-react"
 import type { FormSection as FormSectionType } from "@/types/components"
 import { toast } from "sonner"
@@ -112,8 +111,6 @@ export function TemplatesManager() {
   const [runLocations, setRunLocations] = useState<LocationOption[]>([])
   const [runSelectedLocationIds, setRunSelectedLocationIds] = useState<string[]>([])
   const [runLoading, setRunLoading] = useState(false)
-  const [progressRunId, setProgressRunId] = useState<string | null>(null)
-  const [progressDialogOpen, setProgressDialogOpen] = useState(false)
 
   const fetchAll = useCallback(async () => {
     try {
@@ -239,24 +236,26 @@ export function TemplatesManager() {
     setRunDialogOpen(true)
   }
 
+  // Single search action — delegates to `runSearchTemplates` via the
+  // /api/ingest/search-templates route (targeted mode), which expands the
+  // chosen template/term × location × month tuples, runs the search pipeline,
+  // and persists WebSearchQuery/WebSearchResult/Event/SearchExecution rows.
   const executeRun = async (p: UnifiedPhrase, locationIds: string[]) => {
     setRunLoading(true)
     setRunDialogOpen(false)
     toast.info(`Starting search for "${p.phrase}"...`)
 
     try {
-      const body: Record<string, unknown> = { scraperTypes: ["search"] }
+      const body: Record<string, unknown> = {}
 
       if (p.type === "template") {
-        body.templateIds = [p.id]
-        if (locationIds.length > 0) body.locationIds = locationIds
+        body.searchTemplateIds = [p.id]
       } else {
-        if (p.locationId) {
-          body.locationIds = [p.locationId]
-        }
+        body.searchTermIds = [p.id]
       }
+      if (locationIds.length > 0) body.locationIds = locationIds
 
-      const res = await fetch("/api/ingest/run?trigger=manual", {
+      const res = await fetch("/api/ingest/search-templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -268,8 +267,10 @@ export function TemplatesManager() {
         return
       }
 
-      setProgressRunId(data.runId)
-      setProgressDialogOpen(true)
+      toast.success(
+        `Search complete: ${data.resultsSaved} results saved, ${data.eventsEnriched} events enriched`
+      )
+      fetchAll()
     } catch {
       toast.error("Search request failed")
     } finally {
@@ -475,19 +476,6 @@ export function TemplatesManager() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* ── Progress dialog ─────────────────────────────────────────────── */}
-      <ProgressDialog
-        open={progressDialogOpen}
-        title={`Running: ${runTarget?.phrase ?? "Search"}`}
-        runId={progressRunId}
-        onComplete={() => {
-          setProgressDialogOpen(false)
-          setProgressRunId(null)
-          toast.success("Search complete")
-          fetchAll()
-        }}
-      />
 
       <UniversalList
         columns={columns}

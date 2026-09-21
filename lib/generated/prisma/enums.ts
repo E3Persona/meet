@@ -134,7 +134,8 @@ export const ExtractionMethod = {
   jina_markdown: 'jina_markdown',
   puppeteer_html: 'puppeteer_html',
   gemini_url_context: 'gemini_url_context',
-  gemini_location_search: 'gemini_location_search'
+  gemini_location_search: 'gemini_location_search',
+  cheerio_html: 'cheerio_html'
 } as const
 
 export type ExtractionMethod = (typeof ExtractionMethod)[keyof typeof ExtractionMethod]

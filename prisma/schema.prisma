@@ -62,7 +62,7 @@ model Location {
   venueDirectorySources VenueDirectorySource[] @relation("VenueDirectorySources")
   venueEvents Event[]     @relation("VenueEvents")
   notes       Note[]      @relation("LocationNotes")
-
+ searchExecutions SearchExecution[]
   @@index([type, parentId])
   @@index([state])
   @@index([city])
@@ -87,7 +87,7 @@ model SearchTerm {
   updatedAt  DateTime @updatedAt
 
   location Location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
-
+ executions SearchExecution[]
   @@map("search_terms")
 }
 
@@ -104,6 +104,8 @@ model SearchTemplate {
   active    Boolean       @default(true)
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+
+  executions SearchExecution[]
 
   @@map("search_templates")
 }
@@ -345,6 +347,7 @@ model EventContact {
   notes Note[]
 
   @@map("event_contacts")
+  @@unique([eventId, email])
 }
 
 // ─── Venue Directory Sources ─────────────────────────────────────────────────
@@ -367,6 +370,7 @@ enum ExtractionMethod {
   puppeteer_html
   gemini_url_context
   gemini_location_search
+  cheerio_html
 }
 
 enum HealthStatus {
@@ -507,4 +511,55 @@ model Note {
   @@index([contactId])
   @@index([notedAt])
   @@map("notes")
+}
+
+// ─── Web Search ─────────────────────────────────────────────────────────────────
+
+model WebSearchQuery {
+  id        String            @id @default(cuid())
+  query     String
+  createdAt DateTime          @default(now())
+  results   WebSearchResult[]
+  searchExecutions SearchExecution[]
+
+  @@map("web_search_queries")
+}
+
+model WebSearchResult {
+  id            String          @id @default(cuid())
+  queryId       String
+  query         WebSearchQuery  @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  source        String          // "google" | "duckduckgo"
+  title         String
+  url           String
+  snippet       String?
+  publishedDate DateTime?
+  page          Int
+  createdAt     DateTime        @default(now())
+
+  @@index([queryId])
+  @@map("web_search_results")
+}
+
+model SearchExecution {
+  id               String    @id @default(cuid())
+  searchTemplateId String?
+  searchTermId     String?
+  locationId       String?   // null for GLOBAL-scope templates/terms
+  targetMonth      Int       // 1-12
+  targetYear       Int
+  resolvedQuery    String
+  lastRunAt        DateTime  @default(now())
+  resultCount      Int       @default(0)
+  webSearchQueryId String?
+  webSearchQuery   WebSearchQuery? @relation(fields: [webSearchQueryId], references: [id], onDelete: SetNull)
+
+
+  searchTemplate SearchTemplate? @relation(fields: [searchTemplateId], references: [id], onDelete: Cascade)
+  searchTerm     SearchTerm?     @relation(fields: [searchTermId], references: [id], onDelete: Cascade)
+  location       Location?       @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([searchTemplateId, searchTermId, locationId, targetMonth, targetYear])
+  @@index([lastRunAt])
+  @@map("search_executions")
 }

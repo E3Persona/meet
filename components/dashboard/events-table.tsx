@@ -2,13 +2,14 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import {
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-  type SortingState,
-} from "@tanstack/react-table"
+    flexRender,
+    getCoreRowModel,
+    getSortedRowModel,
+    useReactTable,
+    type ColumnDef,
+    type Row,
+    type SortingState,
+  } from "@tanstack/react-table"
 import {
   Table,
   TableBody,
@@ -710,6 +711,29 @@ export function EventsTable() {
     return new Date(d) < new Date()
   }
 
+  // Sort upcoming/current events first (ascending by date), past events last.
+  // Events without a date always sort to the very bottom.
+  const upcomingFirstSort = (a: Row<EventRow>, b: Row<EventRow>) => {
+    const ra = a.original
+    const rb = b.original
+    const aDate = ra.eventDateStart ? new Date(ra.eventDateStart).getTime() : NaN
+    const bDate = rb.eventDateStart ? new Date(rb.eventDateStart).getTime() : NaN
+    const aPast = isPast(ra)
+    const bPast = isPast(rb)
+
+    // No date → always last
+    if (isNaN(aDate) && isNaN(bDate)) return 0
+    if (isNaN(aDate)) return 1
+    if (isNaN(bDate)) return -1
+
+    // Past events go after upcoming ones
+    if (aPast && !bPast) return 1
+    if (!aPast && bPast) return -1
+
+    // Same group → ascending by start date
+    return aDate - bDate
+  }
+
   // ── Columns ───────────────────────────────────────────────────────────────
 
   const maxContacts = useMemo(
@@ -901,7 +925,7 @@ export function EventsTable() {
             <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
           </Button>
         ),
-        sortingFn: "datetime",
+        sortingFn: upcomingFirstSort,
         cell: ({ row }) => {
           if (isOldYear(row.original))
             return <span className="text-sm text-muted-foreground">—</span>
@@ -931,7 +955,7 @@ export function EventsTable() {
             <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
           </Button>
         ),
-        sortingFn: "datetime",
+        sortingFn: upcomingFirstSort,
         cell: ({ row }) => {
           if (isOldYear(row.original))
             return <span className="text-sm text-muted-foreground">—</span>

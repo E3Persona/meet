@@ -37,16 +37,20 @@
     "@tanstack/react-table": "^8.21.3",
     "@types/react-dropzone": "^4.2.2",
     "@wrksz/themes": "^0.9.3",
+    "axios": "^1.20.0",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "csv-parse": "^7.0.1",
     "date-fns": "^4.1.0",
+    "duck-duck-scrape": "^2.2.7",
     "embla-carousel-react": "^8.6.0",
+    "google-sr": "^6.0.0",
     "lucide-react": "^1.21.0",
     "next": "16.2.6",
     "next-themes": "^0.4.6",
     "pg": "^8.22.0",
+    "puppeteer": "^25.11.0",
     "puppeteer-core": "^25.3.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
@@ -67,12 +71,6 @@
     "vaul": "^1.1.2",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "prisma",
-      "@prisma/engines"
-    ]
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

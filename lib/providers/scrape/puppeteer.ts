@@ -48,7 +48,7 @@ export function createPuppeteerProvider(): ScrapeProvider {
         }
 
         // Wait for any remaining JS to settle
-        await page.waitForTimeout(2000)
+        await new Promise((r) => setTimeout(r, 2000))
 
         // Extract plain text — heading/list structure for block splitter
         const text = await page.evaluate(() => {
