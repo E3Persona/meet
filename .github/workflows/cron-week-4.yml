@@ -10,6 +10,13 @@ on:
   workflow_dispatch:
 
 jobs:
+  search-templates:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: search-templates.ts
+      trigger: scheduled
+      timeout_minutes: 120
+    secrets: inherit
   ingest-eventseye:
     uses: ./.github/workflows/scrape.yml
     with:

@@ -3,6 +3,8 @@ name: Scheduled Ingestion — Week 1
 # Week 1 (Monday): low-risk API/directory scrapers.
 # Combined with weeks 2-4 this covers every dedicated scraper once per month
 # instead of all 23 every week. Build is cached via scrape.yml.
+# `search-templates` runs in every week — it consumes the round-robin queue
+# (10 tuples per run by default), so weekly keeps the backlog drained.
 
 on:
   schedule:
@@ -11,6 +13,13 @@ on:
   workflow_dispatch:
 
 jobs:
+  search-templates:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: search-templates.ts
+      trigger: scheduled
+      timeout_minutes: 120
+    secrets: inherit
   ingest-aca:
     uses: ./.github/workflows/scrape.yml
     with:

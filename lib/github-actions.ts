@@ -26,6 +26,7 @@ const SCRAPER_TO_WORKFLOW: Record<string, string> = {
   "ingest-thetradeshowcalendar.ts": "ingest-thetradeshowcalendar.ts",
   "ingest-tradefairdates.ts": "ingest-tradefairdates.ts",
   "ingest-webmobi.ts": "ingest-webmobi.ts",
+  "search-templates.ts": "search-templates.ts",
 }
 
 export interface TriggerOptions {
