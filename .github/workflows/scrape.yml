@@ -1,0 +1,107 @@
+name: Run Scraper
+
+# Reusable, build-cache-aware runner for a single dedicated scraper.
+# Called by cron-week-*.yml (scheduled) and ingest.yml (manual dispatch).
+#
+# Build cache: node_modules and the Next.js build are cached by job key so
+# every scraper job reuses them instead of re-running
+# `pnpm install --frozen-lockfile` + `next build` each time. That is the bulk
+# of the minutes saved — a single scraper then costs only the tsx run itself.
+
+on:
+  workflow_call:
+    inputs:
+      scraper:
+        description: "Scraper script name (e.g. ingest-thetradeshowcalendar.ts)"
+        required: true
+        type: string
+      trigger:
+        description: "Trigger type"
+        required: false
+        default: "scheduled"
+        type: string
+      date_from:
+        description: "Start date (YYYY-MM-DD)"
+        required: false
+        type: string
+      date_to:
+        description: "End date (YYYY-MM-DD)"
+        required: false
+        type: string
+      force_refresh:
+        description: "Force refresh (skip staleness check)"
+        required: false
+        default: false
+        type: boolean
+      timeout_minutes:
+        description: "Per-scraper timeout"
+        required: false
+        type: number
+        default: 120
+
+jobs:
+  run-scraper:
+    name: Run ${{ inputs.scraper }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      # Cache pnpm store + node_modules keyed on the lockfile hash. Restored
+      # on every run; only changed deps are installed.
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            ~/.pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Cache the Next.js build + Prisma generated client keyed on the lockfile
+      # + schema, so `next build`/`prisma generate` are skipped on cache hits.
+      - name: Cache Next build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .next
+            lib/generated/prisma
+          key: next-build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'prisma/schema.prisma', 'next.config.ts') }}
+          restore-keys: |
+            next-build-${{ runner.os }}-
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Run scraper
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TRIGGER: ${{ inputs.trigger }}
+          DATE_FROM: ${{ inputs.date_from || '' }}
+          DATE_TO: ${{ inputs.date_to || '' }}
+          FORCE_REFRESH: ${{ inputs.force_refresh && '1' || '' }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          BRAVE_SEARCH_API_KEY: ${{ secrets.BRAVE_SEARCH_API_KEY }}
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          WEBPEEL_API_KEY: ${{ secrets.WEBPEEL_API_KEY }}
+        run: pnpm exec tsx scripts/${{ inputs.scraper }}

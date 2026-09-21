@@ -1,0 +1,53 @@
+name: Scheduled Ingestion — Week 2
+
+# Week 2 (Tuesday): mixed directory + venue scrapers.
+
+on:
+  schedule:
+    # Weekly: Tuesday 02:00 UTC
+    - cron: "0 2 * * 2"
+  workflow_dispatch:
+
+jobs:
+  ingest-blackmeetings:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-blackmeetings.ts
+      trigger: scheduled
+      timeout_minutes: 120
+    secrets: inherit
+  ingest-eventbrite:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-eventbrite.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-gaylordnational:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-gaylordnational.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-ica:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-ica.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-infosec:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-infosec.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-philadelphiaunion:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-philadelphiaunion.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit

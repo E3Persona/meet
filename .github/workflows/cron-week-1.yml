@@ -1,0 +1,55 @@
+name: Scheduled Ingestion — Week 1
+
+# Week 1 (Monday): low-risk API/directory scrapers.
+# Combined with weeks 2-4 this covers every dedicated scraper once per month
+# instead of all 23 every week. Build is cached via scrape.yml.
+
+on:
+  schedule:
+    # Weekly: Monday 02:00 UTC
+    - cron: "0 2 * * 1"
+  workflow_dispatch:
+
+jobs:
+  ingest-aca:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-aca.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-asae:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-asae.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-bigevent:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-bigevent.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-cn:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-cn.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-eventbrite-api:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-eventbrite-api.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-eventsdc:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-eventsdc.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit

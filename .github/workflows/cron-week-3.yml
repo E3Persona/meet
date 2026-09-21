@@ -1,0 +1,53 @@
+name: Scheduled Ingestion — Week 3
+
+# Week 3 (Wednesday): venue + conference-listing scrapers.
+
+on:
+  schedule:
+    # Weekly: Wednesday 02:00 UTC
+    - cron: "0 2 * * 3"
+  workflow_dispatch:
+
+jobs:
+  ingest-marriott:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-marriott.ts
+      trigger: scheduled
+      timeout_minutes: 120
+    secrets: inherit
+  ingest-phillyexpocenter:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-phillyexpocenter.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-rrbitc:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-rrbitc.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-sgmp:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-sgmp.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-tf:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-tf.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit
+  ingest-webmobi:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-webmobi.ts
+      trigger: scheduled
+      timeout_minutes: 90
+    secrets: inherit

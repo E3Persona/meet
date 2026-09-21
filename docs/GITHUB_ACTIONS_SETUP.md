@@ -119,6 +119,7 @@ GITHUB_TOKEN=ghp_xxx pnpm exec tsx scripts/test-github-actions.ts
 - Check Actions tab for the run status
 
 ### Cronjob.org triggers but nothing happens
-- The old `cron.yml` workflow just called the Vercel API (same problem)
-- Update cronjob.org to point to the new workflow, or
-- Use GitHub's native cron schedule in `ingest.yml` (already configured)
+- Cronjob.org is no longer used — ingestion is scheduled natively via the
+  weekly rotation workflows: `.github/workflows/cron-week-1..4.yml`
+  (Mon–Thu 02:00 UTC), each calling the cached runner
+  `.github/workflows/scrape.yml`.

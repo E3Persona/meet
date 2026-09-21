@@ -206,8 +206,10 @@ pipeline. They persist ad-hoc searches performed in `app/web-search/page.tsx`.
 - Each scraper route (`/api/ingest/<scraper>/route.ts`) spawns a `tsx scripts/ingest-*.ts`
   subprocess (e.g. `scripts/ingest-ica.ts`). These are dedicated site scrapers
   (ICA, ASAE, ConventionPlanit, etc.) — separate from the general search pipeline.
-- GitHub Actions workflow (`.github/workflows/cron.yml`) also runs dedicated
-  scraper scripts directly via `pnpm exec tsx` weekly.
+- Dedicated scraper scripts run via GitHub Actions on a **4-week rotation**
+  (`.github/workflows/cron-week-1..4.yml`), each calling the cached reusable
+  runner (`.github/workflows/scrape.yml`). One scraper per week, so the whole
+  set covers a month instead of all 23 every week.
 
 ### `runIngest()` flow
 

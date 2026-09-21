@@ -1,0 +1,47 @@
+name: Scheduled Ingestion — Week 4
+
+# Week 4 (Thursday): Puppeteer-based scrapers — the flaky ones, so they get
+# their own week + longer timeouts instead of competing with the rest.
+
+on:
+  schedule:
+    # Weekly: Thursday 02:00 UTC
+    - cron: "0 2 * * 4"
+  workflow_dispatch:
+
+jobs:
+  ingest-eventseye:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-eventseye.ts
+      trigger: scheduled
+      timeout_minutes: 180
+    secrets: inherit
+  ingest-generic-llm:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-generic-llm.ts
+      trigger: scheduled
+      timeout_minutes: 120
+    secrets: inherit
+  ingest-showsbee:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-showsbee.ts
+      trigger: scheduled
+      timeout_minutes: 180
+    secrets: inherit
+  ingest-thetradeshowcalendar:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-thetradeshowcalendar.ts
+      trigger: scheduled
+      timeout_minutes: 180
+    secrets: inherit
+  ingest-tradefairdates:
+    uses: ./.github/workflows/scrape.yml
+    with:
+      scraper: ingest-tradefairdates.ts
+      trigger: scheduled
+      timeout_minutes: 180
+    secrets: inherit
