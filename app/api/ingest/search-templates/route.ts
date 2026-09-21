@@ -2,7 +2,10 @@ import { NextResponse } from "next/server"
 import { startScraperRun } from "@/lib/run-scraper"
 
 import { prisma } from "@/lib/prisma"
-import { runSearchTemplates } from "@/lib/scrapers/ingest-search-templates"
+// `runSearchTemplates` is imported lazily inside POST: it transitively pulls in
+// puppeteer-extra + stealth at module-eval time, which breaks Turbopack's
+// static page-data collection for this route. Deferring to request time
+// keeps the puppeteer chain out of the static graph.
 
 interface SearchTemplatesRequestBody {
   // Targeted mode: provide these to search specific templates/terms against
@@ -93,6 +96,9 @@ export async function POST(request: Request) {
   if (isTargeted) {
     const cappedBatchSize = Math.min(batchSize ?? 10, MAX_TARGETED_BATCH_SIZE)
 
+    const { runSearchTemplates } = await import(
+      "@/lib/scrapers/ingest-search-templates"
+    )
     const summary = await runSearchTemplates({
       searchTemplateIds,
       searchTermIds,

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { MetricCardsGrid } from "@/components/ui/analytics/metric-cards-grid"
 import { MapPin, Calendar, Sparkles, Activity, Search, Globe } from "lucide-react"
 import type { MetricCardDef } from "@/types/components"
@@ -20,6 +20,25 @@ interface Stats {
   } | null
 }
 
+function formatWeekRange(now: Date): string {
+  const start = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  return `${fmt(start)} – ${fmt(now)}`
+}
+
+function formatRunDate(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ""
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
+}
+
 export function StatsRow() {
   const [stats, setStats] = useState<Stats | null>(null)
 
@@ -30,9 +49,18 @@ export function StatsRow() {
       .catch(() => {})
   }, [])
 
+  const weekRange = useMemo(
+    () => formatWeekRange(new Date()),
+    []
+  )
+
   const lastRunLabel = stats?.lastRun
     ? `${stats.lastRun.status === "success" ? "Success" : stats.lastRun.status === "failed" ? "Failed" : "Running"} (${stats.lastRun.recordsNew} new)`
     : "No runs yet"
+
+  const lastRunDate = stats?.lastRun?.startedAt
+    ? formatRunDate(stats.lastRun.startedAt)
+    : ""
 
   const cards: MetricCardDef[] = [
     {
@@ -55,6 +83,7 @@ export function StatsRow() {
       value: stats?.newThisWeek ?? 0,
       icon: Sparkles,
       accent: "success",
+      comparisonLabel: weekRange,
     },
     {
       id: "templates",
@@ -76,6 +105,7 @@ export function StatsRow() {
       value: lastRunLabel,
       icon: Activity,
       accent: stats?.lastRun?.status === "failed" ? "danger" : "success",
+      comparisonLabel: lastRunDate || undefined,
     },
   ]
 
